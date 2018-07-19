@@ -6,14 +6,11 @@ class GLData
 {
     import gfm.opengl;
 
-    this(Vertex)(OpenGL gl, GLProgram program, Vertex[] vertices, int[] indices)
+    this(Vertex, VertexSpecification)(OpenGL gl, ref VertexSpecification vert_spec, Vertex[] vertices, int[] indices)
     {
         _indices = indices;
         _vbo = scoped!GLBuffer(gl, GL_ARRAY_BUFFER, GL_STATIC_DRAW, vertices);
         _ibo = scoped!GLBuffer(gl, GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW, _indices);
-
-        auto vert_spec = scoped!(VertexSpecification!Vertex)(program);
-        scope(exit) vert_spec.destroy;
 
         _vao = scoped!GLVAO(gl);
         // prepare VAO
@@ -46,7 +43,7 @@ class GLData
 
 protected:
     import std.typecons : scoped;
-    import gfm.opengl : GLBuffer, GLVAO, VertexSpecification;
+    import gfm.opengl : GLBuffer, GLVAO;
 
     alias ScopedGLBuffer = typeof(scoped!GLBuffer(OpenGL.init, GL_ARRAY_BUFFER, GL_STATIC_DRAW, (ubyte[]).init));
     alias ScopedGLVAO = typeof(scoped!GLVAO(OpenGL.init));
@@ -55,7 +52,7 @@ protected:
     int[]          _indices;
 }
 
-class Renderer
+class Renderer(Vertex)
 {
     this(OpenGL gl)
     {
@@ -88,6 +85,7 @@ class Renderer
 
         _program = new GLProgram(_gl, program_source);
         assert(_program);
+        _vert_spec = scoped!(VertexSpecification!Vertex)(_program);
     }
 
     auto destroy()
@@ -121,13 +119,17 @@ class Renderer
     auto add(A)(A actor)
     {
         import std.array : array;
-        _gldata ~= new GLData(_gl, _program, actor.data.array, actor.indices.array);
+        _gldata ~= new GLData(_gl, _vert_spec, actor.data.array, actor.indices.array);
     }
 
 protected:
-    import gfm.opengl : GLProgram, OpenGL;
+    import std.typecons : scoped;
+    import gfm.opengl : GLProgram, OpenGL, VertexSpecification;
+
+    alias ScopedVertexSpecification = typeof(scoped!(VertexSpecification!Vertex)(_program));
 
     OpenGL    _gl;
     GLProgram _program;
     GLData[]  _gldata;
+    ScopedVertexSpecification _vert_spec;
 }

@@ -22,7 +22,7 @@ Vertex[] data = [
 int main(string[] args)
 {
     auto app = new GuiApplication("Demo gui application", 1800, 768, GuiApplication.FullScreen.no);
-    auto renderer = new Renderer(app.gl);
+    auto renderer = new Renderer!Vertex(app.gl);
     
     {
         auto actor = makeActor(data, [0, 1, 2, ]);
