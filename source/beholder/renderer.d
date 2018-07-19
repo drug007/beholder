@@ -2,7 +2,7 @@ module beholder.renderer;
 
 import beholder.actor : Actor;
 
-class GLActor
+class GLData
 {
     import gfm.opengl;
 
@@ -92,13 +92,13 @@ class Renderer
 
     auto destroy()
     {
-        foreach(ref actor_gl; _gl_actors)
+        foreach(ref data; _gldata)
         {
-            if (actor_gl)
+            if (data)
             {
-                actor_gl.destroy;
-                actor_gl = null;
-                assert(actor_gl is null);
+                data.destroy;
+                data = null;
+                assert(data is null);
             }
         }
 
@@ -114,14 +114,14 @@ class Renderer
         _program.use();
         scope(exit) _program.unuse();
         
-        foreach(actor; _gl_actors)
-            actor.draw();
+        foreach(data; _gldata)
+            data.draw();
     }
 
     auto add(A)(A actor)
     {
         import std.array : array;
-        _gl_actors ~= new GLActor(_gl, _program, actor.data.array, actor.indices.array);
+        _gldata ~= new GLData(_gl, _program, actor.data.array, actor.indices.array);
     }
 
 protected:
@@ -129,5 +129,5 @@ protected:
 
     OpenGL    _gl;
     GLProgram _program;
-    GLActor[] _gl_actors;
+    GLData[]  _gldata;
 }
