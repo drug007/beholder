@@ -26,13 +26,15 @@ int main(string[] args)
     
     {
         auto actor = renderer.make!Actor(data, [0, 1, 2, ]);
-        renderer.add(actor);
+        actor.kind = actor.Kind.Triangles;
+        renderer.addDataSlice(actor.dataSlice);
     }
 
     {
         import std.algorithm : map;
-        auto actor = renderer.make!Actor(data.map!(a=>Vertex(a.position, vec4f(0, 1, 0, 1))), [1, 0, 3, ]);
-        renderer.add(actor);
+        auto actor = renderer.make!Actor(data.map!(a=>Vertex(a.position, vec4f(0, 1, 0, 1))), [1, 0, 3, 1]);
+        actor.kind = actor.Kind.LineStrip;
+        renderer.addDataSlice(actor.dataSlice);
     }
 
     app.add(renderer);

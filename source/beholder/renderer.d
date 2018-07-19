@@ -23,13 +23,14 @@ class GLData
         }
     }
 
-    auto draw()
+    void bind()
     {
-        _vao.bind();
-        auto length = cast(int) _indices.length;
-        auto start  = cast(int) 0;
-        glDrawElements(GL_TRIANGLES, length, GL_UNSIGNED_INT, cast(void *)(start * 4));
-        _vao.unbind();
+        _vao.bind;
+    }
+
+    void unbind()
+    {
+        _vao.unbind;
     }
 
     auto destroy()
@@ -40,6 +41,11 @@ class GLData
     }
 
     @disable this();
+
+    auto length()
+    {
+        return cast(int) _indices.length;
+    }
 
 protected:
     import std.typecons : scoped;
@@ -112,29 +118,38 @@ class Renderer(Vertex)
         _program.use();
         scope(exit) _program.unuse();
         
-        foreach(data; _gldata)
-            data.draw();
+        foreach(ref ds; _slices)
+        {
+            import gfm.opengl;
+            ds.data.bind();
+            glDrawElements(ds.glKind, ds.length, GL_UNSIGNED_INT, cast(void *)(ds.start));
+            ds.data.unbind();
+        }
     }
 
-    auto add(A)(A actor)
+    auto addDataSlice()(auto ref DataSlice ds)
+    {
+        _slices ~= ds;
+    }
+
+    auto make(alias A, V, I)(V vertices, I indices)
     {
         import std.array : array;
-        _gldata ~= new GLData(_gl, _vert_spec, actor.data.array, actor.indices.array);
-    }
-
-    auto make(alias A, Args...)(Args args)
-    {
-        return new A!(Args)(_gl, _program, args);
+        auto gldata = new GLData(_gl, _vert_spec, vertices.array, indices.array);
+        _gldata ~= gldata;
+        return new A!(V, I)(gldata, vertices, indices);
     }
 
 protected:
     import std.typecons : scoped;
     import gfm.opengl : GLProgram, OpenGL, VertexSpecification;
+    import beholder.actor : DataSlice;
 
     alias ScopedVertexSpecification = typeof(scoped!(VertexSpecification!Vertex)(_program));
 
-    OpenGL    _gl;
-    GLProgram _program;
-    GLData[]  _gldata;
+    OpenGL      _gl;
+    GLProgram   _program;
+    GLData[]    _gldata;
+    DataSlice[] _slices;
     ScopedVertexSpecification _vert_spec;
 }
