@@ -122,6 +122,11 @@ class Renderer(Vertex)
         _gldata ~= new GLData(_gl, _vert_spec, actor.data.array, actor.indices.array);
     }
 
+    auto make(alias A, Args...)(Args args)
+    {
+        return new A!(Args)(_gl, _program, args);
+    }
+
 protected:
     import std.typecons : scoped;
     import gfm.opengl : GLProgram, OpenGL, VertexSpecification;

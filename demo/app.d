@@ -2,7 +2,7 @@ module demo;
 
 import beholder.application : GuiApplication;
 import beholder.renderer : Renderer;
-import beholder.actor : makeActor;
+import beholder.actor : Actor;
 
 import gfm.math : vec3f, vec4f;
 
@@ -25,13 +25,13 @@ int main(string[] args)
     auto renderer = new Renderer!Vertex(app.gl);
     
     {
-        auto actor = makeActor(data, [0, 1, 2, ]);
+        auto actor = renderer.make!Actor(data, [0, 1, 2, ]);
         renderer.add(actor);
     }
 
     {
         import std.algorithm : map;
-        auto actor = makeActor(data.map!(a=>Vertex(a.position, vec4f(0, 1, 0, 1))), [1, 0, 3, ]);
+        auto actor = renderer.make!Actor(data.map!(a=>Vertex(a.position, vec4f(0, 1, 0, 1))), [1, 0, 3, ]);
         renderer.add(actor);
     }
 
