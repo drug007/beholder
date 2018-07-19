@@ -1,0 +1,21 @@
+name "beholder"
+description "Data viewer"
+authors "drug007"
+copyright "Copyright © 2018, drug007"
+dependency "gfm:sdl2" version="~>6.1.4"
+dependency "gfm:math" version="~>6.1.4"
+dependency "gfm:opengl" version="~>6.1.4"
+license "BSL-1.0"
+
+targetPath "bin"
+
+configuration "lib" {
+	targetType "library"
+}
+
+configuration "demo" {
+    targetType  "executable"
+    targetName  "demoapp"
+    sourcePaths "demo"
+    mainSourceFile "demo/app.d"
+}

@@ -1,0 +1,10 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"derelict-gl3": "1.0.24",
+		"derelict-imgui": {"path":"DerelictImgui/"},
+		"derelict-sdl2": "1.9.7",
+		"derelict-util": "2.0.6",
+		"gfm": "6.1.4"
+	}
+}
