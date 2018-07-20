@@ -22,10 +22,20 @@ class Camera
         updateMatrices();
     }
 
+    auto size() const
+    {
+        return _size;
+    }
+
     auto window(vec2f window)
     {
         _window = window;
         updateMatrices();
+    }
+
+    auto position() const
+    {
+        return _position;
     }
 
     auto position(vec3f position)

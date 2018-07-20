@@ -59,6 +59,7 @@ class GuiApplication
         _gl.redirectDebugOutput();
 
         _running = true;
+        _camera_moving = false;
     }
 
     ~this()
@@ -102,15 +103,19 @@ class GuiApplication
                         onKeyUp(event);
                     break;
                     case SDL_MOUSEBUTTONDOWN:
+                        processMouseDown(event);
                         onMouseDown(event);
                     break;
                     case SDL_MOUSEBUTTONUP:
+                        processMouseUp(event);
                         onMouseUp(event);
                     break;
                     case SDL_MOUSEMOTION:
+                        processMouseMotion(event);
                         onMouseMotion(event);
                     break;
                     case SDL_MOUSEWHEEL:
+                        processMouseWheel(event);
                         onMouseWheel(event);
                     break;
                     default:
@@ -164,7 +169,7 @@ class GuiApplication
     }
 
 protected:
-    import gfm.sdl2: SDL2Window, SDL2;
+    import gfm.sdl2;
     import gfm.opengl: OpenGL;
     import beholder.camera : Camera;
 
@@ -174,7 +179,11 @@ protected:
 
     Camera _camera;
 
+    ubyte _left_button, _right_button, _middle_button;
+
     bool _running;
+    bool _camera_moving;
+    int _mouse_x, _mouse_y;
 
     FileLogger _logger;
 
@@ -200,5 +209,90 @@ protected:
 
         foreach(dlg; _renderer_delegates)
             dlg();
+    }
+
+    void processMouseWheel(ref const(SDL_Event) event)
+    {
+        if(event.wheel.y > 0)
+        {
+            _camera.size = camera.size * 1.1;
+        }
+        else if(event.wheel.y < 0)
+        {
+            _camera.size = camera.size * 0.9;
+        }
+    }
+
+    void processMouseUp(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                _left_button = 0;
+            break;
+            case SDL_BUTTON_RIGHT:
+                _right_button = 0;
+                _camera_moving = false;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                _middle_button = 0;
+            break;
+            default:
+        }
+    }
+
+    void processMouseDown(ref const(SDL_Event) event)
+    {
+        switch(event.button.button)
+        {
+            case SDL_BUTTON_LEFT:
+                _left_button = 1;
+            break;
+            case SDL_BUTTON_RIGHT:
+                _right_button = 1;
+                _camera_moving = true;
+            break;
+            case SDL_BUTTON_MIDDLE:
+                _middle_button = 1;
+            break;
+            default:
+        }
+    }
+    
+    void processMouseMotion(ref const(SDL_Event) event)
+    {
+        import gfm.math : vec3f;
+
+        auto new_mouse_x = event.motion.x;
+        auto new_mouse_y = _height - event.motion.y;
+        
+        if(_camera_moving)
+        {
+            float factor_x = void, factor_y = void;
+            const aspect_ratio = _width/cast(float)_height;
+            if(_width > _height) 
+            {
+                factor_x = 2.0f * _camera.size / cast(float) _width * aspect_ratio;
+                factor_y = 2.0f * _camera.size / cast(float) _height;
+            }
+            else
+            {
+                factor_x = 2.0f * _camera.size / cast(float) _width;
+                factor_y = 2.0f * _camera.size / cast(float) _height / aspect_ratio;
+            }
+            auto new_pos = _camera.position + vec3f(
+                (_mouse_x - new_mouse_x)*factor_x, 
+                (_mouse_y - new_mouse_y)*factor_y,
+                0,
+            );
+            _camera.position = new_pos;
+        }
+
+        _mouse_x = new_mouse_x;
+        _mouse_y = new_mouse_y;
+
+        _left_button   = (event.motion.state & SDL_BUTTON_LMASK);
+        _right_button  = (event.motion.state & SDL_BUTTON_RMASK);
+        _middle_button = (event.motion.state & SDL_BUTTON_MMASK);
     }
 }
