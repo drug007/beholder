@@ -58,6 +58,8 @@ class GuiApplication
         // redirect OpenGL output to our Logger
         _gl.redirectDebugOutput();
 
+        glEnable( GL_PROGRAM_POINT_SIZE );
+        
         _running = true;
         _camera_moving = false;
     }

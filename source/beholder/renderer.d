@@ -137,9 +137,22 @@ class Renderer(Vertex)
     auto make(alias A, V, I)(V vertices, I indices)
     {
         import std.array : array;
-        auto gldata = new GLData(_gl, _vert_spec, vertices.array, indices.array);
+        import std.range : ElementType;
+
+        static assert (is(ElementType!I : int), "Index should be a type that can be implicitly converted to int");
+        auto indices_array = indices.array;
+        auto gldata = new GLData(_gl, _vert_spec, vertices.array, indices_array);
         _gldata ~= gldata;
-        return new A!(V, I)(gldata, vertices, indices);
+        return new A!(V, int[])(gldata, vertices, indices_array);
+    }
+
+    auto make(alias A, V)(V vertices)
+    {
+        import std.array : array;
+        import std.range : iota, walkLength;
+
+        auto indices_array = iota(cast(int) vertices.walkLength).array;
+        return make!(A, V, int[])(vertices, indices_array);
     }
 
 protected:

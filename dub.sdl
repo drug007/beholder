@@ -5,6 +5,7 @@ copyright "Copyright © 2018, drug007"
 dependency "gfm:sdl2" version="~>6.1.4"
 dependency "gfm:math" version="~>6.1.4"
 dependency "gfm:opengl" version="~>6.1.4"
+dependency "color" version="~>0.0.7"
 license "BSL-1.0"
 
 targetPath "bin"
