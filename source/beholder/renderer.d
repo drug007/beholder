@@ -70,10 +70,11 @@ class Renderer(Vertex)
             layout(location = 0) in vec3 position;
             layout(location = 1) in vec4 color;
             out vec4 fragment;
+            uniform mat4 mvp_matrix;
             void main()
             {
-                gl_Position = vec4(position.xyz, 1.0);
-                gl_PointSize = 3.0;                
+                gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
+                gl_PointSize = 3.0;
                 fragment = color;
             }
             #endif
@@ -113,8 +114,9 @@ class Renderer(Vertex)
         }
     }
 
-    void draw()
+    void draw(ref mat4f mvp_matrix)
     {
+        _program.uniform("mvp_matrix").set(mvp_matrix);
         _program.use();
         scope(exit) _program.unuse();
         
@@ -143,6 +145,7 @@ class Renderer(Vertex)
 protected:
     import std.typecons : scoped;
     import gfm.opengl : GLProgram, OpenGL, VertexSpecification;
+    import gfm.math : mat4f;
     import beholder.actor : DataSlice;
 
     alias ScopedVertexSpecification = typeof(scoped!(VertexSpecification!Vertex)(_program));

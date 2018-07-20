@@ -49,6 +49,9 @@ class GuiApplication
             _height = ws.y;
         }
 
+        import gfm.math : vec2f, vec3f;
+        _camera = new Camera(vec2f(_width, _height), vec3f(0, 0, 0), 2.0);
+
         // reload OpenGL now that a context exists
         _gl.reload();
 
@@ -73,7 +76,7 @@ class GuiApplication
     auto add(Renderer)(Renderer renderer)
     {
         _renderer_delegates ~= delegate() {
-            renderer.draw();
+            renderer.draw(_camera.mvpMatrix);
         };
     }
 
@@ -120,6 +123,11 @@ class GuiApplication
         }
     }
 
+    auto camera()
+    {
+        return _camera;
+    }
+
     void onKeyDown(ref const(SDL_Event) event)
     {
 
@@ -158,10 +166,13 @@ class GuiApplication
 protected:
     import gfm.sdl2: SDL2Window, SDL2;
     import gfm.opengl: OpenGL;
+    import beholder.camera : Camera;
 
     SDL2Window _window;
     int _width;
     int _height;
+
+    Camera _camera;
 
     bool _running;
 
