@@ -63,8 +63,8 @@ class Renderer(Vertex)
     this(OpenGL gl)
     {
         _gl = gl;
-        const program_source =
-            q{#version 330 core
+        const program_source = 
+            "#version 330 core
 
             #if VERTEX_SHADER
             layout(location = 0) in vec3 position;
@@ -87,8 +87,7 @@ class Renderer(Vertex)
             {
                 color_out = fragment;
             }
-            #endif
-        };
+            #endif";
 
         _program = new GLProgram(_gl, program_source);
         assert(_program);

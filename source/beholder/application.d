@@ -83,7 +83,7 @@ class GuiApplication
         };
     }
 
-    auto run()
+    void run()
     {
         import gfm.sdl2: SDL_GetTicks, SDL_QUIT, SDL_KEYDOWN, SDL_KEYDOWN, SDL_KEYUP, SDL_MOUSEBUTTONDOWN,
             SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_MOUSEWHEEL;
@@ -168,6 +168,11 @@ class GuiApplication
     auto gl()
     {
         return _gl;
+    }
+
+    ref window()
+    {
+        return _window;
     }
 
 protected:
