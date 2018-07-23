@@ -1,0 +1,11 @@
+name "nuklear_demo"
+description "Demo for nuklear based application."
+authors "drug007"
+copyright "Copyright © 2018, drug007"
+license "BSL-1.0"
+
+dependency "derelict-sdl2" version="3.1.0-alpha.4"
+dependency "derelict-gl3" version="2.0.0-beta.6"
+dependency "beholder" path=".."
+
+lflags "-L./c" "-lnuklear_sdl_gl3" "-lGL" "-lSDL2"

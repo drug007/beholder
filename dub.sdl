@@ -6,21 +6,5 @@ dependency "gfm:sdl2" version="~>7.0.0"
 dependency "gfm:math" version="~>7.0.0"
 dependency "gfm:opengl" version="~>7.0.0"
 dependency "color" version="~>0.0.7"
-dependency "derelict-sdl2" version="3.1.0-alpha.4"
-dependency "derelict-gl3" version="2.0.0-beta.6"
 license "BSL-1.0"
-
-lflags "-L./demo/c" "-lnuklear_sdl_gl3" "-lGL" "-lSDL2"
-
-targetPath "bin"
-
-configuration "lib" {
-	targetType "library"
-}
-
-configuration "demo" {
-    targetType  "executable"
-    targetName  "demoapp"
-    sourcePaths "demo"
-    mainSourceFile "demo/app.d"
-}
+targetType "library"
