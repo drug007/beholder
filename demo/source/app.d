@@ -1,6 +1,6 @@
 module demo;
 
-import beholder.application : GuiApplication;
+import beholder.application : Application;
 import beholder.renderer : Renderer;
 import beholder.actor : Actor;
 
@@ -97,16 +97,16 @@ Vertex[][] data = [
     ]
 ];
 
-enum MAX_VERTEX_MEMORY = 512 * 1024;
-enum MAX_ELEMENT_MEMORY = 128 * 1024;
-
-class NuklearApplication : GuiApplication
+class NuklearApplication : Application
 {
     import nuklear_sdl_gl3;
 
+    enum MAX_VERTEX_MEMORY = 512 * 1024;
+    enum MAX_ELEMENT_MEMORY = 128 * 1024;
+
     nk_context* ctx;
 
-    this(string title, int w, int h, GuiApplication.FullScreen flag)
+    this(string title, int w, int h, Application.FullScreen flag)
     {
         super(title, w, h, flag);
 
@@ -177,35 +177,9 @@ class NuklearApplication : GuiApplication
             while(_sdl2.pollEvent(&event))
             {
                 nk_sdl_handle_event(&event);
-                switch(event.type)
-                {
-                    case SDL_QUIT:
-                        if (aboutQuit()) return;
-                    break;
-                    case SDL_KEYDOWN:
-                        onKeyDown(event);
-                    break;
-                    case SDL_KEYUP:
-                        onKeyUp(event);
-                    break;
-                    case SDL_MOUSEBUTTONDOWN:
-                        processMouseDown(event);
-                        onMouseDown(event);
-                    break;
-                    case SDL_MOUSEBUTTONUP:
-                        processMouseUp(event);
-                        onMouseUp(event);
-                    break;
-                    case SDL_MOUSEMOTION:
-                        processMouseMotion(event);
-                        onMouseMotion(event);
-                    break;
-                    case SDL_MOUSEWHEEL:
-                        processMouseWheel(event);
-                        onMouseWheel(event);
-                    break;
-                    default:
-                }
+                if (nk_window_is_any_hovered(ctx))
+                    continue;
+                defaultProcessEvent(event);
             }
 
             draw();
@@ -217,7 +191,7 @@ class NuklearApplication : GuiApplication
 
 int main(string[] args)
 {
-    auto app = new NuklearApplication("Demo gui application", 1800, 768, GuiApplication.FullScreen.no);
+    auto app = new NuklearApplication("Demo gui application", 1800, 768, Application.FullScreen.no);
     scope(exit) app.destroy();
 	app.camera.size = 30_000;
 	app.camera.position = vec3f(0, 15_000, 0);

@@ -4033,8 +4033,7 @@ extern(C)
     void nk_tooltip_end(nk_context*) @nogc nothrow;
     void nk_tooltipf(nk_context*, const(char)*, ...) @nogc nothrow;
 }
-import derelict.sdl2.sdl;
-import derelict.opengl;
+import gfm.opengl;
 import gfm.sdl2;
 
 

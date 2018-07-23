@@ -1,6 +1,6 @@
 module beholder.application;
 
-class GuiApplication
+class Application
 {
     import std.experimental.logger : FileLogger, LogLevel;
     import std.typecons : Flag;
@@ -92,37 +92,7 @@ class GuiApplication
         {
             SDL_Event event;
             while(_sdl2.pollEvent(&event))
-            {
-                switch(event.type)
-                {
-                    case SDL_QUIT:
-                        if (aboutQuit()) return;
-                    break;
-                    case SDL_KEYDOWN:
-                        onKeyDown(event);
-                    break;
-                    case SDL_KEYUP:
-                        onKeyUp(event);
-                    break;
-                    case SDL_MOUSEBUTTONDOWN:
-                        processMouseDown(event);
-                        onMouseDown(event);
-                    break;
-                    case SDL_MOUSEBUTTONUP:
-                        processMouseUp(event);
-                        onMouseUp(event);
-                    break;
-                    case SDL_MOUSEMOTION:
-                        processMouseMotion(event);
-                        onMouseMotion(event);
-                    break;
-                    case SDL_MOUSEWHEEL:
-                        processMouseWheel(event);
-                        onMouseWheel(event);
-                    break;
-                    default:
-                }
-            }
+                defaultProcessEvent(event);
 
             draw();
 
@@ -199,6 +169,39 @@ protected:
 
     alias RendererDelegate = void delegate();
     RendererDelegate[] _renderer_delegates;
+
+    void defaultProcessEvent(ref const(SDL_Event) event)
+    {
+        switch(event.type)
+        {
+            case SDL_QUIT:
+                if (aboutQuit()) _running = false;
+            break;
+            case SDL_KEYDOWN:
+                onKeyDown(event);
+            break;
+            case SDL_KEYUP:
+                onKeyUp(event);
+            break;
+            case SDL_MOUSEBUTTONDOWN:
+                processMouseDown(event);
+                onMouseDown(event);
+            break;
+            case SDL_MOUSEBUTTONUP:
+                processMouseUp(event);
+                onMouseUp(event);
+            break;
+            case SDL_MOUSEMOTION:
+                processMouseMotion(event);
+                onMouseMotion(event);
+            break;
+            case SDL_MOUSEWHEEL:
+                processMouseWheel(event);
+                onMouseWheel(event);
+            break;
+            default:
+        }
+    }
 
     bool aboutQuit()
     {
