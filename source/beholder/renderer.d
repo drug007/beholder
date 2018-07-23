@@ -133,6 +133,11 @@ class Renderer(Vertex)
         _slices ~= ds;
     }
 
+    auto clearDataSlices()
+    {
+        _slices.length = 0;
+    }
+
     auto make(alias A, V, I)(V vertices, I indices)
     {
         import std.array : array;
