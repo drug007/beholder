@@ -49,16 +49,8 @@ class Camera
         return _mvp_matrix;
     }
 
-protected:
-    import gfm.math;
-
-    vec2f _window;
-    vec3f _position;
-    float _size;
-    mat4f _projection, _view, _mvp_matrix, _model;
-
-    /// Преобразование экранных координат в мировые.
-    /// Возвращает луч из камеры в мировых координатах.
+    /// Translate screen coordinates to world ones.
+    /// Returns ray from the camera in world coordinates.
     vec3f screenPoint2worldRay(vec2f screenCoords) pure const
     {
         vec3f normalized;
@@ -75,6 +67,14 @@ protected:
 
         return rayWorld;
     }
+
+protected:
+    import gfm.math;
+
+    vec2f _window;
+    vec3f _position;
+    float _size;
+    mat4f _projection, _view, _mvp_matrix, _model;
 
     void updateMatrices()
     {
