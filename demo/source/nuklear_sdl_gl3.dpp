@@ -10,8 +10,7 @@
  *
  * ===============================================================
  */
-import derelict.sdl2.sdl;
-import derelict.opengl;
+import gfm.opengl;
 import gfm.sdl2;
 
 #include <nuklear_details.h>
