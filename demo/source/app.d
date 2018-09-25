@@ -97,14 +97,51 @@ Vertex[][] data = [
     ]
 ];
 
+alias CoordType = float;
+enum NumberOfDimensions = 3;
+
+union Payload
+{
+	long l;
+	struct
+	{
+		int source;
+		int subset;
+	}
+
+	this(long l)
+	{
+		this.l = l;
+	}
+
+	this(int source, int subset)
+	{
+		this.source = source;
+		this.subset = subset;
+	}
+
+	void toString(scope void delegate(const(char)[]) sink) const
+	{
+		import std.format : sformat;
+		char[512] buffer = '\0';
+		auto formatted_output = sformat(buffer[], "%s(long: %s, source: %s, subset: %s)", typeof(this).stringof, l, source, subset);
+		sink(formatted_output);
+	}
+}
+
+import rtree;
+alias RTreeIndex = RTree!(Payload, CoordType, NumberOfDimensions, CoordType);
+
 class NuklearApplication : Application
 {
+	import gfm.math : vec2f;
     import nuklear_sdl_gl3;
 
     enum MAX_VERTEX_MEMORY = 512 * 1024;
     enum MAX_ELEMENT_MEMORY = 128 * 1024;
 
     nk_context* ctx;
+	RTreeIndex index;
 
     this(string title, int w, int h, Application.FullScreen flag)
     {
@@ -114,16 +151,55 @@ class NuklearApplication : Application
         nk_font_atlas *atlas;
         nk_sdl_font_stash_begin(&atlas);
         nk_sdl_font_stash_end();
+
+		index = new RTreeIndex();
     }
 
     ~this()
     {
         nk_sdl_shutdown();
+	}
+
+	/// Projection of world coordinates to plane z = 0
+    private vec3f projectWindowToPlane0(in vec2f winCoords)
+    {
+        double x = void, y = void;
+        const aspect_ratio = _width/cast(double)_height;
+        if(_width > _height) 
+        {
+            auto factor_x = 2.0f * _camera.size / _width * aspect_ratio;
+            auto factor_y = 2.0f * _camera.size / _height;
+
+            x = winCoords.x * factor_x + _camera.position.x - _camera.size * aspect_ratio;
+            y = winCoords.y * factor_y + _camera.position.y - _camera.size;
+        }
+        else
+        {
+            auto factor_x = 2.0f * _camera.size / _width;
+            auto factor_y = 2.0f * _camera.size / _height * aspect_ratio;
+
+            x = winCoords.x * factor_x + _camera.position.x - _camera.size;
+            y = winCoords.y * factor_y + _camera.position.y - _camera.size * aspect_ratio;
+        }
+
+        return vec3f(x, y, 0.0f);
     }
 
-    override void draw()
-    {
-        super.draw();
+	override void draw()
+	{
+		super.draw();
+
+		if (nk_input_mouse_clicked(&ctx.input, NK_BUTTON_LEFT, nk_rect(0, 0, _width, _height)))
+		{
+			const span = vec3f(1, 1, 1)*2*camera.size/_width*10; // 10 pixels around mouse pointer
+			auto mouse = vec2f(_mouse_x, _mouse_y);
+			auto ray = projectWindowToPlane0(mouse);
+			auto min = ray - span;
+			auto max = ray + span;
+			auto result = index.search(min.ptr[0..NumberOfDimensions], max.ptr[0..NumberOfDimensions]);
+			import std.stdio;
+			writeln(result[]); 
+		}
 
         static nk_colorf bg;
         bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
@@ -199,14 +275,28 @@ int main(string[] args)
     auto renderer = new Renderer!Vertex(app.gl);
 	scope(exit) renderer.destroy();
     
+	enum displace = vec3f(0.01, 0.01, 0.01);
+	int i, j;
     foreach(e; data)
     {
+		j = 0;
+		foreach(ref p; e)
+		{
+			import std.math : isNaN;
+			if (p.position.x.isNaN)
+				continue;
+			auto payload = Payload(i, j);
+			app.index.insert((p.position-displace).ptr[0..NumberOfDimensions], (p.position+displace).ptr[0..NumberOfDimensions], payload);
+			j++;
+		}
         auto actor = renderer.make!Actor(e);
         auto ds = actor.dataSlice;
         ds.kind = actor.Kind.LineStrip;
         renderer.addDataSlice(ds);
         ds.kind = actor.Kind.Points;
         renderer.addDataSlice(ds);
+
+		i++;
     }
 
     app.add(renderer);
