@@ -23,9 +23,9 @@ struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T))
 		import std.format : sformat;
 		char[textBufferSize] buffer;
 		if (header.length)
-			sformat(buffer, "%s: %s\0", header, t);
+			sformat(buffer[], "%s: %s\0", header, t);
 		else
-			sformat(buffer, "%s\0", t);
+			sformat(buffer[], "%s\0", t);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 	}
 }
@@ -55,7 +55,7 @@ struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 
 		char[textBufferSize] buffer;
 
-		auto formatted_output = sformat(buffer, "%s (%d)\0", header, a.length);
+		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
@@ -101,13 +101,13 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 
 		char[textBufferSize] buffer;
 
-		auto formatted_output = sformat(buffer, "%s (%d)\0", header, a.length);
+		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
 			foreach(i; 0..a.length)
 			{
-				formatted_output = sformat(buffer, "%s[%d]\0", header, i);
+				formatted_output = sformat!"%s[%d]\0"(buffer[], header, i);
 				state[i].draw(ctx, formatted_output, a[i]);
 			}
 			nk_tree_pop(ctx);
