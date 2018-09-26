@@ -117,37 +117,50 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 
 struct Drawer(T) if (isAggregateType!T)
 {
-	import std.traits : isArray;
+	import std.traits : isSomeFunction, ReturnType, isArray;
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
 
-	static foreach(i; 0..T.tupleof.length)
+	static foreach(member; DrawableMembers!T) 
 	{
-		mixin("Drawer!(typeof(T." ~ T.tupleof[i].stringof ~ ")) state_" ~ T.tupleof[i].stringof ~ ";");
+		static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+			mixin("Drawer!(ReturnType!(T." ~ member ~ ")) state_" ~ member ~ ";");
+		else
+			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
 	}
 
 	@disable this();
 
 	this(ref T t)
 	{
-		static foreach(i; 0..T.tupleof.length)
+		static foreach(member; DrawableMembers!T)
 		{
 			// generates string like
+			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
+			// or
 			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
-			mixin("state_" ~ T.tupleof[i].stringof ~ " = Drawer!(typeof(T." ~ T.tupleof[i].stringof ~ "))(t." ~ T.tupleof[i].stringof ~ ");");
+			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
+			else
+				mixin("state_" ~ member ~ " = Drawer!(typeof(T." ~ member ~ "))(t." ~ member ~ ");");
 		}
 	}
 
 	/// updates size of underlying data
 	void update(ref T t)
 	{
-		static foreach(i; 0..T.tupleof.length)
+		static foreach(member; DrawableMembers!T)
 		{
 			// generates string like
+			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
+			// or
 			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
-			mixin("state_" ~ T.tupleof[i].stringof ~ " = Drawer!(typeof(T." ~ T.tupleof[i].stringof ~ "))(t." ~ T.tupleof[i].stringof ~ ");");
+			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
+			else
+				mixin("state_" ~ member ~ " = Drawer!(typeof(T." ~ member ~ "))(t." ~ member ~ ");");
 		}
 	}
 
@@ -161,12 +174,102 @@ struct Drawer(T) if (isAggregateType!T)
 
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
 		{
-			// first two elements of tupleof is `collapsed` and `selected` so skip them
-			static foreach(i; 2..this.tupleof.length) 
+			static foreach(member; DrawableMembers!t) 
 			{
-				this.tupleof[i].draw(ctx, FieldNameTuple!T[i-2], t.tupleof[i-2]);
+				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
 			}
+
 			nk_tree_pop(ctx);
 		}
 	}
+}
+
+//*****************************************************************************
+// helpers
+//*****************************************************************************
+
+import std.traits : isTypeTuple;
+
+private bool privateOrPackage()(string protection)
+{
+	return protection == "private" || protection == "package";
+}
+
+// check if the member is readable/writeble?
+private enum isReadableAndWritable(alias aggregate, string member) = __traits(compiles, __traits(getMember, aggregate, member) = __traits(getMember, aggregate, member));
+private enum isPublic(alias aggregate, string member) = !__traits(getProtection, __traits(getMember, aggregate, member)).privateOrPackage;
+
+// check if the member is property
+private template isProperty(alias aggregate, string member)
+{
+	import std.traits : isSomeFunction, functionAttributes, FunctionAttribute;
+
+	static if(isSomeFunction!(__traits(getMember, aggregate, member)))
+		enum isProperty = (functionAttributes!(__traits(getMember, aggregate, member)) & FunctionAttribute.property);
+	else
+		enum isProperty = false;
+}
+
+// check if the member is readable
+private enum isReadable(alias aggregate, string member) = __traits(compiles, { auto _val = __traits(getMember, aggregate, member); });
+
+private template isItSequence(T...)
+{
+	static if (T.length < 2)
+		enum isItSequence = false;
+	else
+		enum isItSequence = true;
+}
+
+private template isFieldName(alias aggregate, string member) if (!isTypeTuple!aggregate)
+{
+	import std.traits, std.algorithm;
+	enum isFieldName = member.among(FieldNameTuple!(typeof(aggregate))) != 0;
+}
+
+// This trait defines what members should be drawn -
+// public members that are either readable and writable or getter properties
+private template Drawable(alias value, string member)
+{
+	import std.traits : isTypeTuple;
+
+	static if (isItSequence!value)
+		enum Drawable = false;
+	else
+	static if (isFieldName!(value, member) && !isPublic!(value, member))
+			enum Drawable = false;
+	else
+	static if (isTypeTuple!(__traits(getMember, value, member)))
+		enum Drawable = false;
+	else
+	static if (is(typeof(__traits(getMember, value, member)) == enum))
+		enum Drawable = false;
+	else
+	static if (isItSequence!(__traits(getMember, value, member)))
+		enum Drawable = false;
+	else
+	static if (isReadableAndWritable!(value, member))
+		enum Drawable = true;
+	else
+	static if (isReadable!(value, member))
+		enum Drawable = isProperty!(value, member); // a readable property is getter
+	else
+		enum Drawable = false;
+}
+
+/// returns alias sequence, members of which are members of value
+/// that should be drawn
+private template DrawableMembers(alias value)
+{
+	import std.meta : ApplyLeft, Filter, AliasSeq;
+
+	alias AllMembers = AliasSeq!(__traits(allMembers, typeof(value)));
+	alias isProper = ApplyLeft!(Drawable, value);
+	alias DrawableMembers = Filter!(isProper, AllMembers);
+}
+
+private template DrawableMembers(T)
+{
+	T t;
+	alias DrawableMembers = DrawableMembers!t;
 }
