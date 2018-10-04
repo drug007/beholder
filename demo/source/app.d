@@ -97,6 +97,24 @@ Vertex[][] data = [
     ]
 ];
 
+struct Foo
+{
+	int i;
+	float f;
+	string str;
+	int[2] i2 = [ 101, 112 ];
+}
+
+struct Bar
+{
+	Foo foo1;
+	Foo foo2;
+	int i;
+	string[] string_array;
+}
+
+import beholder.drawer;
+
 alias CoordType = float;
 enum NumberOfDimensions = 3;
 
@@ -143,6 +161,10 @@ class NuklearApplication : Application
     nk_context* ctx;
 	RTreeIndex index;
 
+	Foo foo;
+	Bar[] bar;
+	Drawer!(Bar[]) bar_drawer;
+
     this(string title, int w, int h, Application.FullScreen flag)
     {
         super(title, w, h, flag);
@@ -153,6 +175,15 @@ class NuklearApplication : Application
         nk_sdl_font_stash_end();
 
 		index = new RTreeIndex();
+
+		bar_drawer = Drawer!(typeof(bar))(bar);
+		
+		auto b = Bar();
+		b.string_array ~= "First line";
+		b.string_array ~= "Second line";
+		bar ~= b;
+		bar ~= Bar();
+		bar_drawer.update(bar);
     }
 
     ~this()
@@ -204,7 +235,7 @@ class NuklearApplication : Application
         static nk_colorf bg;
         bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
 
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 450),
             NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
             NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
         {
@@ -235,6 +266,7 @@ class NuklearApplication : Application
                 nk_combo_end(ctx);
             }
         }
+		bar_drawer.draw(ctx, "bar", bar);
         nk_end(ctx);
 
         nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
