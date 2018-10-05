@@ -207,17 +207,67 @@ class NuklearApplication : Application
 	{
 		super.draw();
 
-		if (nk_input_mouse_clicked(&ctx.input, NK_BUTTON_LEFT, nk_rect(0, 0, _width, _height)))
+		static bool popup_active;
+		static nk_rect popup_window;
+		import std.container.array : Array;
+		static Array!Payload search_result;
+
+		nk_style *s = &ctx.style;
+		nk_style_push_color(ctx, &s.window.background, nk_rgba(0,0,0,0));
+		nk_style_push_style_item(ctx, &s.window.fixed_background, nk_style_item_color(nk_rgba(0,0,0,0)));
+		if (nk_begin(ctx, "Main", popup_window, NK_WINDOW_BACKGROUND))
 		{
-			const span = vec3f(1, 1, 1)*2*camera.size/_width*10; // 10 pixels around mouse pointer
-			auto mouse = vec2f(_mouse_x, _mouse_y);
-			auto ray = projectWindowToPlane0(mouse);
-			auto min = ray - span;
-			auto max = ray + span;
-			auto result = index.search(min.ptr[0..NumberOfDimensions], max.ptr[0..NumberOfDimensions]);
-			import std.stdio;
-			writeln(result[]); 
-		}
+			if (nk_input_mouse_clicked(&ctx.input, NK_BUTTON_LEFT, nk_rect(0, 0, _width, _height)))
+			{
+				if (!popup_active || !nk_input_mouse_clicked(&ctx.input, NK_BUTTON_LEFT, popup_window))
+				{
+					const span = vec3f(1, 1, 1)*2*camera.size/_width*10; // 10 pixels around mouse pointer
+					auto mouse = vec2f(_mouse_x, _mouse_y);
+					auto ray = projectWindowToPlane0(mouse);
+					auto min = ray - span;
+					auto max = ray + span;
+					search_result = index.search(min.ptr[0..NumberOfDimensions], max.ptr[0..NumberOfDimensions]);
+
+					if (!search_result.empty)
+					{
+						popup_active = true;
+						popup_window = nk_rect(_mouse_x, _height - _mouse_y, 200, 400);
+						import std.stdio;
+						writeln(search_result[], " ", _mouse_x, " ", _mouse_y);
+					}
+					else
+					{
+						popup_active = false;
+						popup_window = nk_rect(0, 0, 0, 0);
+						search_result.length = 0;
+					}
+				}
+			}
+			if (popup_active)
+			{
+				nk_style_pop_color(ctx);
+				nk_style_pop_style_item(ctx);
+
+				nk_layout_row_dynamic(ctx, 250, 1);
+				auto pw = nk_rect(0, 0, popup_window.w, popup_window.h);
+				if (nk_popup_begin(ctx, NK_POPUP_DYNAMIC, "Popup", NK_WINDOW_SCALABLE, pw))
+				{
+					char[512] buffer;
+					foreach(ref e; search_result[])
+					{
+						import std.format : sformat;
+						auto formatted_output = sformat!"[%d]\0"(buffer[], e.index);
+						value_drawer.state[e.index].draw(ctx, formatted_output, value[e.index]);
+					}
+					nk_popup_end(ctx);
+				}
+				nk_style_push_color(ctx, &s.window.background, nk_rgba(0,0,0,0));
+				nk_style_push_style_item(ctx, &s.window.fixed_background, nk_style_item_color(nk_rgba(0,0,0,0)));
+			}
+        }
+        nk_end(ctx);
+		nk_style_pop_color(ctx);
+		nk_style_pop_style_item(ctx);
 
         static nk_colorf bg;
         bg.r = 0.10f, bg.g = 0.18f, bg.b = 0.24f, bg.a = 1.0f;
@@ -266,9 +316,9 @@ class NuklearApplication : Application
                 bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
                 nk_combo_end(ctx);
             }
+            bar_drawer.draw(ctx, "bar", bar);
+            value_drawer.draw(ctx, "value", value);
         }
-		bar_drawer.draw(ctx, "bar", bar);
-        value_drawer.draw(ctx, "value", value);
         nk_end(ctx);
 
         nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
@@ -283,20 +333,53 @@ class NuklearApplication : Application
         {
             SDL_Event event;
             nk_input_begin(ctx);
-            scope(exit) nk_input_end(ctx);
             while(_sdl2.pollEvent(&event))
             {
                 nk_sdl_handle_event(&event);
-                if (nk_window_is_any_hovered(ctx))
+                if (isAnyNuklearWindowHoveredExceptOne(ctx, "Main"))
                     continue;
                 defaultProcessEvent(event);
             }
+			nk_input_end(ctx);
 
             draw();
 
             _window.swapBuffers();
         }
     }
+
+	private auto isAnyNuklearWindowHoveredExceptOne(nk_context* ctx, string window_name)
+	{
+		nk_window *iter;
+		assert(ctx);
+		if (!ctx) return false;
+		iter = ctx.begin;
+		while (iter)
+		{
+			import std.string : fromStringz;
+			/* check if window is being hovered */
+			if(!(iter.flags & NK_WINDOW_HIDDEN)) {
+				/* check if window popup is being hovered */
+				if (iter.popup.active && iter.popup.win && nk_input_is_mouse_hovering_rect(&ctx.input, iter.popup.win.bounds))
+					return true;
+
+				// skip window
+				if (iter.name_string.ptr.fromStringz != window_name)
+				{
+					if (iter.flags & NK_WINDOW_MINIMIZED) {
+						nk_rect header = iter.bounds;
+						header.h = ctx.style.font.height + 2 * ctx.style.window.header.padding.y;
+						if (nk_input_is_mouse_hovering_rect(&ctx.input, header))
+							return 1;
+					} else if (nk_input_is_mouse_hovering_rect(&ctx.input, iter.bounds)) {
+						return true;
+					}
+				}
+			}
+			iter = iter.next;
+		}
+		return false;
+	}
 }
 
 alias LookupTable = vec4f[int];
@@ -310,7 +393,7 @@ enum LookupTable lut = [
 
 int main(string[] args)
 {
-    auto app = new NuklearApplication("Demo gui application", 1800, 768, Application.FullScreen.no);
+    auto app = new NuklearApplication("Demo gui application", 1200, 768, Application.FullScreen.no);
     scope(exit) app.destroy();
 	app.camera.size = 30_000;
 	app.camera.position = vec3f(0, 15_000, 0);
