@@ -9,7 +9,6 @@ enum fieldWidth = 80;
 
 struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !isPointer!T)
 {
-	import std.typecons : Flag;
 	int selected;
 
 	this(ref const(T) t) {
@@ -31,17 +30,14 @@ struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !is
 
 struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 {
-	import std.typecons : Flag;
 	int selected;
 
 	this(T t) {
-		pragma(msg, __LINE__, " ====== POINTER ======", T);
 		// by default do nothing
 	}
 
 	void draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
-		pragma(msg, __LINE__, " ====== DRAW POINTER ======", T);
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
 		char[textBufferSize] buffer;
@@ -56,7 +52,6 @@ struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 {
 	import std.range : ElementType;
-	import std.typecons : Flag;
 
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
