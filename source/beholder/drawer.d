@@ -12,7 +12,7 @@ struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !is
 	import std.typecons : Flag;
 	int selected;
 
-	this(ref T t) {
+	this(ref const(T) t) {
 		// by default do nothing
 	}
 
@@ -64,7 +64,7 @@ struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 	int selected;
 	Drawer!(ElementType!T)[T.length] state;
 
-	this(T a)
+	this(const T a)
 	{
 		static foreach(i; 0..a.length)
 			state[i] = Drawer!(ElementType!T)(a[i]);
@@ -100,7 +100,7 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	nk_collapse_states collapsed;
 	Drawer!(ElementType!A)[] state;
 
-	this(A a)
+	this(const A a)
 	{
 		state = uninitializedArray!(typeof(state))(a.length);
 		foreach(i; 0..a.length)
@@ -155,17 +155,17 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 	int selected;
 	TaggedAlgebraic!Payload state;
 
-	this(ref T t)
+	this(ref const(T) t)
 	{
 		Lexit:
 		final switch (t.kind)
 		{
-			static foreach(i; 0..T.Union.tupleof.length)
+			static foreach(i; 0..t.Union.tupleof.length)
 			{
-		mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
 					import taggedalgebraic : TypeOf, get;
-					alias PayloadType = TypeOf!(mixin("T.Kind." ~ T.Union.tupleof[i].stringof));
+					alias PayloadType = TypeOf!(mixin("T.Kind." ~ t.Union.tupleof[i].stringof));
 					state = Drawer!PayloadType(t.get!PayloadType);
 					break Lexit;
 				}
@@ -250,14 +250,10 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
 	}
 
-	this(ref T t)
+	this(ref const(T) t)
 	{
 		static foreach(member; DrawableMembers!T)
 		{
-			// generates string like
-			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
-			// or
-			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
 			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
 				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
 			else
@@ -270,10 +266,6 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	{
 		static foreach(member; DrawableMembers!T)
 		{
-			// generates string like
-			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
-			// or
-			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
 			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
 				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
 			else
@@ -316,15 +308,15 @@ private bool privateOrPackage()(string protection)
 private enum isReadableAndWritable(alias aggregate, string member) = __traits(compiles, __traits(getMember, aggregate, member) = __traits(getMember, aggregate, member));
 private enum isPublic(alias aggregate, string member) = !__traits(getProtection, __traits(getMember, aggregate, member)).privateOrPackage;
 
-// check if the member is property
-private template isProperty(alias aggregate, string member)
+// check if the member is property with const qualifier
+private template isConstProperty(alias aggregate, string member)
 {
-	import std.traits : isSomeFunction, functionAttributes, FunctionAttribute;
+	import std.traits : isSomeFunction, hasFunctionAttributes;
 
 	static if(isSomeFunction!(__traits(getMember, aggregate, member)))
-		enum isProperty = (functionAttributes!(__traits(getMember, aggregate, member)) & FunctionAttribute.property);
+		enum isConstProperty = hasFunctionAttributes!(__traits(getMember, aggregate, member), "const", "property");
 	else
-		enum isProperty = false;
+		enum isConstProperty = false;
 }
 
 // check if the member is readable
@@ -348,7 +340,7 @@ private template hasProtection(alias aggregate, string member)
 private template Drawable(alias value, string member)
 {
 	import std.algorithm : among;
-	import std.traits : isTypeTuple;
+	import std.traits : isTypeTuple, isSomeFunction;
 
 	static if (isItSequence!value)
 		enum Drawable = false;
@@ -365,11 +357,11 @@ private template Drawable(alias value, string member)
 	static if(member.among("__ctor", "__dtor"))
 		enum Drawable = false;
 	else
-	static if (isReadableAndWritable!(value, member))
+	static if (isReadableAndWritable!(value, member) && !isSomeFunction!(__traits(getMember, value, member)))
 		enum Drawable = true;
 	else
 	static if (isReadable!(value, member))
-		enum Drawable = isProperty!(value, member); // a readable property is getter
+		enum Drawable = isConstProperty!(value, member); // a readable property is getter
 	else
 		enum Drawable = false;
 }
