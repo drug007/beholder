@@ -99,7 +99,7 @@ struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
 		// by default do nothing
 	}
 
-	void draw(Context)(Context ctx, const(char)[] header, ref T t)
+	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
 	{
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
