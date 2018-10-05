@@ -215,7 +215,7 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws current value
-	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
@@ -296,7 +296,7 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws all fields
-	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
