@@ -88,6 +88,7 @@ class Application
         import gfm.sdl2: SDL_GetTicks, SDL_QUIT, SDL_KEYDOWN, SDL_KEYDOWN, SDL_KEYUP, SDL_MOUSEBUTTONDOWN,
             SDL_MOUSEBUTTONUP, SDL_MOUSEMOTION, SDL_MOUSEWHEEL;
 
+		next_time = SDL_GetTicks() + TickInterval;
         while(_running)
         {
             SDL_Event event;
@@ -97,6 +98,9 @@ class Application
             draw();
 
             _window.swapBuffers();
+
+			SDL_Delay(timeLeft);
+        	next_time += TickInterval;
         }
     }
 
@@ -170,6 +174,21 @@ protected:
 
     alias RendererDelegate = void delegate();
     RendererDelegate[] _renderer_delegates;
+
+	enum TickInterval = 30;
+
+	uint next_time;
+
+	uint timeLeft()
+	{
+		uint now;
+
+		now = SDL_GetTicks();
+		if(next_time <= now)
+			return 0;
+		else
+			return next_time - now;
+	}
 
 	/// projects window coordinates to plane z = 0
     vec3f projectWindowToPlane0(in vec2f winCoords)
