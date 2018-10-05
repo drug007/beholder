@@ -11,11 +11,11 @@ struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !is
 {
 	int selected;
 
-	this(ref const(T) t) {
+	this(const(T) t) {
 		// by default do nothing
 	}
 
-	void draw(Context, T)(Context ctx, const(char)[] header, ref T t)
+	void draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
