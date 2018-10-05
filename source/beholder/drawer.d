@@ -188,7 +188,7 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws current value
-	void draw(Context)(Context ctx, const(char)[] header, ref T t)
+	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
@@ -245,7 +245,7 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
 	}
 
-	this(ref const(T) t)
+	this()(auto ref const(T) t)
 	{
 		static foreach(member; DrawableMembers!T)
 		{
@@ -269,7 +269,7 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws all fields
-	void draw(Context)(Context ctx, const(char)[] header, ref T t)
+	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
@@ -363,18 +363,23 @@ private template Drawable(alias value, string member)
 
 /// returns alias sequence, members of which are members of value
 /// that should be drawn
-private template DrawableMembers(alias value)
+private template DrawableMembers(alias A)
 {
 	import std.meta : ApplyLeft, Filter, AliasSeq;
+	import std.traits : isType, Unqual;
 
-	alias AllMembers = AliasSeq!(__traits(allMembers, typeof(value)));
-	alias isProper = ApplyLeft!(Drawable, value);
+	static if (isType!A)
+	{
+		alias Type = Unqual!A;
+	}
+	else
+	{
+		alias Type = Unqual!(typeof(A));
+	}
+
+	Type symbol;
+
+	alias AllMembers = AliasSeq!(__traits(allMembers, Type));
+	alias isProper = ApplyLeft!(Drawable, symbol);
 	alias DrawableMembers = Filter!(isProper, AllMembers);
-}
-
-private template DrawableMembers(T)
-{
-	import std.traits : Unqual;
-	Unqual!T t;
-	alias DrawableMembers = DrawableMembers!t;
 }
