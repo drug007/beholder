@@ -4,7 +4,7 @@ import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray,
 	isSomeString, isPointer, isSomeChar;
 import std.range : ElementType;
 
-enum textBufferSize = 256;
+enum textBufferSize = 1024;
 enum itemHeight = 25;
 enum ident = 20;
 enum fieldWidth = 80;
@@ -321,6 +321,29 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 
 import std.traits : isTypeTuple;
 
+private template isNullable(T)
+{
+	import std.traits : hasMember;
+
+	static if (
+		hasMember!(T, "isNull") &&
+		is(typeof(__traits(getMember, T, "isNull")) == bool) &&
+		(
+			(hasMember!(T, "get") && !is(typeof(__traits(getMember, T, "get")) == void)) ||
+			(hasMember!(T, "value") && !is(typeof(__traits(getMember, T, "value")) == void))
+		) &&
+		hasMember!(T, "nullify") &&
+		is(typeof(__traits(getMember, T, "nullify")) == void)
+	)
+	{
+		enum isNullable = true;
+	}
+	else
+	{
+		enum isNullable = false;
+	}
+}
+
 private bool privateOrPackage()(string protection)
 {
 	return protection == "private" || protection == "package";
@@ -380,10 +403,10 @@ private template Drawable(alias value, string member)
 		enum Drawable = false;
 	else
 	static if (isReadableAndWritable!(value, member) && !isSomeFunction!(__traits(getMember, value, member)))
-		enum Drawable = true;
+		enum Drawable = !isNullable!(typeof(value));
 	else
 	static if (isReadable!(value, member))
-		enum Drawable = isConstProperty!(value, member); // a readable property is getter
+		enum Drawable = isConstProperty!(value, member) && !isNullable!(typeof(value)); // a readable property is getter
 	else
 		enum Drawable = false;
 }
