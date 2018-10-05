@@ -173,6 +173,21 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 			nk_tree_pop(ctx);
 		}
 	}
+
+	/// draws part of elements
+	void draw(Context)(Context ctx, A a, Drawer!(ElementType!A)[] state)
+	{
+		import std.format : sformat;
+		import nuklear_sdl_gl3;
+
+		char[textBufferSize] buffer;
+
+		assert(state.length == a.length);
+		foreach(i; 0..a.length)
+		{
+			state[i].draw(ctx, "\0", a[i]);
+		}
+	}
 }
 
 import std.traits : isInstanceOf;
