@@ -5,8 +5,7 @@ import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray,
 import std.range : ElementType;
 
 enum textBufferSize = 1024;
-enum itemHeight = 25;
-enum ident = 20;
+enum itemHeight = 21;
 enum fieldWidth = 80;
 
 struct Drawer(T) if (
@@ -82,11 +81,23 @@ struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
-			static foreach(i; 0..a.length)
+			nk_list_view view;
+			// set layout height for the whole list view
+			// it lets nk_list_view calculates its parameters
+			nk_layout_row_dynamic(ctx, itemHeight*(a.length+1), 1);
+			if (nk_list_view_begin(ctx, &view, "statarr", NK_WINDOW_BORDER, itemHeight, a.length)) 
 			{
-				state[i].draw(ctx, "", a[i]);
+				// set layout for list view elements to draw them properly
+				nk_layout_row_dynamic(ctx, itemHeight, 1);
+				foreach(i; 0..view.count)
+				{
+					state[view.begin + i].draw(ctx, "", a[view.begin + i]);
+				}
+				nk_list_view_end(&view);
 			}
 			nk_tree_pop(ctx);
+			// restore layout height
+			nk_layout_row_dynamic(ctx, itemHeight, 1);
 		}
 	}
 }
@@ -148,10 +159,16 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
-			foreach(i; 0..a.length)
+			nk_list_view view;
+			nk_layout_row_dynamic(ctx, itemHeight * 25, 1);
+			if (nk_list_view_begin(ctx, &view, "dynarr", NK_WINDOW_BORDER, itemHeight, cast(int)a.length)) 
 			{
-				formatted_output = sformat!"%s[%d]\0"(buffer[], header, i);
-				state[i].draw(ctx, formatted_output, a[i]);
+				foreach(i; 0..view.count)
+				{
+					formatted_output = sformat!"%s[%d]\0"(buffer[], header, view.begin + i);
+					state[view.begin + i].draw(ctx, formatted_output, a[view.begin + i]);
+				}
+				nk_list_view_end(&view);
 			}
 			nk_tree_pop(ctx);
 		}
