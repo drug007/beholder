@@ -12,4 +12,4 @@ nuklear_demo-test-*
 *.o
 *.obj
 *.lst
-/nuklear_demo
+/demo
