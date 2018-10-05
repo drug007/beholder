@@ -1,18 +1,17 @@
 module beholder.drawer;
 
-import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, isSomeString;
+import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, isSomeString, isPointer;
 
 enum textBufferSize = 256;
 enum itemHeight = 25;
 enum ident = 20;
 enum fieldWidth = 80;
 
-struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T))
+struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !isPointer!T)
 {
 	import std.typecons : Flag;
 	int selected;
 
-	@disable this();
 	this(ref T t) {
 		// by default do nothing
 	}
@@ -30,6 +29,30 @@ struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T))
 	}
 }
 
+struct Drawer(T) if (isPointer!T && !isAggregateType!T)
+{
+	import std.typecons : Flag;
+	int selected;
+
+	this(T t) {
+		pragma(msg, __LINE__, " ====== POINTER ======", T);
+		// by default do nothing
+	}
+
+	void draw(Context, T)(Context ctx, const(char)[] header, T t)
+	{
+		pragma(msg, __LINE__, " ====== DRAW POINTER ======", T);
+		import nuklear_sdl_gl3;
+		import std.format : sformat;
+		char[textBufferSize] buffer;
+		if (header.length)
+			sformat(buffer, "%s: %x\0", header, t);
+		else
+			sformat(buffer, "%x\0", t);
+		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+	}
+}
+
 struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 {
 	import std.range : ElementType;
@@ -41,7 +64,6 @@ struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 	int selected;
 	Drawer!(ElementType!T)[T.length] state;
 
-	@disable this();
 	this(T a)
 	{
 		static foreach(i; 0..a.length)
@@ -78,7 +100,6 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	nk_collapse_states collapsed;
 	Drawer!(ElementType!A)[] state;
 
-	@disable this();
 	this(A a)
 	{
 		state = uninitializedArray!(typeof(state))(a.length);
@@ -115,7 +136,105 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	}
 }
 
-struct Drawer(T) if (isAggregateType!T)
+import std.traits : isInstanceOf;
+import taggedalgebraic : TaggedAlgebraic;
+
+struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
+{
+	struct Payload
+	{
+		static foreach(i; 0..T.Union.tupleof.length)
+		{
+			mixin("Drawer!(typeof(T.Union." ~ T.Union.tupleof[i].stringof ~ ")) state_" ~ T.Union.tupleof[i].stringof ~ ";");
+		}
+	}
+
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	int selected;
+	TaggedAlgebraic!Payload state;
+
+	this(ref T t)
+	{
+		Lexit:
+		final switch (t.kind)
+		{
+			static foreach(i; 0..T.Union.tupleof.length)
+			{
+		mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+				{
+					import taggedalgebraic : TypeOf, get;
+					alias PayloadType = TypeOf!(mixin("T.Kind." ~ T.Union.tupleof[i].stringof));
+					state = Drawer!PayloadType(t.get!PayloadType);
+					break Lexit;
+				}
+			}
+		}
+	}
+
+	/// updates size of underlying data
+	void update(ref T t)
+	{
+		Lexit:
+		final switch (t.kind)
+		{
+			static foreach(i; 0..T.Union.tupleof.length)
+			{
+		mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+				{
+					import taggedalgebraic : TypeOf, get;
+					alias PayloadType = TypeOf!(mixin("T.Kind." ~ T.Union.tupleof[i].stringof));
+					state = Drawer!PayloadType(t.get!PayloadType);
+					break Lexit;
+				}
+			}
+		}
+	}
+
+	/// draws current value
+	void draw(Context)(Context ctx, const(char)[] header, ref T t)
+	{
+		import std.traits : FieldNameTuple;
+		import nuklear_sdl_gl3;
+
+		char[textBufferSize] buffer;
+
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
+		{
+			Lexit:
+			final switch (t.kind)
+			{
+				static foreach(i; 0..T.Union.tupleof.length)
+				{
+			mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+					{
+						import taggedalgebraic : TypeOf, get;
+						enum FieldName = T.Union.tupleof[i].stringof;
+						alias FieldType = TypeOf!(mixin("T.Kind." ~ FieldName));
+						alias DrawerType = Drawer!FieldType;
+						if (cast(int)state.kind != cast(int)t.kind)
+						{
+							auto old_collapsed = state.collapsed;
+							auto old_selected  = state.selected;
+							state = Drawer!FieldType(t.get!FieldType);
+							with(state.get!DrawerType)
+							{
+								collapsed = old_collapsed;
+								selected  = old_selected;
+							}
+						}
+						state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
+						break Lexit;
+					}
+				}
+			}
+			nk_tree_pop(ctx);
+		}
+	}
+}
+
+struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 {
 	import std.traits : isSomeFunction, ReturnType, isArray;
 	import nuklear_sdl_gl3 : nk_collapse_states;
@@ -131,8 +250,6 @@ struct Drawer(T) if (isAggregateType!T)
 			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
 	}
 
-	@disable this();
-
 	this(ref T t)
 	{
 		static foreach(member; DrawableMembers!T)
@@ -141,10 +258,10 @@ struct Drawer(T) if (isAggregateType!T)
 			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
 			// or
 			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
-			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
 				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
 			else
-				mixin("state_" ~ member ~ " = Drawer!(typeof(T." ~ member ~ "))(t." ~ member ~ ");");
+				mixin("state_" ~ member) = typeof(mixin("state_" ~ member))(mixin("t." ~ member ));
 		}
 	}
 
@@ -157,10 +274,10 @@ struct Drawer(T) if (isAggregateType!T)
 			//     state_field_name = Drawer!(ReturnType!(T.field_name))(t.field_name);
 			// or
 			//     state_field_name = Drawer!(typeof(T.field_name))(t.field_name);
-			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
 				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
 			else
-				mixin("state_" ~ member ~ " = Drawer!(typeof(T." ~ member ~ "))(t." ~ member ~ ");");
+				mixin("state_" ~ member) = typeof(mixin("state_" ~ member))(mixin("t." ~ member ));
 		}
 	}
 
@@ -221,31 +338,31 @@ private template isItSequence(T...)
 		enum isItSequence = true;
 }
 
-private template isFieldName(alias aggregate, string member) if (!isTypeTuple!aggregate)
+private template hasProtection(alias aggregate, string member)
 {
-	import std.traits, std.algorithm;
-	enum isFieldName = member.among(FieldNameTuple!(typeof(aggregate))) != 0;
+	enum hasProtection = __traits(compiles, { enum pl = __traits(getProtection, __traits(getMember, aggregate, member)); });
 }
 
 // This trait defines what members should be drawn -
 // public members that are either readable and writable or getter properties
 private template Drawable(alias value, string member)
 {
+	import std.algorithm : among;
 	import std.traits : isTypeTuple;
 
 	static if (isItSequence!value)
 		enum Drawable = false;
 	else
-	static if (isFieldName!(value, member) && !isPublic!(value, member))
+	static if (hasProtection!(value, member) && !isPublic!(value, member))
 			enum Drawable = false;
-	else
-	static if (isTypeTuple!(__traits(getMember, value, member)))
-		enum Drawable = false;
 	else
 	static if (is(typeof(__traits(getMember, value, member)) == enum))
 		enum Drawable = false;
 	else
 	static if (isItSequence!(__traits(getMember, value, member)))
+		enum Drawable = false;
+	else
+	static if(member.among("__ctor", "__dtor"))
 		enum Drawable = false;
 	else
 	static if (isReadableAndWritable!(value, member))
@@ -270,6 +387,7 @@ private template DrawableMembers(alias value)
 
 private template DrawableMembers(T)
 {
-	T t;
+	import std.traits : Unqual;
+	Unqual!T t;
 	alias DrawableMembers = DrawableMembers!t;
 }

@@ -114,6 +114,16 @@ struct Bar
 }
 
 import beholder.drawer;
+import taggedalgebraic : TaggedAlgebraic;
+
+struct Types
+{
+    Foo f;
+    Bar b;
+    Vertex v;
+}
+
+alias Value = TaggedAlgebraic!Types;
 
 alias CoordType = float;
 enum NumberOfDimensions = 3;
@@ -165,6 +175,9 @@ class NuklearApplication : Application
 	Bar[] bar;
 	Drawer!(Bar[]) bar_drawer;
 
+    Value[] value;
+    Drawer!(typeof(value)) value_drawer;
+
     this(string title, int w, int h, Application.FullScreen flag)
     {
         super(title, w, h, flag);
@@ -184,6 +197,11 @@ class NuklearApplication : Application
 		bar ~= b;
 		bar ~= Bar();
 		bar_drawer.update(bar);
+
+        import std.range, std.array;
+        value = [ Value(Foo()), Value(b), Value(data[0][0]), Value(data[0][1]), ].repeat(10_000).join.array;
+        value_drawer = Drawer!(typeof(value))(value);
+        value_drawer.update(value);
     }
 
     ~this()
@@ -245,7 +263,21 @@ class NuklearApplication : Application
 
             nk_layout_row_static(ctx, 30, 80, 1);
             if (nk_button_label(ctx, "button"))
+            {
                 printf("button pressed!\n");
+                final switch(value[0].kind)
+                {
+                    case Value.Kind.f:
+                        value[0] = Bar();
+                    break;
+                    case Value.Kind.b:
+                        value[0] = data[0][0];
+                    break;
+                    case Value.Kind.v:
+                        value[0] = Foo();
+                    break;
+                }
+            }
             nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
             if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
@@ -267,6 +299,7 @@ class NuklearApplication : Application
             }
         }
 		bar_drawer.draw(ctx, "bar", bar);
+        value_drawer.draw(ctx, "value", value);
         nk_end(ctx);
 
         nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);

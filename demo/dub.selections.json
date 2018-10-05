@@ -7,6 +7,7 @@
 		"derelict-sdl2": "3.1.0-alpha.4",
 		"derelict-util": "3.0.0-beta.2",
 		"gfm": "7.0.2",
-		"rtree": "0.0.1"
+		"rtree": "0.0.1",
+		"taggedalgebraic": "0.10.11"
 	}
 }
