@@ -309,7 +309,7 @@ private template isConstProperty(alias aggregate, string member)
 	import std.traits : isSomeFunction, hasFunctionAttributes;
 
 	static if(isSomeFunction!(__traits(getMember, aggregate, member)))
-		enum isConstProperty = hasFunctionAttributes!(__traits(getMember, aggregate, member), "const", "property");
+		enum isConstProperty = hasFunctionAttributes!(__traits(getMember, aggregate, member), "const", "@property");
 	else
 		enum isConstProperty = false;
 }
