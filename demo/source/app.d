@@ -178,31 +178,6 @@ class NuklearApplication : Application
         nk_sdl_shutdown();
 	}
 
-	/// Projection of world coordinates to plane z = 0
-    private vec3f projectWindowToPlane0(in vec2f winCoords)
-    {
-        double x = void, y = void;
-        const aspect_ratio = _width/cast(double)_height;
-        if(_width > _height) 
-        {
-            auto factor_x = 2.0f * _camera.size / _width * aspect_ratio;
-            auto factor_y = 2.0f * _camera.size / _height;
-
-            x = winCoords.x * factor_x + _camera.position.x - _camera.size * aspect_ratio;
-            y = winCoords.y * factor_y + _camera.position.y - _camera.size;
-        }
-        else
-        {
-            auto factor_x = 2.0f * _camera.size / _width;
-            auto factor_y = 2.0f * _camera.size / _height * aspect_ratio;
-
-            x = winCoords.x * factor_x + _camera.position.x - _camera.size;
-            y = winCoords.y * factor_y + _camera.position.y - _camera.size * aspect_ratio;
-        }
-
-        return vec3f(x, y, 0.0f);
-    }
-
 	override void draw()
 	{
 		super.draw();
