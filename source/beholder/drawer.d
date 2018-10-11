@@ -307,12 +307,22 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	this()(auto ref const(T) t)
 	{
 		static foreach(member; DrawableMembers!T)
-		{
+		{{
 			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
 				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
 			else
-				mixin("state_" ~ member) = typeof(mixin("state_" ~ member))(mixin("t." ~ member ));
-		}
+			{
+				static if (isNullable!T)
+					bool isItNull = t.isNull;
+				else
+					enum isItNull = false;
+
+				alias Field = typeof(mixin("state_" ~ member));
+				mixin("state_" ~ member) = (isItNull) ?
+						Field() :
+						Field(mixin("t." ~ member ));
+			}
+		}}
 	}
 
 	/// updates size of underlying data
@@ -337,12 +347,17 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
 		{
+			scope(exit)
+				nk_tree_pop(ctx);
+			static if (isNullable!T)
+			{
+				if (t.isNull)
+					return;
+			}
 			static foreach(member; DrawableMembers!t) 
 			{
 				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
 			}
-
-			nk_tree_pop(ctx);
 		}
 	}
 }
@@ -435,10 +450,10 @@ private template Drawable(alias value, string member)
 		enum Drawable = false;
 	else
 	static if (isReadableAndWritable!(value, member) && !isSomeFunction!(__traits(getMember, value, member)))
-		enum Drawable = !isNullable!(typeof(value));
+		enum Drawable = true;
 	else
 	static if (isReadable!(value, member))
-		enum Drawable = isConstProperty!(value, member) && !isNullable!(typeof(value)); // a readable property is getter
+		enum Drawable = isConstProperty!(value, member); // a readable property is getter
 	else
 		enum Drawable = false;
 }
