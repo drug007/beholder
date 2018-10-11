@@ -381,8 +381,7 @@ int main(string[] args)
     int[int][int] ids;
     foreach(p; data)
     {
-		import std.math : isNaN;
-        if (p.kind == Value.Kind.dp)
+		if (p.kind == Value.Kind.dp)
         {
             auto payload = Payload(p.source, p.dataset, i);
             app.index.insert((p.position-displace).ptr[0..NumberOfDimensions], (p.position+displace).ptr[0..NumberOfDimensions], payload);
