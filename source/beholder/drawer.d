@@ -20,7 +20,7 @@ struct Drawer(T) if (
 		// by default do nothing
 	}
 
-	void draw(Context, T)(Context ctx, const(char)[] header, T t)
+	float draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
@@ -30,6 +30,8 @@ struct Drawer(T) if (
 		else
 			sformat(buffer[], "%s\0", t);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+
+		return ctx.current.layout.row.height;
 	}
 }
 
@@ -41,7 +43,7 @@ struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 		// by default do nothing
 	}
 
-	void draw(Context, T)(Context ctx, const(char)[] header, T t)
+	float draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
@@ -51,6 +53,7 @@ struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 		else
 			sformat(buffer, "%x\0", t);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+		return ctx.current.layout.row.height;
 	}
 }
 
@@ -70,12 +73,13 @@ struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 			state[i] = Drawer!(ElementType!T)(a[i]);
 	}
 
-	void draw(Context, T)(Context ctx, const(char)[] header, ref T a)
+	float draw(Context, T)(Context ctx, const(char)[] header, ref T a)
 	{
 		import std.format : sformat;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
+		float height = 0;
 
 		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
@@ -91,7 +95,7 @@ struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 				nk_layout_row_dynamic(ctx, itemHeight, 1);
 				foreach(i; 0..view.count)
 				{
-					state[view.begin + i].draw(ctx, "", a[view.begin + i]);
+					height += state[view.begin + i].draw(ctx, "", a[view.begin + i]);
 				}
 				nk_list_view_end(&view);
 			}
@@ -99,6 +103,7 @@ struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 			// restore layout height
 			nk_layout_row_dynamic(ctx, itemHeight, 1);
 		}
+		return height;
 	}
 }
 
@@ -110,7 +115,7 @@ struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
 		// by default do nothing
 	}
 
-	void draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
+	float draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
 	{
 		import nuklear_sdl_gl3;
 		import std.format : sformat;
@@ -120,6 +125,7 @@ struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
 		else
 			sformat(buffer[], "%s\0", t[]);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+		return ctx.current.layout.row.height;
 	}
 }
 
@@ -148,12 +154,13 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	}
 
 	/// draws all elements
-	void draw(Context)(Context ctx, const(char)[] header, const(A) a)
+	float draw(Context)(Context ctx, const(char)[] header, const(A) a)
 	{
 		import std.format : sformat;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
+		float height = 0;
 
 		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
@@ -166,27 +173,31 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 				foreach(i; 0..view.count)
 				{
 					formatted_output = sformat!"%s[%d]\0"(buffer[], header, view.begin + i);
-					state[view.begin + i].draw(ctx, formatted_output, a[view.begin + i]);
+					height += state[view.begin + i].draw(ctx, formatted_output, a[view.begin + i]);
 				}
 				nk_list_view_end(&view);
 			}
 			nk_tree_pop(ctx);
 		}
+
+		return height;
 	}
 
 	/// draws part of elements
-	void draw(Context)(Context ctx, A a, Drawer!(ElementType!A)[] state)
+	float draw(Context)(Context ctx, A a, Drawer!(ElementType!A)[] state)
 	{
 		import std.format : sformat;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
+		float height = 0;
 
 		assert(state.length == a.length);
 		foreach(i; 0..a.length)
 		{
-			state[i].draw(ctx, "\0", a[i]);
+			height += state[i].draw(ctx, "\0", a[i]);
 		}
+		return height;
 	}
 }
 
@@ -247,12 +258,13 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws current value
-	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
+		float height = 0;
 
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
 		{
@@ -278,13 +290,15 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 								selected  = old_selected;
 							}
 						}
-						state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
+						height += state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
 						break Lexit;
 					}
 				}
 			}
 			nk_tree_pop(ctx);
 		}
+
+		return height;
 	}
 }
 
@@ -338,12 +352,13 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	}
 
 	/// draws all fields
-	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
+		float height = 0;
 
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
 		{
@@ -352,13 +367,14 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 			static if (isNullable!T)
 			{
 				if (t.isNull)
-					return;
+					return height;
 			}
 			static foreach(member; DrawableMembers!t) 
 			{
-				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
+				mixin("height += state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
 			}
 		}
+		return height;
 	}
 }
 
