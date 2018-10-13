@@ -405,7 +405,6 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 
 		static if (DrawableMembers!t.length == 1)
 		{
-			nk_layout_row_dynamic(ctx, itemHeight, 1);
 			static foreach(member; DrawableMembers!t)
 				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
 		}

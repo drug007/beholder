@@ -24,6 +24,36 @@ struct Bar
 	string[] string_array;
 }
 
+struct SingleNested5
+{
+	string str;
+}
+
+struct SingleNested4
+{
+	SingleNested5 nested;
+}
+
+struct SingleNested3
+{
+	SingleNested4 nested;
+}
+
+struct SingleNested2
+{
+	SingleNested3 nested;
+}
+
+struct SingleNested1
+{
+	SingleNested2 nested;
+}
+
+struct SingleNested0
+{
+	SingleNested1 nested;
+}
+
 struct DataPoint
 {
     int source;
@@ -151,6 +181,9 @@ class NuklearApplication : Application
 
 	Nullable!Foo[] nullable_foo;
 	Drawer!(Nullable!Foo[]) nullable_foo_drawer;
+
+	SingleNested0 single_nested;
+	Drawer!(SingleNested0) single_nested_drawer;
 
     this(string title, int w, int h, Application.FullScreen flag)
     {
@@ -301,6 +334,7 @@ class NuklearApplication : Application
             bar_drawer.draw(ctx, "bar", bar);
             value_drawer.draw(ctx, "value", value);
 			nullable_foo_drawer.draw(ctx, "nullable_foo", nullable_foo);
+			single_nested_drawer.draw(ctx, "single_nested", single_nested);
         }
         nk_end(ctx);
 
