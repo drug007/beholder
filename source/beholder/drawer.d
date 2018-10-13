@@ -305,46 +305,39 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 // Nullable, non TaggedAlgebraic aggregate type
 struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && isNullable!T)
 {
-	import std.traits : isSomeFunction, ReturnType, isArray;
+	import std.traits : isSomeFunction, ReturnType, isArray, hasMember;
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
 
-	static foreach(member; DrawableMembers!T) 
+	static if (hasMember!(T, "get"))
 	{
-		static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
-			mixin("Drawer!(ReturnType!(T." ~ member ~ ")) state_" ~ member ~ ";");
-		else
-			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
+		enum memberTypeIsGet = true;
+		alias State = Drawer!(ReturnType!(T.get));
 	}
+	else static if (hasMember!(T, "value"))
+	{
+		enum memberTypeIsGet = false;
+		alias State = Drawer!(ReturnType!(T.value));
+	}
+	else
+		static assert(0);
+
+	State state;
 
 	this()(auto ref const(T) t)
 	{
-		static foreach(member; DrawableMembers!T)
-		{{
-			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
-				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
-			else
-			{
-				alias Field = typeof(mixin("state_" ~ member));
-				mixin("state_" ~ member) = t.isNull ?
-						Field() :
-						Field(mixin("t." ~ member ));
-			}
-		}}
+		update(t);
 	}
 
 	/// updates size of underlying data
-	void update(ref T t)
+	void update()(auto ref inout(T) t)
 	{
-		static foreach(member; DrawableMembers!T)
-		{
-			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
-				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
-			else
-				mixin("state_" ~ member) = typeof(mixin("state_" ~ member))(mixin("t." ~ member ));
-		}
+		static if(memberTypeIsGet)
+			state = t.isNull ? State() : State(t.get);
+		else
+			state = t.isNull ? State() : State(t.value);
 	}
 
 	/// draws all fields
@@ -354,42 +347,26 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
-		float height = 0;
-
-		sformat(buffer[], "%s\0", header);
-		auto tree_type = NK_TREE_NODE;
+		auto title = sformat(buffer[], "%s\0", header);
 
 		import std.string : fromStringz;
 		
 		if (t.isNull)
 		{
 			if (header.length)
-				sformat(buffer[], "%s: null\0", header.ptr.fromStringz);
+				title = sformat(buffer[], "%s: null\0", header.ptr.fromStringz);
 			else
-				sformat(buffer[], "null\0", t);
+				title = sformat(buffer[], "null\0", t);
 
-			tree_type = NK_TREE_TAB;
-		}
-
-		static if (DrawableMembers!t.length == 1)
-		{
 			nk_layout_row_dynamic(ctx, itemHeight, 1);
-			static foreach(member; DrawableMembers!t)
-				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
+			nk_selectable_label(ctx, title.ptr, NK_TEXT_LEFT, &selected);
+			return itemHeight;
 		}
+
+		static if(memberTypeIsGet)
+			return state.draw(ctx, title, t.get);
 		else
-		if (nk_tree_state_push(ctx, tree_type, buffer.ptr, &collapsed))
-		{
-			scope(exit)
-				nk_tree_pop(ctx);
-			if (t.isNull)
-				return height;
-			static foreach(member; DrawableMembers!t) 
-			{
-				mixin("height += state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
-			}
-		}
-		return height;
+			return state.draw(ctx, title, t.value);
 	}
 }
 

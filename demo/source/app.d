@@ -176,7 +176,7 @@ class NuklearApplication : Application
         value_drawer = Drawer!(typeof(value))(value);
         value_drawer.update(value);
 
-		nullable_foo = [Nullable!Foo(), Nullable!Foo(foo), ];
+		nullable_foo = [Nullable!Foo(), Nullable!Foo(foo), Nullable!Foo(), Nullable!Foo(foo), Nullable!Foo(), Nullable!Foo(foo), Nullable!Foo(foo), Nullable!Foo(), Nullable!Foo(), ];
 		nullable_foo_drawer = Drawer!(typeof(nullable_foo))(nullable_foo);
     }
 
