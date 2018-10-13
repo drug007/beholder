@@ -141,12 +141,10 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 
 	this(const A a)
 	{
-		state = uninitializedArray!(typeof(state))(a.length);
-		foreach(i; 0..a.length)
-			state[i] = Drawer!(ElementType!A)(a[i]);
+		update(a);
 	}
 
-	void update(A a)
+	void update(const A a)
 	{
 		state = uninitializedArray!(typeof(state))(a.length);
 		foreach(i; 0..a.length)
@@ -223,24 +221,11 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 
 	this(ref const(T) t)
 	{
-		Lexit:
-		final switch (t.kind)
-		{
-			static foreach(i; 0..t.Union.tupleof.length)
-			{
-		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
-				{
-					import taggedalgebraic : TypeOf, get;
-					alias PayloadType = TypeOf!(mixin("T.Kind." ~ t.Union.tupleof[i].stringof));
-					state = Drawer!PayloadType(t.get!PayloadType);
-					break Lexit;
-				}
-			}
-		}
+		update(t);
 	}
 
 	/// updates size of underlying data
-	void update(ref T t)
+	void update()(auto ref inout(T) t)
 	{
 		Lexit:
 		final switch (t.kind)
@@ -389,6 +374,12 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 
 	this()(auto ref const(T) t)
 	{
+		update(t);
+	}
+
+	/// updates size of underlying data
+	void update()(auto ref const(T) t)
+	{
 		static foreach(member; DrawableMembers!T)
 		{{
 			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
@@ -399,18 +390,6 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 				mixin("state_" ~ member) = Field(mixin("t." ~ member ));
 			}
 		}}
-	}
-
-	/// updates size of underlying data
-	void update(ref T t)
-	{
-		static foreach(member; DrawableMembers!T)
-		{
-			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
-				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
-			else
-				mixin("state_" ~ member) = typeof(mixin("state_" ~ member))(mixin("t." ~ member ));
-		}
 	}
 
 	/// draws all fields
