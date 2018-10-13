@@ -132,6 +132,7 @@ alias RTreeIndex = RTree!(Payload, CoordType, NumberOfDimensions, CoordType);
 
 class NuklearApplication : Application
 {
+	import std.typecons : Nullable;
 	import gfm.math : vec2f;
     import nuklear_sdl_gl3;
 
@@ -147,6 +148,9 @@ class NuklearApplication : Application
 
     Value[] value;
     Drawer!(typeof(value)) value_drawer;
+
+	Nullable!Foo[] nullable_foo;
+	Drawer!(Nullable!Foo[]) nullable_foo_drawer;
 
     this(string title, int w, int h, Application.FullScreen flag)
     {
@@ -171,6 +175,9 @@ class NuklearApplication : Application
         value = data.dup;
         value_drawer = Drawer!(typeof(value))(value);
         value_drawer.update(value);
+
+		nullable_foo = [Nullable!Foo(), Nullable!Foo(foo), ];
+		nullable_foo_drawer = Drawer!(typeof(nullable_foo))(nullable_foo);
     }
 
     ~this()
@@ -293,6 +300,7 @@ class NuklearApplication : Application
             }
             bar_drawer.draw(ctx, "bar", bar);
             value_drawer.draw(ctx, "value", value);
+			nullable_foo_drawer.draw(ctx, "nullable_foo", nullable_foo);
         }
         nk_end(ctx);
 

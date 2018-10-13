@@ -353,12 +353,31 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	/// draws all fields
 	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
+		import std.format : sformat;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
 		float height = 0;
 
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
+		sformat(buffer[], "%s\0", header);
+		auto tree_type = NK_TREE_NODE;
+
+		static if (isNullable!T)
+		{
+			import std.string : fromStringz;
+			
+			if (t.isNull)
+			{
+				if (header.length)
+					sformat(buffer[], "%s: null\0", header.ptr.fromStringz);
+				else
+					sformat(buffer[], "null\0", t);
+
+				tree_type = NK_TREE_TAB;
+			}
+		}
+
+		if (nk_tree_state_push(ctx, tree_type, buffer.ptr, &collapsed))
 		{
 			scope(exit)
 				nk_tree_pop(ctx);
