@@ -260,7 +260,6 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 	/// draws current value
 	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
@@ -354,7 +353,6 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T))
 	/// draws all fields
 	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import std.traits : FieldNameTuple;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
