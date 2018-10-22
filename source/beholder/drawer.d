@@ -250,37 +250,32 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 
 		char[textBufferSize] buffer;
 		float height = 0;
-
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, header.ptr, &collapsed))
+		Lexit:
+		final switch (t.kind)
 		{
-			Lexit:
-			final switch (t.kind)
+			static foreach(i; 0..t.Union.tupleof.length)
 			{
-				static foreach(i; 0..t.Union.tupleof.length)
+		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
-			mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
+					import taggedalgebraic : TypeOf, get;
+					enum FieldName = t.Union.tupleof[i].stringof;
+					alias FieldType = TypeOf!(mixin("T.Kind." ~ FieldName));
+					alias DrawerType = Drawer!FieldType;
+					if (cast(int)state.kind != cast(int)t.kind)
 					{
-						import taggedalgebraic : TypeOf, get;
-						enum FieldName = t.Union.tupleof[i].stringof;
-						alias FieldType = TypeOf!(mixin("T.Kind." ~ FieldName));
-						alias DrawerType = Drawer!FieldType;
-						if (cast(int)state.kind != cast(int)t.kind)
+						auto old_collapsed = state.collapsed;
+						auto old_selected  = state.selected;
+						state = Drawer!FieldType(t.get!FieldType);
+						with(state.get!DrawerType)
 						{
-							auto old_collapsed = state.collapsed;
-							auto old_selected  = state.selected;
-							state = Drawer!FieldType(t.get!FieldType);
-							with(state.get!DrawerType)
-							{
-								collapsed = old_collapsed;
-								selected  = old_selected;
-							}
+							collapsed = old_collapsed;
+							selected  = old_selected;
 						}
-						height += state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
-						break Lexit;
 					}
+					height += state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
+					break Lexit;
 				}
 			}
-			nk_tree_pop(ctx);
 		}
 
 		return height;
