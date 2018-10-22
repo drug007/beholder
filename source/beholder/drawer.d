@@ -353,19 +353,33 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 // Non Nullable, non TagggedAlgebraic aggregate type
 struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 {
+	import std.algorithm : among;
 	import std.traits : isSomeFunction, ReturnType, isArray;
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
 
-	static foreach(member; DrawableMembers!T) 
+	// Unfortunately `hasMember` does not work 
+	// with opDispatch, so brute force it
+	enum DrawnAsAvailable = "drawnAs".among(__traits(allMembers, T));
+
+	static if (DrawnAsAvailable)
 	{
-		static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
-			mixin("Drawer!(ReturnType!(T." ~ member ~ ")) state_" ~ member ~ ";");
-		else
-			mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
+		alias DrawnAsType = ReturnType!(T.drawnAs);
+		Drawer!DrawnAsType state_drawn_as;
+		enum Cached = is(DrawnAsType : string);
+		static if(Cached)
+			DrawnAsType cached;
 	}
+	else
+		static foreach(member; DrawableMembers!T) 
+		{
+			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
+				mixin("Drawer!(ReturnType!(T." ~ member ~ ")) state_" ~ member ~ ";");
+			else
+				mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
+		}
 
 	this()(auto ref const(T) t)
 	{
@@ -375,6 +389,13 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 	/// updates size of underlying data
 	void update()(auto ref const(T) t)
 	{
+		static if (DrawnAsAvailable)
+		{
+			state_drawn_as = Drawer!(ReturnType!(T.drawnAs))(t.drawnAs);
+			static if (Cached)
+				cached = t.drawnAs;
+		}
+		else
 		static foreach(member; DrawableMembers!T)
 		{{
 			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
@@ -392,12 +413,18 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 	{
 		import std.format : sformat;
 		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
+		
 		float height = 0;
 
-		sformat(buffer[], "%s\0", header);
-
+		static if (DrawnAsAvailable)
+		{
+			nk_layout_row_dynamic(ctx, itemHeight, 1);
+			static if (Cached)
+				state_drawn_as.draw(ctx, header, cached);
+			else
+				state_drawn_as.draw(ctx, "", t.drawnAs);
+		}
+		else
 		static if (DrawableMembers!t.length == 1)
 		{
 			static foreach(member; DrawableMembers!t)
@@ -405,6 +432,9 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 		}
 		else
 		{
+			char[textBufferSize] buffer;
+
+			sformat(buffer[], "%s\0", header);
 			if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 			{
 				scope(exit)
