@@ -1,7 +1,7 @@
 module beholder.drawer;
 
 import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, 
-	isSomeString, isPointer, isSomeChar;
+	isSomeString, isPointer, isSomeChar, isAssociativeArray, isBoolean;
 import std.range : ElementType;
 
 enum textBufferSize = 1024;
@@ -11,7 +11,8 @@ enum fieldWidth = 80;
 struct Drawer(T) if (
 	!isAggregateType!T && 
 	!isPointer!T &&
-	(!isArray!T || isSomeString!T)
+	(!isArray!T || isSomeString!T) &&
+	!isAssociativeArray!T
 )
 {
 	int selected;
@@ -35,10 +36,12 @@ struct Drawer(T) if (
 		// passed using `.ptr` member
 		static if (isIntegral!T)
 			snprintf(buffer[l..$].ptr, buffer.length-l, "%d", t);
-		else static if (isSomeString!T)
-			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.ptr);
 		else static if (isFloatingPoint!T)
 			snprintf(buffer[l..$].ptr, buffer.length-l, "%f", t);
+		else static if (isBoolean!T)
+			snprintf(buffer[l..$].ptr, buffer.length-l, t ? "true" : "false");
+		else static if (isSomeString!T)
+			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.ptr);
 		else
 			static assert(0, T.stringof);
 
@@ -211,6 +214,61 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 		{
 			height += state[i].draw(ctx, "", a[i]);
 		}
+		return height;
+	}
+}
+
+struct Drawer(A) if (isAssociativeArray!A)
+{
+	import std.array : uninitializedArray;
+	import std.range : ElementType;
+
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	alias Value = typeof(A.init.values[0]);
+	alias Key   = typeof(A.init.keys[0]);
+	Drawer!Value[] state;
+
+	this(const A a)
+	{
+		update(a);
+	}
+
+	void update(const A a)
+	{
+		state = uninitializedArray!(typeof(state))(a.length);
+		foreach(i; 0..a.length)
+			state[i] = Drawer!Value(a[a.keys[i]]);
+	}
+
+	/// draws all elements
+	float draw(Context)(Context ctx, const(char)[] header, const(A) a)
+	{
+		import core.stdc.stdio : sprintf;
+		import nuklear_sdl_gl3;
+
+		char[textBufferSize] buffer;
+		float height = 0;
+
+		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
+		{
+			assert(state.length == a.length);
+			nk_list_view view;
+			nk_layout_row_dynamic(ctx, itemHeight * 25, 1);
+			if (nk_list_view_begin(ctx, &view, "dynarr", NK_WINDOW_BORDER, itemHeight, cast(int)a.length)) 
+			{
+				foreach(i; 0..view.count)
+				{
+					snprintf(buffer.ptr, buffer.length, "%s[%ld]", header.ptr, view.begin + i);
+					height += state[view.begin + i].draw(ctx, buffer, a[a.keys[view.begin + i]]);
+				}
+				nk_list_view_end(&view);
+			}
+			nk_tree_pop(ctx);
+		}
+
 		return height;
 	}
 }
