@@ -602,9 +602,6 @@ private template Drawable(alias value, string member)
 	static if (hasProtection!(value, member) && !isPublic!(value, member))
 			enum Drawable = false;
 	else
-	static if (is(typeof(__traits(getMember, value, member)) == enum))
-		enum Drawable = false;
-	else
 	static if (isItSequence!(__traits(getMember, value, member)))
 		enum Drawable = false;
 	else
