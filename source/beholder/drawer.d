@@ -22,13 +22,26 @@ struct Drawer(T) if (
 
 	float draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
+		import core.stdc.stdio : snprintf;
+		import std.traits : isIntegral, isFloatingPoint;
 		import nuklear_sdl_gl3;
-		import std.format : sformat;
+
 		char[textBufferSize] buffer;
+		size_t l;
 		if (header.length)
-			sformat(buffer[], "%s: %s\0", header, t);
+			l = snprintf(buffer.ptr, buffer.length, "%s: ", header.ptr);
+		
+		// format specifier depends on type, also string should be
+		// passed using `.ptr` member
+		static if (isIntegral!T)
+			snprintf(buffer[l..$].ptr, buffer.length-l, "%d", t);
+		else static if (isSomeString!T)
+			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.ptr);
+		else static if (isFloatingPoint!T)
+			snprintf(buffer[l..$].ptr, buffer.length-l, "%f", t);
 		else
-			sformat(buffer[], "%s\0", t);
+			static assert(0, T.stringof);
+
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 
 		return ctx.current.layout.row.height;
@@ -45,13 +58,14 @@ struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 
 	float draw(Context, T)(Context ctx, const(char)[] header, T t)
 	{
+		import core.stdc.stdio : sprintf;
 		import nuklear_sdl_gl3;
-		import std.format : sformat;
+
 		char[textBufferSize] buffer;
 		if (header.length)
-			sformat(buffer, "%s: %x\0", header, t);
+			snprintf(buffer.ptr, buffer.length, "%s: %x", header.ptr, t);
 		else
-			sformat(buffer, "%x\0", t);
+			snprintf(buffer.ptr, buffer.length, "%x", t);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 		return ctx.current.layout.row.height;
 	}
@@ -75,14 +89,14 @@ struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 
 	float draw(Context, T)(Context ctx, const(char)[] header, ref T a)
 	{
-		import std.format : sformat;
+		import core.stdc.stdio : sprintf;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
 		float height = 0;
 
-		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
+		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
 			nk_list_view view;
@@ -117,13 +131,16 @@ struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
 
 	float draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
 	{
+		import std.algorithm : min;
+		import core.stdc.stdio : sprintf;
 		import nuklear_sdl_gl3;
-		import std.format : sformat;
+
 		char[textBufferSize] buffer;
+		auto l = min(textBufferSize-1, t.length)-header.length;
 		if (header.length)
-			sformat(buffer[], "%s: %s\0", header, t[]);
+			snprintf(buffer.ptr, l, "%s: %s", header.ptr, t.ptr);
 		else
-			sformat(buffer[], "%s\0", t[]);
+			snprintf(buffer.ptr, l, "%s", t.ptr);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 		return ctx.current.layout.row.height;
 	}
@@ -154,14 +171,14 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	/// draws all elements
 	float draw(Context)(Context ctx, const(char)[] header, const(A) a)
 	{
-		import std.format : sformat;
+		import core.stdc.stdio : sprintf;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
 		float height = 0;
 
-		auto formatted_output = sformat(buffer[], "%s (%d)\0", header, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, formatted_output.ptr, &collapsed))
+		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 		{
 			assert(state.length == a.length);
 			nk_list_view view;
@@ -170,8 +187,8 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 			{
 				foreach(i; 0..view.count)
 				{
-					formatted_output = sformat!"%s[%d]\0"(buffer[], header, view.begin + i);
-					height += state[view.begin + i].draw(ctx, formatted_output, a[view.begin + i]);
+					snprintf(buffer.ptr, buffer.length, "%s[%ld]", header.ptr, view.begin + i);
+					height += state[view.begin + i].draw(ctx, buffer, a[view.begin + i]);
 				}
 				nk_list_view_end(&view);
 			}
@@ -184,7 +201,6 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	/// draws part of elements
 	float draw(Context)(Context ctx, A a, Drawer!(ElementType!A)[] state)
 	{
-		import std.format : sformat;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
@@ -193,7 +209,7 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 		assert(state.length == a.length);
 		foreach(i; 0..a.length)
 		{
-			height += state[i].draw(ctx, "\0", a[i]);
+			height += state[i].draw(ctx, "", a[i]);
 		}
 		return height;
 	}
@@ -248,7 +264,6 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 	{
 		import nuklear_sdl_gl3;
 
-		char[textBufferSize] buffer;
 		float height = 0;
 		Lexit:
 		final switch (t.kind)
@@ -323,30 +338,30 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 	/// draws all fields
 	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import std.format : sformat;
+		import core.stdc.stdio : sprintf;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
-		auto title = sformat(buffer[], "%s\0", header);
+		auto l = snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
 
 		import std.string : fromStringz;
 		
 		if (t.isNull)
 		{
 			if (header.length)
-				title = sformat(buffer[], "%s: null\0", header.ptr.fromStringz);
+				l = snprintf(buffer.ptr, buffer.length, "%s: null", header.ptr);
 			else
-				title = sformat(buffer[], "null\0", t);
+				l = snprintf(buffer.ptr, buffer.length, "null");
 
 			nk_layout_row_dynamic(ctx, itemHeight, 1);
-			nk_selectable_label(ctx, title.ptr, NK_TEXT_LEFT, &selected);
+			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 			return itemHeight;
 		}
 
 		static if(memberTypeIsGet)
-			return state.draw(ctx, title, t.get);
+			return state.draw(ctx, buffer[0..l], t.get);
 		else
-			return state.draw(ctx, title, t.value);
+			return state.draw(ctx, buffer[0..l], t.value);
 	}
 }
 
@@ -411,7 +426,6 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 	/// draws all fields
 	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import std.format : sformat;
 		import nuklear_sdl_gl3;
 		
 		float height = 0;
@@ -432,9 +446,11 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 		}
 		else
 		{
+			import core.stdc.stdio : sprintf;
+			
 			char[textBufferSize] buffer;
+			snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
 
-			sformat(buffer[], "%s\0", header);
 			if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 			{
 				scope(exit)
