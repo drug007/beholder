@@ -1,13 +1,19 @@
 module beholder.drawer;
 
-import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, isSomeString, isPointer;
+import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, 
+	isSomeString, isPointer, isSomeChar;
+import std.range : ElementType;
 
 enum textBufferSize = 256;
 enum itemHeight = 25;
 enum ident = 20;
 enum fieldWidth = 80;
 
-struct Drawer(T) if (!isAggregateType!T && (!isArray!T || isSomeString!T) && !isPointer!T)
+struct Drawer(T) if (
+	!isAggregateType!T && 
+	!isPointer!T &&
+	(!isArray!T || isSomeString!T)
+)
 {
 	int selected;
 
@@ -49,7 +55,7 @@ struct Drawer(T) if (isPointer!T && !isAggregateType!T)
 	}
 }
 
-struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
+struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
 {
 	import std.range : ElementType;
 
@@ -85,6 +91,27 @@ struct Drawer(T) if (!isSomeString!T && isStaticArray!T)
 	}
 }
 
+struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
+{
+	int selected;
+
+	this(ref const(T) t) {
+		// by default do nothing
+	}
+
+	void draw(Context)(Context ctx, const(char)[] header, ref T t)
+	{
+		import nuklear_sdl_gl3;
+		import std.format : sformat;
+		char[textBufferSize] buffer;
+		if (header.length)
+			sformat(buffer[], "%s: %s\0", header, t[]);
+		else
+			sformat(buffer[], "%s\0", t[]);
+		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+	}
+}
+
 struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 {
 	import std.array : uninitializedArray;
@@ -110,7 +137,7 @@ struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
 	}
 
 	/// draws all elements
-	void draw(Context)(Context ctx, const(char)[] header, A a)
+	void draw(Context)(Context ctx, const(char)[] header, const(A) a)
 	{
 		import std.format : sformat;
 		import nuklear_sdl_gl3;
@@ -174,12 +201,12 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 		Lexit:
 		final switch (t.kind)
 		{
-			static foreach(i; 0..T.Union.tupleof.length)
+			static foreach(i; 0..t.Union.tupleof.length)
 			{
-		mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
 					import taggedalgebraic : TypeOf, get;
-					alias PayloadType = TypeOf!(mixin("T.Kind." ~ T.Union.tupleof[i].stringof));
+					alias PayloadType = TypeOf!(mixin("T.Kind." ~ t.Union.tupleof[i].stringof));
 					state = Drawer!PayloadType(t.get!PayloadType);
 					break Lexit;
 				}
@@ -200,12 +227,12 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T))
 			Lexit:
 			final switch (t.kind)
 			{
-				static foreach(i; 0..T.Union.tupleof.length)
+				static foreach(i; 0..t.Union.tupleof.length)
 				{
-			mixin("case T.Kind." ~ T.Union.tupleof[i].stringof ~ ":");
+			mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 					{
 						import taggedalgebraic : TypeOf, get;
-						enum FieldName = T.Union.tupleof[i].stringof;
+						enum FieldName = t.Union.tupleof[i].stringof;
 						alias FieldType = TypeOf!(mixin("T.Kind." ~ FieldName));
 						alias DrawerType = Drawer!FieldType;
 						if (cast(int)state.kind != cast(int)t.kind)
