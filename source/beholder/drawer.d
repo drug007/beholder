@@ -34,7 +34,9 @@ struct Drawer(T) if (
 		
 		// format specifier depends on type, also string should be
 		// passed using `.ptr` member
-		static if (isIntegral!T)
+		static if (is(T == enum))
+			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.enumToString.ptr);
+		else static if (isIntegral!T)
 			snprintf(buffer[l..$].ptr, buffer.length-l, "%d", t);
 		else static if (isFloatingPoint!T)
 			snprintf(buffer[l..$].ptr, buffer.length-l, "%f", t);
@@ -527,6 +529,18 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 //*****************************************************************************
 // helpers
 //*****************************************************************************
+
+@nogc @safe nothrow
+private string enumToString(E)(E e) if (is(E == enum))
+{
+	import std.traits : Unqual;
+
+	// using `if` instead of `final switch` is simple
+	// workaround of duplicated enum members
+	static foreach(v; __traits(allMembers, E))
+		mixin("if (e == E." ~ v ~ ") return `" ~ v ~ "`;");
+	return "Unrepresentable by " ~ Unqual!E.stringof ~ " value";
+}
 
 import std.traits : isTypeTuple;
 
