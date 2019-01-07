@@ -16,3 +16,4 @@ beholder-test-*
 /bin/
 /core
 *.a
+/dub.selections.json

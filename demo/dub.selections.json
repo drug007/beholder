@@ -3,11 +3,12 @@
 	"versions": {
 		"beholder": {"path":".."},
 		"color": "0.0.7",
-		"derelict-gl3": "2.0.0-beta.6",
+		"derelict-gl3": "2.0.0-beta.7",
 		"derelict-sdl2": "3.1.0-alpha.4",
 		"derelict-util": "3.0.0-beta.2",
-		"gfm": "7.0.2",
+		"gfm": "7.0.5",
+		"nukleared": {"path":"../nukleared"},
 		"rtree": "0.0.1",
-		"taggedalgebraic": "0.10.11"
+		"taggedalgebraic": "0.10.12"
 	}
 }

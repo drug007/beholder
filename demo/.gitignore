@@ -2,12 +2,6 @@
 docs.json
 __dummy.html
 docs/
-nuklear_demo.so
-nuklear_demo.dylib
-nuklear_demo.dll
-nuklear_demo.a
-nuklear_demo.lib
-nuklear_demo-test-*
 *.exe
 *.o
 *.obj
