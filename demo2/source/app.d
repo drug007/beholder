@@ -92,7 +92,7 @@ class DemoApplication : NuklearApp, Parent
 		_camera = new Camera(
 			vec2f(_width, _height), 
 			vec3f(0, 0, 0),
-			1_000_000
+			15_000
 		);
 
 		new GridRenderer(this);

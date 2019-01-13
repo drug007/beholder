@@ -30,10 +30,11 @@ class CircleMotionModel : MotionModel
 
 	void update(ref Movable m, Duration duration)
 	{
-		m.pos += m.vel * duration.total!"hnsecs" / 10_000_000.0;
+		auto t = duration.total!"hnsecs" / 10_000_000.0;
+		m.pos += m.vel * t;
 
 		import gfm.math;
-		auto rot = mat3x3f.rotation(2*PI/1000.0, vec3f(0, 0, 1));
+		auto rot = mat3x3f.rotation(2*PI/120.0 * t, vec3f(0, 0, 1));
 		m.vel = rot * m.vel;
 	}
 }
@@ -159,6 +160,7 @@ class MainSimulator : Simulator
 		auto delta = (timestamp - _old_timestamp);
 		foreach(ref m; _movables)
 			m.update(delta);
+		_old_timestamp += delta;
 
 // 		auto delta = (timestamp - _old_timestamp).total!"hnsecs" / 10_000_000.0;
 // 		enforce(delta < 10_000_000, "Delta should be less than 1 second"); 
