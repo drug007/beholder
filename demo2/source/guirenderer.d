@@ -81,11 +81,11 @@ class GUIRenderer : Renderer
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
-			enum {EASY, HARD}
-			static int op = EASY;
+			enum { SimulationOn, SimulationOff }
+			static int op = SimulationOn;
 			static int property = 20;
 
-			nk_layout_row_static(_app.ctx, 30, 80, 1);
+			nk_layout_row_static(_app.ctx, 30, 120, 1);
 			// if (nk_button_label(_app.ctx, "button"))
 			// {
 			// 	printf("button pressed!\n");
@@ -102,9 +102,20 @@ class GUIRenderer : Renderer
 			// 		break;
 			// 	}
 			// }
+			nk_label(_app.ctx, "Simulation is:", NK_TEXT_LEFT);
 			nk_layout_row_dynamic(_app.ctx, 30, 2);
-			if (nk_option_label(_app.ctx, "easy", op == EASY)) op = EASY;
-			if (nk_option_label(_app.ctx, "hard", op == HARD)) op = HARD;
+			auto old_op = op;
+			if (nk_option_label(_app.ctx, "on",  op == SimulationOn))  op = SimulationOn;
+			if (nk_option_label(_app.ctx, "off", op == SimulationOff)) op = SimulationOff;
+			if (op != old_op)
+			{
+				if (op == SimulationOn)
+					_app.startSimulation;
+				else
+					_app.stopSimulation;
+			}
+
+
 			nk_layout_row_dynamic(_app.ctx, 22, 1);
 			nk_property_int(_app.ctx, "Compression:", 0, &property, 100, 10, 1);
 

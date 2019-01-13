@@ -9,11 +9,15 @@ interface Simulator
 {
 	import std.datetime : SysTime;
 
-	void onSimulation(const SysTime);
+	void onSimulation(SysTime);
+	void startSimulation(SysTime);
+	void stopSimulation();
 }
 
 interface Parent
 {
 	void addRenderer(Renderer);
 	void addSimulator(Simulator);
+	void startSimulation();
+	void stopSimulation();
 }

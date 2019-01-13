@@ -92,7 +92,7 @@ class DemoApplication : NuklearApp, Parent
 		_camera = new Camera(
 			vec2f(_width, _height), 
 			vec3f(0, 0, 0),
-			30_000
+			1_000_000
 		);
 
 		new GridRenderer(this);
@@ -112,6 +112,18 @@ class DemoApplication : NuklearApp, Parent
 	void addSimulator(Simulator simulator)
 	{
 		_simulators ~= simulator;
+	}
+
+	void startSimulation()
+	{
+		foreach(s; _simulators)
+			s.startSimulation(currTimestamp);
+	}
+
+	void stopSimulation()
+	{
+		foreach(s; _simulators)
+			s.stopSimulation;
 	}
 
 	override void onIdle()
