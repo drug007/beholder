@@ -1,0 +1,10 @@
+name "demo"
+description "Demo for nuklear based application."
+authors "drug007"
+copyright "Copyright © 2018-2019, drug007"
+license "BSL-1.0"
+
+dependency "beholder" path=".."
+dependency "nukleared" path="../nukleared"
+
+lflags "-L../nukleared/lib" "-lnukleared" "-lnuklear_sdl_gl3" "-lGL" "-lSDL2"

@@ -33,6 +33,11 @@ class Camera
         updateMatrices();
     }
 
+	auto window()
+	{
+		return _window;
+	}
+
     auto position() const
     {
         return _position;
@@ -49,13 +54,33 @@ class Camera
         return _mvp_matrix;
     }
 
+	ref projection()
+	{
+		return _projection;
+	}
+
+	ref modelView()
+	{
+		return _model_view;
+	}
+
+	ref model()
+	{
+		return _model;
+	}
+	
+	ref view()
+	{
+		return _view;
+	}
+
 protected:
     import gfm.math;
 
     vec2f _window;
     vec3f _position;
     float _size;
-    mat4f _projection, _view, _mvp_matrix, _model;
+    mat4f _projection, _view, _mvp_matrix, _model, _model_view;
 
     /// Преобразование экранных координат в мировые.
     /// Возвращает луч из камеры в мировых координатах.
@@ -91,6 +116,8 @@ protected:
             vec3f(0, 1, 0)  // "Head" is up
         );
 
-        _mvp_matrix = _projection * _view * _model;
+		_model_view = _view * _model;
+
+        _mvp_matrix = _projection * _model_view;
     }
 }
