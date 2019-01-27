@@ -48,6 +48,23 @@ static this()
 	circleMotionModel = new CircleMotionModel();
 }
 
+Dg linear = delegate(vec3f f, vec3f t, float tt)
+{
+	return f + (t-f)*tt;
+};
+
+Dg circular = delegate(vec3f f, vec3f t, float tt)
+{
+	auto radius = vec3f(0, 1000, 0);
+	auto center = vec3f( 7899+10_000, -9615 - 1_000, 0);
+	auto velocity = 2 * PI / 1;
+
+	import gfm.math;
+	auto rot = mat3f.rotateZ(-velocity * tt);
+
+	return center + rot * radius;
+};
+
 struct Movable
 {
 	import std.datetime : Duration;
@@ -58,12 +75,26 @@ struct Movable
 
 	MotionModel motion;
 
+	Timeline tl;
+
 	this(vec3f pos, vec3f vel, MotionModel motion)
 	{
 		this.pos = pos;
 		this.vel = vel;
 		this.acc = vec3f(0, 0, 0);
 		this.motion = motion;
+
+		
+		import std.random : uniform;
+
+		import std.datetime : dur;
+		tl.from(pos)
+			.to(pos + vec3f(10_000, 0, 0))
+			.period(dur!"msecs"(5000))
+			.using(linear)
+			.to(pos + vec3f(10_000, 0, 0))
+			.period(dur!"msecs"(5000))
+			.using(circular);
 	}
 
 	this(vec3f pos, vec3f vel, vec3f acc, MotionModel motion)
@@ -76,8 +107,13 @@ struct Movable
 
 	void update(Duration duration)
 	{
-		if (motion)
-			motion.update(this, duration);
+		auto new_pos = tl.update(duration);
+		auto new_vel = new_pos - pos;
+		if (new_vel.squaredMagnitude)
+			vel = new_vel;
+		else
+			tl.clear;
+		pos = new_pos;
 	}
 }
 
@@ -162,14 +198,6 @@ class MainSimulator : Simulator
 			m.update(delta);
 		_old_timestamp += delta;
 
-// 		auto delta = (timestamp - _old_timestamp).total!"hnsecs" / 10_000_000.0;
-// 		enforce(delta < 10_000_000, "Delta should be less than 1 second"); 
-
-// // import std.stdio;
-// // writeln(delta);
-// 		foreach(ref m; _movables)
-// 			m.pos += m.vel * delta;
-// // writeln(_movables);
 		updateVertices;
 		_track_renderer.update(_vertices, _indices);
 	}
@@ -214,5 +242,106 @@ private:
 		import std.conv : castFrom;
 
 		_indices = castFrom!ulong.to!uint(_vertices.length).iota.array;
+	}
+}
+
+import std.datetime : SysTime, Duration, UTC;
+alias Dg = vec3f delegate(vec3f f, vec3f t, float t);
+
+struct Timepoint
+{
+	vec3f pos;
+	SysTime timestamp;
+	Dg dg;
+}
+
+struct Timeline
+{
+	import std.container.array : Array;
+	private Array!Timepoint _points;
+	private SysTime _curr_time;
+	private vec3f _curr_value;
+	private int _curr_segment;
+
+	typeof(this) from(vec3f pos)
+	{
+		_curr_time = SysTime(0, UTC());
+		_points.clear;
+		_points ~= Timepoint(pos, SysTime(0, UTC()));
+
+		return this;
+	}
+
+	auto to(vec3f pos)
+	{
+		_points ~= Timepoint(pos, SysTime(0, UTC()));
+
+		return this;
+	}
+
+	auto period(Duration d)
+	{
+		assert(_points.length > 1);
+		_points[$-1].timestamp = _points[$-2].timestamp + d;
+
+		return this;
+	}
+
+	auto using(Dg dg)
+	{
+		_points[$-2].dg = dg;
+
+		return this;
+	}
+
+	auto start() const
+	{
+		return _points[0].timestamp;
+	}
+
+	auto finish() const
+	{
+		return _points[$-1].timestamp;
+	}
+
+	auto currTime() const
+	{
+		return _curr_time;
+	}
+
+	auto currValue() const
+	{
+		return _curr_value;
+	}
+
+	auto clear()
+	{
+		_curr_segment = 0;
+		_curr_time = SysTime(0, UTC());
+		update(Duration.zero);
+	}
+
+	auto update(Duration d)
+	{
+		auto new_timestamp = _curr_time + d;
+		if (new_timestamp > finish)
+			return _curr_value;
+		assert(_curr_segment < _points.length);
+		while (new_timestamp > _points[_curr_segment+1].timestamp)
+		{
+			_curr_segment++;
+			if (_curr_segment == _points.length)
+			{
+				_curr_time = _points[$-1].timestamp;
+				return _points[$-1].pos;
+			}
+		}
+		auto time_in_current_interval = new_timestamp - _points[_curr_segment].timestamp;
+		float t = time_in_current_interval.total!"hnsecs" / cast(float)(_points[_curr_segment+1].timestamp - _points[_curr_segment].timestamp).total!"hnsecs";
+		auto dg = _points[_curr_segment].dg;
+
+		_curr_value = dg(_points[_curr_segment].pos, _points[_curr_segment+1].pos, t);
+		_curr_time = new_timestamp;
+		return _curr_value;
 	}
 }
