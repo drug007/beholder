@@ -104,6 +104,9 @@ class DemoApplication : NuklearApp, Parent
 		s.startSimulation(currTimestamp);
 	}
 
+	@property mouseX() const { return _mouse_x; }
+	@property mouseY() const { return _mouse_y; }
+
 	void addRenderer(Renderer renderer)
 	{
 		_renderers ~= renderer;

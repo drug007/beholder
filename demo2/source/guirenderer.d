@@ -140,6 +140,21 @@ class GUIRenderer : Renderer
 		}
 		nk_end(_app.ctx);
 
+		auto width = _app.window.getWidth;
+		if (nk_begin(_app.ctx, "Parameters", nk_rect(width -230 - 30, 50, 230, 450),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			nk_layout_row_dynamic(_app.ctx, 22, 1);
+			import std.conv : text;
+			nk_label(_app.ctx, text("Mouse position: ", _app.mouseX, " ", _app.mouseY, "\0").ptr, NK_TEXT_LEFT);
+			with(_app.camera.position)
+				nk_label(_app.ctx, text("Camera position: ", x, " ", y, "\0").ptr, NK_TEXT_LEFT);
+			with(_app.camera)
+				nk_label(_app.ctx, text("Camera scale: ", size, "\0").ptr, NK_TEXT_LEFT);
+		}
+		nk_end(_app.ctx);
+
 		nk_sdl_render(NK_ANTI_ALIASING_ON, _app.MAX_VERTEX_MEMORY, _app.MAX_ELEMENT_MEMORY);
 	}
 private:
