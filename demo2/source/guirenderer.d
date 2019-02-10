@@ -86,6 +86,11 @@ class GUIRenderer : Renderer
 			static int property = 20;
 
 			nk_layout_row_static(_app.ctx, 30, 120, 1);
+			if (nk_button_label(_app.ctx, "clear"))
+			{
+				// import mainsimulator;
+				_app.clearFinished;
+			}
 			// if (nk_button_label(_app.ctx, "button"))
 			// {
 			// 	printf("button pressed!\n");

@@ -6,65 +6,6 @@ import gldata : Vertex;
 import gfm.math : vec3f, vec4f;
 import std.math : PI;
 
-interface MotionModel
-{
-	import std.datetime : Duration;
-
-	void update(ref Movable m, Duration duration);
-}
-
-class LinearMotionModel : MotionModel
-{
-	import std.datetime : Duration;
-
-	void update(ref Movable m, Duration duration)
-	{
-		m.pos += m.vel * duration.total!"hnsecs" / 10_000_000.0;
-		m.vel += m.acc;
-	}
-}
-
-class CircleMotionModel : MotionModel
-{
-	import std.datetime : Duration;
-
-	void update(ref Movable m, Duration duration)
-	{
-		auto t = duration.total!"hnsecs" / 10_000_000.0;
-		m.pos += m.vel * t;
-
-		import gfm.math;
-		auto rot = mat3x3f.rotation(2*PI/120.0 * t, vec3f(0, 0, 1));
-		m.vel = rot * m.vel;
-	}
-}
-
-static LinearMotionModel linearMotionModel;
-static CircleMotionModel circleMotionModel;
-
-static this()
-{
-	linearMotionModel = new LinearMotionModel();
-	circleMotionModel = new CircleMotionModel();
-}
-
-Dg linear = delegate(vec3f f, vec3f t, float tt)
-{
-	return f + (t-f)*tt;
-};
-
-Dg circular = delegate(vec3f f, vec3f t, float tt)
-{
-	auto radius = vec3f(0, 1000, 0);
-	auto center = vec3f( 7899+10_000, -9615 - 1_000, 0);
-	auto velocity = 2 * PI / 1;
-
-	import gfm.math;
-	auto rot = mat3f.rotateZ(-velocity * tt);
-
-	return center + rot * radius;
-};
-
 struct Movable
 {
 	import std.datetime : Duration;
@@ -133,49 +74,49 @@ class MainSimulator : Simulator
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000), null),
 			]);
 			_movables[1] = Movable([
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(90_000_000), null),
 			]);
 			_movables[2] = Movable([
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(90_000_000), null),
 			]);
 			_movables[3] = Movable([
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(90_000_000), null),
 			]);
 			_movables[4] = Movable([
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(90_000_000), null),
 			]);
 			_movables[5] = Movable([
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(90_000_000), null),
 			]);
 			_movables[6] = Movable([
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(90_000_000), null),
 			]);
 			_movables[7] = Movable([
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(90_000_000), null),
 			]);
 			_movables[8] = Movable([
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(90_000_000), null),
 			]);
 			_movables[9] = Movable([
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(10_000_000), null),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(40_000_000), null),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(70_000_000), null),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(30_000_000), null),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(90_000_000), null),
 			]);
 		}
 
@@ -219,6 +160,13 @@ class MainSimulator : Simulator
 
 		updateVertices;
 		_track_renderer.update(_vertices, _indices);
+	}
+
+	void clearFinished()
+	{
+		foreach(m; _movables)
+			if (m.tl.inProgress == Timeline.Progress.after)
+				m.tl.clear;
 	}
 
 private:
@@ -294,7 +242,7 @@ struct Timeline
 	private Array!Timepoint _points;
 	private SysTime _curr_time;
 	private vec3f _curr_value;
-	private int _curr_segment;
+	private Progress _in_progress;
 
 	float[] _t, _x, _y;
 	alias S = typeof(pchip!float(_t.idup.sliced, _x.idup.sliced));
@@ -302,6 +250,7 @@ struct Timeline
 
 	this(Timepoint[] points)
 	{
+		_in_progress = Progress.before;
 		_curr_time = SysTime(0, UTC());
 		_points.clear;
 		_points = points;
@@ -340,22 +289,37 @@ struct Timeline
 
 	auto clear()
 	{
-		_curr_segment = 0;
 		_curr_time = SysTime(0, UTC());
+		_curr_value = _curr_value.init;
+		_in_progress = Progress.before;
 		update(Duration.zero);
 	}
+
+	enum Progress { before, inProgress, after, }
+
+	@property inProgress() const { return _in_progress; }
 
 	auto update(Duration d)
 	{
 		auto new_timestamp = _curr_time + d;
-		if (new_timestamp > finish)
+		scope(success) _curr_time = new_timestamp;
+		if (new_timestamp < start)
+		{
+			_in_progress = Progress.before;
 			return _curr_value;
+		}
+		else if (new_timestamp >= finish)
+		{
+			_in_progress = Progress.after;
+			return _curr_value;
+		}
+		else
+			_in_progress = Progress.inProgress;
 
 		auto new_x = [cast(float)new_timestamp.stdTime].vmap(sx).front;
 		auto new_y = [cast(float)new_timestamp.stdTime].vmap(sy).front;
 
 		_curr_value = vec3f(new_x, new_y, 0);
-		_curr_time = new_timestamp;
 		return _curr_value;
 	}
 }

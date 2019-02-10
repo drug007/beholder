@@ -126,6 +126,17 @@ class DemoApplication : NuklearApp, Parent
 			s.stopSimulation;
 	}
 
+	void clearFinished()
+	{
+		foreach(sim; _simulators)
+		{
+			if (auto s = cast(MainSimulator) sim)
+			{
+				s.clearFinished;
+			}
+		}
+	}
+
 	override void onIdle()
 	{
 		import std.datetime : dur;
