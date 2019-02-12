@@ -31,8 +31,6 @@ struct Movable
 		auto new_vel = new_pos - pos;
 		if (new_vel.squaredMagnitude)
 			vel = new_vel;
-		else
-			tl.clear;
 		pos = new_pos;
 	}
 }
@@ -69,54 +67,54 @@ class MainSimulator : Simulator
 		{
 			// fix values to get deterministic value for debugging
 			_movables[0] = Movable([
-				Timepoint(vec3f( 7899, -9615, 0), SysTime(         0), null),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000), null),
+				Timepoint(vec3f( 7899, -9615, 0), SysTime(         0)),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000)),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000)),
 			]);
 			_movables[1] = Movable([
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000)),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(90_000_000)),
 			]);
 			_movables[2] = Movable([
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(30_000_000)),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(90_000_000)),
 			]);
 			_movables[3] = Movable([
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(30_000_000)),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(90_000_000)),
 			]);
 			_movables[4] = Movable([
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(30_000_000)),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(60_000_000)),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(90_000_000)),
 			]);
 			_movables[5] = Movable([
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(30_000_000)),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(90_000_000)),
 			]);
 			_movables[6] = Movable([
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000)),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(60_000_000)),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(90_000_000)),
 			]);
 			_movables[7] = Movable([
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(30_000_000)),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(90_000_000)),
 			]);
 			_movables[8] = Movable([
-				Timepoint(vec3f(-6263,  5981, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f(-6263,  5981, 0), SysTime(30_000_000)),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(60_000_000)),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(90_000_000)),
 			]);
 			_movables[9] = Movable([
-				Timepoint(vec3f( 8599, -2917, 0), SysTime(30_000_000), null),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(60_000_000), null),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(90_000_000), null),
+				Timepoint(vec3f( 8599, -2917, 0), SysTime(30_000_000)),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(60_000_000)),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(90_000_000)),
 			]);
 		}
 
@@ -131,32 +129,10 @@ class MainSimulator : Simulator
 		parent.addSimulator(this);
 	}
 
-	void startSimulation(SysTime start)
+	void onSimulation(Duration delta)
 	{
-		_old_timestamp = start;
-	}
-
-	void stopSimulation()
-	{
-		_old_timestamp = SysTime(0);
-	}
-
-	void onSimulation(const SysTime timestamp)
-	{
-		if (_old_timestamp == SysTime(0))
-			// simulation is off (TODO isn't it excess checking?)
-			return;
-
-		import std.exception : enforce;
-		enforce(timestamp >= _old_timestamp);
-
-		if (_old_timestamp == timestamp)
-			return;
-
-		auto delta = (timestamp - _old_timestamp);
 		foreach(ref m; _movables)
 			m.update(delta);
-		_old_timestamp += delta;
 
 		updateVertices;
 		_track_renderer.update(_vertices, _indices);
@@ -164,9 +140,10 @@ class MainSimulator : Simulator
 
 	void clearFinished()
 	{
-		foreach(m; _movables)
-			if (m.tl.inProgress == Timeline.Progress.after)
-				m.tl.clear;
+		foreach(ref m; _movables)
+			m.tl.clear;
+
+		onSimulation(Duration.zero);
 	}
 
 private:
@@ -177,7 +154,6 @@ private:
 	TrackRenderer _track_renderer;
 
 	Movable[] _movables;
-	SysTime _old_timestamp;
 
 	void updateVertices()
 	{
@@ -213,13 +189,11 @@ private:
 }
 
 import std.datetime : SysTime, Duration, UTC;
-alias Dg = vec3f delegate(vec3f f, vec3f t, float t);
 
 struct Timepoint
 {
 	vec3f pos;
 	SysTime timestamp;
-	Dg dg;
 }
 
 struct Timeline

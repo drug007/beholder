@@ -7,11 +7,9 @@ interface Renderer
 
 interface Simulator
 {
-	import std.datetime : SysTime;
+	import std.datetime : Duration;
 
-	void onSimulation(SysTime);
-	void startSimulation(SysTime);
-	void stopSimulation();
+	void onSimulation(Duration delta);
 }
 
 interface Parent

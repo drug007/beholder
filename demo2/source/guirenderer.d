@@ -152,6 +152,7 @@ class GUIRenderer : Renderer
 				nk_label(_app.ctx, text("Camera position: ", x, " ", y, "\0").ptr, NK_TEXT_LEFT);
 			with(_app.camera)
 				nk_label(_app.ctx, text("Camera scale: ", size, "\0").ptr, NK_TEXT_LEFT);
+			nk_label(_app.ctx, text("Time: ", _app.currTimestamp, "\0").ptr, NK_TEXT_LEFT);
 		}
 		nk_end(_app.ctx);
 

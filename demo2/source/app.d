@@ -82,6 +82,7 @@ class DemoApplication : NuklearApp, Parent
 	private Camera _camera;
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
+	private bool _simulation_in_progress;
 
 	this(string title, int w, int h, NuklearApp.FullScreen flag)
 	{
@@ -100,8 +101,8 @@ class DemoApplication : NuklearApp, Parent
 		new GUIRenderer(this);
 		auto s = new MainSimulator(this, track_renderer);
 
+		_simulation_in_progress = true;
 		_current_simulation_timestamp = currTimestamp;
-		s.startSimulation(currTimestamp);
 	}
 
 	@property mouseX() const { return _mouse_x; }
@@ -119,14 +120,15 @@ class DemoApplication : NuklearApp, Parent
 
 	void startSimulation()
 	{
-		foreach(s; _simulators)
-			s.startSimulation(currTimestamp);
+		_simulation_in_progress = true;
+		_current_simulation_timestamp = currTimestamp;
 	}
 
 	void stopSimulation()
 	{
-		foreach(s; _simulators)
-			s.stopSimulation;
+		import std.datetime : UTC;
+		_simulation_in_progress = false;
+		_current_simulation_timestamp = SysTime(0, UTC());
 	}
 
 	void clearFinished()
@@ -142,19 +144,21 @@ class DemoApplication : NuklearApp, Parent
 
 	override void onIdle()
 	{
-		import std.datetime : dur;
-		enum SimulationPeriod = 15.dur!"msecs";
-		auto delta = currTimestamp - _current_simulation_timestamp;
-		if (delta >= SimulationPeriod)
+		if (_simulation_in_progress)
 		{
-			do
+			import std.datetime : dur;
+			enum SimulationPeriod = 15.dur!"msecs";
+			auto delta = currTimestamp - _current_simulation_timestamp;
+			if (delta >= SimulationPeriod)
 			{
-				foreach(s; _simulators)
-					s.onSimulation(currTimestamp);
-				delta -= SimulationPeriod;
-				_current_simulation_timestamp += SimulationPeriod;
-			} while (delta >= SimulationPeriod);
-			_current_simulation_timestamp += delta;
+				do
+				{
+					foreach(s; _simulators)
+						s.onSimulation(delta);
+					delta -= SimulationPeriod;
+					_current_simulation_timestamp += SimulationPeriod;
+				} while (delta >= SimulationPeriod);
+			}
 		}
 		draw();
 	}
