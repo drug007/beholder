@@ -70,6 +70,7 @@ import nuklearapp : NuklearApp;
 
 class DemoApplication : NuklearApp, Parent
 {
+	import std.datetime : Duration, SysTime;
 	import std.typecons : Nullable;
 	import gfm.math : vec2f;
 
@@ -79,6 +80,7 @@ class DemoApplication : NuklearApp, Parent
 	private Array!Renderer  _renderers;
 	private Array!Simulator _simulators;
 	private SysTime _current_simulation_timestamp;
+	private Duration _simulation_start_timeshift;
 	private Camera _camera;
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
@@ -101,8 +103,8 @@ class DemoApplication : NuklearApp, Parent
 		new GUIRenderer(this);
 		auto s = new MainSimulator(this, track_renderer);
 
-		_simulation_in_progress = true;
-		_current_simulation_timestamp = currTimestamp;
+		stopSimulation;
+		startSimulation;
 	}
 
 	@property mouseX() const { return _mouse_x; }
@@ -122,17 +124,20 @@ class DemoApplication : NuklearApp, Parent
 	{
 		_simulation_in_progress = true;
 		_current_simulation_timestamp = currTimestamp;
+		_simulation_start_timeshift = _current_simulation_timestamp - SysTime(0);
 	}
 
 	void stopSimulation()
 	{
-		import std.datetime : UTC;
 		_simulation_in_progress = false;
-		_current_simulation_timestamp = SysTime(0, UTC());
+		_current_simulation_timestamp = SysTime(0);
+		_simulation_start_timeshift = Duration.zero;
 	}
 
 	void clearFinished()
 	{
+		_current_simulation_timestamp = currTimestamp;
+		_simulation_start_timeshift = _current_simulation_timestamp - SysTime(0);
 		foreach(sim; _simulators)
 		{
 			if (auto s = cast(MainSimulator) sim)
@@ -141,6 +146,8 @@ class DemoApplication : NuklearApp, Parent
 			}
 		}
 	}
+
+	auto currSimulationTimestamp() const { return _current_simulation_timestamp.toUTC - _simulation_start_timeshift; }
 
 	override void onIdle()
 	{
@@ -153,10 +160,10 @@ class DemoApplication : NuklearApp, Parent
 			{
 				do
 				{
-					foreach(s; _simulators)
-						s.onSimulation(delta);
-					delta -= SimulationPeriod;
 					_current_simulation_timestamp += SimulationPeriod;
+					foreach(s; _simulators)
+						s.onSimulation(_current_simulation_timestamp - _simulation_start_timeshift);
+					delta -= SimulationPeriod;
 				} while (delta >= SimulationPeriod);
 			}
 		}

@@ -7,9 +7,9 @@ interface Renderer
 
 interface Simulator
 {
-	import std.datetime : Duration;
+	import std.datetime : SysTime;
 
-	void onSimulation(Duration delta);
+	void onSimulation(SysTime new_timestamp);
 }
 
 interface Parent

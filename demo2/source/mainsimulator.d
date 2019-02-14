@@ -8,8 +8,6 @@ import std.math : PI;
 
 struct Movable
 {
-	import std.datetime : Duration;
-
 	vec3f pos;
 	vec3f vel;
 	vec3f acc;
@@ -123,18 +121,14 @@ class MainSimulator : Simulator
 		updateVertices;
 		updateIndices;
 
-		_curr_time = SysTime(0, UTC());
-
 		_track_renderer = track_renderer;
 		_track_renderer.update(_vertices, _indices);
 
 		parent.addSimulator(this);
 	}
 
-	void onSimulation(Duration delta)
+	void onSimulation(SysTime new_timestamp)
 	{
-		auto new_timestamp = _curr_time + delta;
-		scope(exit) _curr_time = new_timestamp;
 		foreach(ref m; _movables)
 			m.update(new_timestamp);
 
@@ -144,12 +138,10 @@ class MainSimulator : Simulator
 
 	void clearFinished()
 	{
-		_curr_time = SysTime(0, UTC());
-
 		foreach(ref m; _movables)
 			m.tl.clear;
 
-		onSimulation(Duration.zero);
+		onSimulation(SysTime(0));
 	}
 
 private:
@@ -158,7 +150,6 @@ private:
 	Vertex[] _vertices;
 	uint[] _indices;
 	TrackRenderer _track_renderer;
-	SysTime _curr_time;
 
 	Movable[] _movables;
 
@@ -195,7 +186,7 @@ private:
 	}
 }
 
-import std.datetime : SysTime, Duration, UTC;
+import std.datetime : SysTime;
 
 struct Timepoint
 {
@@ -265,7 +256,7 @@ struct Timeline
 	{
 		_curr_value = _curr_value.init;
 		_in_progress = Progress.before;
-		update(SysTime(0, UTC()));
+		update(SysTime(0));
 	}
 
 	enum Progress { before, inProgress, after, }

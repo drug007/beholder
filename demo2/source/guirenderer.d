@@ -145,7 +145,7 @@ class GUIRenderer : Renderer
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
-			nk_layout_row_dynamic(_app.ctx, 22, 1);
+			nk_layout_row_dynamic(_app.ctx, 12, 1);
 			import std.conv : text;
 			nk_label(_app.ctx, text("Mouse position: ", _app.mouseX, " ", _app.mouseY, "\0").ptr, NK_TEXT_LEFT);
 			with(_app.camera.position)
@@ -153,6 +153,7 @@ class GUIRenderer : Renderer
 			with(_app.camera)
 				nk_label(_app.ctx, text("Camera scale: ", size, "\0").ptr, NK_TEXT_LEFT);
 			nk_label(_app.ctx, text("Time: ", _app.currTimestamp, "\0").ptr, NK_TEXT_LEFT);
+			nk_label(_app.ctx, text("Time: ", _app.currSimulationTimestamp, "\0").ptr, NK_TEXT_LEFT);
 		}
 		nk_end(_app.ctx);
 
