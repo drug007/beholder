@@ -25,9 +25,9 @@ struct Movable
 		tl = Timeline(points);
 	}
 
-	void update(Duration duration)
+	void update(SysTime ts)
 	{
-		auto new_pos = tl.update(duration);
+		auto new_pos = tl.update(ts);
 		auto new_vel = new_pos - pos;
 		if (new_vel.squaredMagnitude)
 			vel = new_vel;
@@ -123,6 +123,8 @@ class MainSimulator : Simulator
 		updateVertices;
 		updateIndices;
 
+		_curr_time = SysTime(0, UTC());
+
 		_track_renderer = track_renderer;
 		_track_renderer.update(_vertices, _indices);
 
@@ -131,8 +133,10 @@ class MainSimulator : Simulator
 
 	void onSimulation(Duration delta)
 	{
+		auto new_timestamp = _curr_time + delta;
+		scope(exit) _curr_time = new_timestamp;
 		foreach(ref m; _movables)
-			m.update(delta);
+			m.update(new_timestamp);
 
 		updateVertices;
 		_track_renderer.update(_vertices, _indices);
@@ -140,6 +144,8 @@ class MainSimulator : Simulator
 
 	void clearFinished()
 	{
+		_curr_time = SysTime(0, UTC());
+
 		foreach(ref m; _movables)
 			m.tl.clear;
 
@@ -152,6 +158,7 @@ private:
 	Vertex[] _vertices;
 	uint[] _indices;
 	TrackRenderer _track_renderer;
+	SysTime _curr_time;
 
 	Movable[] _movables;
 
@@ -214,7 +221,6 @@ struct Timeline
 
 	import std.container.array : Array;
 	private Array!Timepoint _points;
-	private SysTime _curr_time;
 	private vec3f _curr_value;
 	private Progress _in_progress;
 
@@ -225,7 +231,6 @@ struct Timeline
 	this(Timepoint[] points)
 	{
 		_in_progress = Progress.before;
-		_curr_time = SysTime(0, UTC());
 		_points.clear;
 		_points = points;
 		_t = _points[].map!"cast(float)a.timestamp.stdTime".array;
@@ -251,11 +256,6 @@ struct Timeline
 		return _points[$-1].timestamp;
 	}
 
-	auto currTime() const
-	{
-		return _curr_time;
-	}
-
 	auto currValue() const
 	{
 		return _curr_value;
@@ -263,20 +263,17 @@ struct Timeline
 
 	auto clear()
 	{
-		_curr_time = SysTime(0, UTC());
 		_curr_value = _curr_value.init;
 		_in_progress = Progress.before;
-		update(Duration.zero);
+		update(SysTime(0, UTC()));
 	}
 
 	enum Progress { before, inProgress, after, }
 
 	@property inProgress() const { return _in_progress; }
 
-	auto update(Duration d)
+	auto update(SysTime new_timestamp)
 	{
-		auto new_timestamp = _curr_time + d;
-		scope(success) _curr_time = new_timestamp;
 		if (new_timestamp < start)
 		{
 			_in_progress = Progress.before;
