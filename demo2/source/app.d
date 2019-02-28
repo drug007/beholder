@@ -85,6 +85,7 @@ class DemoApplication : NuklearApp, Parent
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
 	private bool _simulation_in_progress;
+	private SysTime _last_timestamp;
 
 	this(string title, int w, int h, NuklearApp.FullScreen flag)
 	{
@@ -101,7 +102,15 @@ class DemoApplication : NuklearApp, Parent
 		new GridRenderer(this);
 		auto track_renderer = new TrackRenderer(this);
 		new GUIRenderer(this);
-		auto s = new MainSimulator(this, track_renderer);
+		_simulators ~= new MainSimulator(this, track_renderer);
+
+		import std.datetime : UTC;
+		_last_timestamp = SysTime(0, UTC());
+		foreach(s; _simulators)
+		{
+			if (s.finishTimestamp > _last_timestamp)
+				_last_timestamp = s.finishTimestamp;
+		}
 
 		stopSimulation;
 		startSimulation;
@@ -113,11 +122,6 @@ class DemoApplication : NuklearApp, Parent
 	void addRenderer(Renderer renderer)
 	{
 		_renderers ~= renderer;
-	}
-
-	void addSimulator(Simulator simulator)
-	{
-		_simulators ~= simulator;
 	}
 
 	void startSimulation()
@@ -147,7 +151,12 @@ class DemoApplication : NuklearApp, Parent
 		}
 	}
 
+	auto lastTimestamp() const { return _last_timestamp; }
 	auto currSimulationTimestamp() const { return _current_simulation_timestamp.toUTC - _simulation_start_timeshift; }
+	auto currSimulationTimestamp(SysTime value)
+	{
+		auto current_simulation_timestamp = value + _simulation_start_timeshift;
+	}
 
 	override void onIdle()
 	{

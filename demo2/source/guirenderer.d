@@ -156,6 +156,24 @@ class GUIRenderer : Renderer
 			nk_label(_app.ctx, text("Time: ", _app.currSimulationTimestamp, "\0").ptr, NK_TEXT_LEFT);
 		}
 		nk_end(_app.ctx);
+		
+		const height = _app.window.getHeight;
+		const padding = 10;
+		const panel_height = 50;
+		if (nk_begin(_app.ctx, "Timeline", 
+			nk_rect(padding, height - panel_height + padding, width - 2*padding, panel_height - 2*padding), 0))
+		{
+			import std.conv : text;
+			import std.datetime : SysTime, UTC;
+
+			nk_layout_row_dynamic(_app.ctx, 12, 2);
+			float value = _app.currSimulationTimestamp.stdTime;
+			float finish = _app.lastTimestamp.stdTime;
+			nk_slider_float(_app.ctx, 0.0001, &value, finish, value*typeof(value).epsilon);
+			nk_label(_app.ctx, text("value: ", SysTime(cast(long)value, UTC()), "\0").ptr, NK_TEXT_LEFT);
+			_app.currSimulationTimestamp = SysTime(cast(long) value);
+		}
+		nk_end(_app.ctx);
 
 		nk_sdl_render(NK_ANTI_ALIASING_ON, _app.MAX_VERTEX_MEMORY, _app.MAX_ELEMENT_MEMORY);
 	}

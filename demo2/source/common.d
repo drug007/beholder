@@ -17,7 +17,6 @@ interface Simulator
 interface Parent
 {
 	void addRenderer(Renderer);
-	void addSimulator(Simulator);
 	void startSimulation();
 	void stopSimulation();
 }

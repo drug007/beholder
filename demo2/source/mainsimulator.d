@@ -135,9 +135,11 @@ class MainSimulator : Simulator
 			}
 		}
 
-		import std.algorithm : sort;
+		import std.algorithm : sort, map;
 		_intervals = intervals.data;
 		_intervals.sort!"a.timestamp < b.timestamp";
+
+		_ts_storage.addTimestamps(_intervals.map!"a.timestamp.stdTime");
 
 		_vertices = uninitializedArray!(typeof(_vertices))(_movables.length);
 
@@ -146,8 +148,6 @@ class MainSimulator : Simulator
 
 		_track_renderer = track_renderer;
 		_track_renderer.update(_vertices, _indices);
-
-		parent.addSimulator(this);
 	}
 
 	void onSimulation(SysTime new_timestamp)
@@ -186,6 +186,7 @@ class MainSimulator : Simulator
 
 private:
 	import std.datetime : SysTime;
+	import timestamp_storage : TimestampStorage;
 
 	Vertex[] _vertices;
 	uint[] _indices;
@@ -193,6 +194,7 @@ private:
 
 	Movable[] _movables;
 	Entry[] _intervals;
+	TimestampStorage _ts_storage;
 
 	void updateVertices()
 	{
