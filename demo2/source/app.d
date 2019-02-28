@@ -77,6 +77,10 @@ class DemoApplication : NuklearApp, Parent
 	RTreeIndex index;
 
 	import std.container.array : Array;
+
+	enum SimulationState { stopped, playing, paused, }
+
+	private SimulationState _simulation_state;
 	private Array!Renderer  _renderers;
 	private Array!Simulator _simulators;
 	private SysTime _current_timestamp;
@@ -127,43 +131,74 @@ class DemoApplication : NuklearApp, Parent
 
 	void startSimulation()
 	{
-		if (_simulation_in_progress)
-			return;
-
-		_simulation_in_progress = true;
-		_current_timestamp = SysTime();
-		_start_timestamp = currTimestamp;
-		_start_timeshift = Duration.zero;
+		final switch(_simulation_state)
+		{
+			case SimulationState.stopped:
+			{
+				_simulation_state = SimulationState.playing;
+				_simulation_in_progress = true;
+				_current_timestamp = SysTime();
+				_start_timestamp = currTimestamp;
+				_start_timeshift = Duration.zero;
+				break;
+			}
+			case SimulationState.playing:
+				// do nothing
+			break;
+			case SimulationState.paused:
+			{
+				pauseSimulation;
+				break;
+			}
+		}
 	}
 
 	void pauseSimulation()
 	{
-		_simulation_in_progress = !_simulation_in_progress;
-		if (_simulation_in_progress)
-			_start_timeshift = currTimestamp - _start_timestamp - (_current_timestamp - SysTime());
+		final switch(_simulation_state)
+		{
+			case SimulationState.stopped:
+				// do nothing
+			break;
+			case SimulationState.playing:
+			{
+				_simulation_state = SimulationState.paused;
+				_simulation_in_progress = false;
+				break;
+			}
+			case SimulationState.paused:
+			{
+				_simulation_state = SimulationState.playing;
+				_simulation_in_progress = true;
+				_start_timeshift = currTimestamp - _start_timestamp - (_current_timestamp - SysTime());
+				break;
+			}
+		}
 	}
 
 	void stopSimulation()
 	{
-		if (_simulation_in_progress)
+		final switch(_simulation_state)
 		{
-			_simulation_in_progress = false;
-			_current_timestamp = SysTime();
-			_start_timestamp = SysTime();
-			_start_timeshift = Duration.zero;
-		}
-	}
-
-	void clearFinished()
-	{
-		_current_timestamp = SysTime();
-		_start_timestamp = SysTime();
-		_start_timeshift = Duration.zero;
-		foreach(sim; _simulators)
-		{
-			if (auto s = cast(MainSimulator) sim)
+			case SimulationState.stopped:
+				// do nothing
+			break;
+			case SimulationState.playing:
+			case SimulationState.paused:
 			{
-				s.clearFinished;
+				_simulation_state = SimulationState.stopped;
+				_simulation_in_progress = false;
+				_current_timestamp = SysTime();
+				_start_timestamp = SysTime();
+				_start_timeshift = Duration.zero;
+				foreach(sim; _simulators)
+				{
+					if (auto s = cast(MainSimulator) sim)
+					{
+						s.clearFinished;
+					}
+				}
+				break;
 			}
 		}
 	}

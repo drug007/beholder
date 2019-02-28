@@ -77,66 +77,6 @@ class GUIRenderer : Renderer
 		nk_style_pop_color(_app.ctx);
 		nk_style_pop_style_item(_app.ctx);
 
-		if (nk_begin(_app.ctx, "Demo", nk_rect(50, 50, 230, 450),
-			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-		{
-			enum { SimulationOn, SimulationOff }
-			static int op = SimulationOn;
-			static int property = 20;
-
-			nk_layout_row_static(_app.ctx, 30, 120, 1);
-			if (nk_button_label(_app.ctx, "clear"))
-			{
-				// import mainsimulator;
-				_app.clearFinished;
-			}
-			// if (nk_button_label(_app.ctx, "button"))
-			// {
-			// 	printf("button pressed!\n");
-			// 	final switch(value[0].kind)
-			// 	{
-			// 		case Value.Kind.f:
-			// 			value[0] = Bar();
-			// 		break;
-			// 		case Value.Kind.b:
-			// 			value[0] = data[0];
-			// 		break;
-			// 		case Value.Kind.dp:
-			// 			value[0] = Foo();
-			// 		break;
-			// 	}
-			// }
-
-			nk_label(_app.ctx, "Simulation is:", NK_TEXT_LEFT);
-			nk_layout_row_dynamic(_app.ctx, 30, 2);
-			if (nk_button_label(_app.ctx, "prev"))
-				_app.stopSimulation;
-			if (nk_button_label(_app.ctx, "play"))
-				_app.startSimulation;
-			if (nk_button_label(_app.ctx, "pause"))
-				_app.pauseSimulation;
-
-
-			nk_layout_row_dynamic(_app.ctx, 22, 1);
-			nk_property_int(_app.ctx, "Compression:", 0, &property, 100, 10, 1);
-
-			nk_layout_row_dynamic(_app.ctx, 20, 1);
-			nk_label(_app.ctx, "background:", NK_TEXT_LEFT);
-			nk_layout_row_dynamic(_app.ctx, 25, 1);
-			if (nk_combo_begin_color(_app.ctx, nk_rgb_cf(_bg), nk_vec2(nk_widget_width(_app.ctx),400))) {
-				nk_layout_row_dynamic(_app.ctx, 120, 1);
-				_bg = nk_color_picker(_app.ctx, _bg, NK_RGBA);
-				nk_layout_row_dynamic(_app.ctx, 25, 1);
-				_bg.r = nk_propertyf(_app.ctx, "#R:", 0, _bg.r, 1.0f, 0.01f,0.005f);
-				_bg.g = nk_propertyf(_app.ctx, "#G:", 0, _bg.g, 1.0f, 0.01f,0.005f);
-				_bg.b = nk_propertyf(_app.ctx, "#B:", 0, _bg.b, 1.0f, 0.01f,0.005f);
-				_bg.a = nk_propertyf(_app.ctx, "#A:", 0, _bg.a, 1.0f, 0.01f,0.005f);
-				nk_combo_end(_app.ctx);
-			}
-		}
-		nk_end(_app.ctx);
-
 		auto width = _app.window.getWidth;
 		if (nk_begin(_app.ctx, "Parameters", nk_rect(width -230 - 30, 50, 230, 450),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
@@ -156,14 +96,20 @@ class GUIRenderer : Renderer
 		
 		const height = _app.window.getHeight;
 		const padding = 10;
-		const panel_height = 50;
+		const panel_height = 60;
 		if (nk_begin(_app.ctx, "Timeline", 
 			nk_rect(padding, height - panel_height + padding, width - 2*padding, panel_height - 2*padding), 0))
 		{
 			import std.conv : text;
 			import std.datetime : SysTime, UTC;
 
-			nk_layout_row_dynamic(_app.ctx, 12, 2);
+			nk_layout_row_dynamic(_app.ctx, 20, 5);
+			if (nk_button_label(_app.ctx, "play"))
+				_app.startSimulation;
+			if (nk_button_label(_app.ctx, "pause"))
+				_app.pauseSimulation;
+			if (nk_button_label(_app.ctx, "stop"))
+				_app.stopSimulation;
 			float value = _app.currSimulationTimestamp.stdTime;
 			float finish = _app.lastTimestamp.stdTime;
 			nk_slider_float(_app.ctx, 0.0001, &value, finish, value*typeof(value).epsilon);
