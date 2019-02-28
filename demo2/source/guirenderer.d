@@ -103,7 +103,7 @@ class GUIRenderer : Renderer
 			import std.conv : text;
 			import std.datetime : SysTime, UTC;
 
-			nk_layout_row_dynamic(_app.ctx, 20, 5);
+			nk_layout_row(_app.ctx, NK_DYNAMIC, 20, 5, [0.05f, 0.05f, 0.05f, 0.65f, 0.2f].ptr);
 			if (nk_button_label(_app.ctx, "play"))
 				_app.startSimulation;
 			if (nk_button_label(_app.ctx, "pause"))
