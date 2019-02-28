@@ -33,6 +33,13 @@ struct Movable
 	}
 }
 
+struct Entry
+{
+	uint interval_idx;
+	ubyte point_idx;
+	SysTime timestamp;
+}
+
 class MainSimulator : Simulator
 {
 	import trackrenderer : TrackRenderer;
@@ -116,6 +123,22 @@ class MainSimulator : Simulator
 			]);
 		}
 
+		import std.array : appender;
+		auto intervals = appender!(Entry[])();
+
+		foreach(uint i, ref m; _movables)
+		{
+			ubyte j;
+			foreach(ref p; m.tl.points)
+			{
+				intervals ~= Entry(i, j++, p.timestamp);
+			}
+		}
+
+		import std.algorithm : sort;
+		_intervals = intervals.data;
+		_intervals.sort!"a.timestamp < b.timestamp";
+
 		_vertices = uninitializedArray!(typeof(_vertices))(_movables.length);
 
 		updateVertices;
@@ -129,6 +152,13 @@ class MainSimulator : Simulator
 
 	void onSimulation(SysTime new_timestamp)
 	{
+		import std.array : front, back;
+
+		if (new_timestamp < _intervals.front.timestamp)
+			return;
+		if (new_timestamp > _intervals.back.timestamp)
+			return;
+
 		foreach(ref m; _movables)
 			m.update(new_timestamp);
 
@@ -144,6 +174,16 @@ class MainSimulator : Simulator
 		onSimulation(SysTime(0));
 	}
 
+	SysTime startTimestamp()
+	{
+		return _intervals[0].timestamp;
+	}
+
+	SysTime finishTimestamp()
+	{
+		return _intervals[$-1].timestamp;
+	}
+
 private:
 	import std.datetime : SysTime;
 
@@ -152,6 +192,7 @@ private:
 	TrackRenderer _track_renderer;
 
 	Movable[] _movables;
+	Entry[] _intervals;
 
 	void updateVertices()
 	{
@@ -257,6 +298,11 @@ struct Timeline
 		_curr_value = _curr_value.init;
 		_in_progress = Progress.before;
 		update(SysTime(0));
+	}
+
+	auto points() const
+	{
+		return _points;
 	}
 
 	enum Progress { before, inProgress, after, }

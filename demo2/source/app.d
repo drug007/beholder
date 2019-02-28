@@ -160,9 +160,15 @@ class DemoApplication : NuklearApp, Parent
 			{
 				do
 				{
+					_simulation_in_progress = false;
 					_current_simulation_timestamp += SimulationPeriod;
 					foreach(s; _simulators)
-						s.onSimulation(_current_simulation_timestamp - _simulation_start_timeshift);
+					{
+						auto simulation_timestamp = _current_simulation_timestamp - _simulation_start_timeshift;
+						if (simulation_timestamp < s.finishTimestamp)
+							_simulation_in_progress = true;
+						s.onSimulation(simulation_timestamp);
+					}
 					delta -= SimulationPeriod;
 				} while (delta >= SimulationPeriod);
 			}
