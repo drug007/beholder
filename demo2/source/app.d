@@ -79,8 +79,9 @@ class DemoApplication : NuklearApp, Parent
 	import std.container.array : Array;
 	private Array!Renderer  _renderers;
 	private Array!Simulator _simulators;
-	private SysTime _current_simulation_timestamp;
-	private Duration _simulation_start_timeshift;
+	private SysTime _current_timestamp;
+	private SysTime _start_timestamp;
+	private Duration _start_timeshift;
 	private Camera _camera;
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
@@ -105,7 +106,7 @@ class DemoApplication : NuklearApp, Parent
 		_simulators ~= new MainSimulator(this, track_renderer);
 
 		import std.datetime : UTC;
-		_last_timestamp = SysTime(0, UTC());
+		_last_timestamp = SysTime();
 		foreach(s; _simulators)
 		{
 			if (s.finishTimestamp > _last_timestamp)
@@ -126,22 +127,38 @@ class DemoApplication : NuklearApp, Parent
 
 	void startSimulation()
 	{
+		if (_simulation_in_progress)
+			return;
+
 		_simulation_in_progress = true;
-		_current_simulation_timestamp = currTimestamp;
-		_simulation_start_timeshift = _current_simulation_timestamp - SysTime(0);
+		_current_timestamp = SysTime();
+		_start_timestamp = currTimestamp;
+		_start_timeshift = Duration.zero;
+	}
+
+	void pauseSimulation()
+	{
+		_simulation_in_progress = !_simulation_in_progress;
+		if (_simulation_in_progress)
+			_start_timeshift = currTimestamp - _start_timestamp - (_current_timestamp - SysTime());
 	}
 
 	void stopSimulation()
 	{
-		_simulation_in_progress = false;
-		_current_simulation_timestamp = SysTime(0);
-		_simulation_start_timeshift = Duration.zero;
+		if (_simulation_in_progress)
+		{
+			_simulation_in_progress = false;
+			_current_timestamp = SysTime();
+			_start_timestamp = SysTime();
+			_start_timeshift = Duration.zero;
+		}
 	}
 
 	void clearFinished()
 	{
-		_current_simulation_timestamp = currTimestamp;
-		_simulation_start_timeshift = _current_simulation_timestamp - SysTime(0);
+		_current_timestamp = SysTime();
+		_start_timestamp = SysTime();
+		_start_timeshift = Duration.zero;
 		foreach(sim; _simulators)
 		{
 			if (auto s = cast(MainSimulator) sim)
@@ -152,10 +169,10 @@ class DemoApplication : NuklearApp, Parent
 	}
 
 	auto lastTimestamp() const { return _last_timestamp; }
-	auto currSimulationTimestamp() const { return _current_simulation_timestamp.toUTC - _simulation_start_timeshift; }
+	auto currSimulationTimestamp() const { return _current_timestamp.toUTC; }
 	auto currSimulationTimestamp(SysTime value)
 	{
-		auto current_simulation_timestamp = value + _simulation_start_timeshift;
+		auto current_simulation_timestamp = value;
 	}
 
 	override void onIdle()
@@ -164,19 +181,20 @@ class DemoApplication : NuklearApp, Parent
 		{
 			import std.datetime : dur;
 			enum SimulationPeriod = 15.dur!"msecs";
-			auto delta = currTimestamp - _current_simulation_timestamp;
+			auto d = _current_timestamp - SysTime();
+			auto delta = currTimestamp - (_start_timestamp + d + _start_timeshift);
+			assert(delta > Duration.zero);
 			if (delta >= SimulationPeriod)
 			{
 				do
 				{
 					_simulation_in_progress = false;
-					_current_simulation_timestamp += SimulationPeriod;
+					_current_timestamp += SimulationPeriod;
 					foreach(s; _simulators)
 					{
-						auto simulation_timestamp = _current_simulation_timestamp - _simulation_start_timeshift;
-						if (simulation_timestamp < s.finishTimestamp)
+						if (_current_timestamp < s.finishTimestamp)
 							_simulation_in_progress = true;
-						s.onSimulation(simulation_timestamp);
+						s.onSimulation(_current_timestamp);
 					}
 					delta -= SimulationPeriod;
 				} while (delta >= SimulationPeriod);

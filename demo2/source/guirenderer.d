@@ -107,18 +107,15 @@ class GUIRenderer : Renderer
 			// 		break;
 			// 	}
 			// }
+
 			nk_label(_app.ctx, "Simulation is:", NK_TEXT_LEFT);
 			nk_layout_row_dynamic(_app.ctx, 30, 2);
-			auto old_op = op;
-			if (nk_option_label(_app.ctx, "on",  op == SimulationOn))  op = SimulationOn;
-			if (nk_option_label(_app.ctx, "off", op == SimulationOff)) op = SimulationOff;
-			if (op != old_op)
-			{
-				if (op == SimulationOn)
-					_app.startSimulation;
-				else
-					_app.stopSimulation;
-			}
+			if (nk_button_label(_app.ctx, "prev"))
+				_app.stopSimulation;
+			if (nk_button_label(_app.ctx, "play"))
+				_app.startSimulation;
+			if (nk_button_label(_app.ctx, "pause"))
+				_app.pauseSimulation;
 
 
 			nk_layout_row_dynamic(_app.ctx, 22, 1);
