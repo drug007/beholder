@@ -277,6 +277,12 @@ class DemoApplication : NuklearApp, Parent
 				gridrenderer.update;
 	}
 
+	override void onResize(ref const(SDL_Event) event)
+	{
+		_camera.window = vec2f(window.getWidth, window.getHeight);
+		updateGridRenderer;
+	}
+
 	override void processMouseMotion(ref const(SDL_Event) event)
 	{
 		import gfm.math : vec3f;

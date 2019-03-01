@@ -38,7 +38,7 @@ class SdlApp
 		_window = new SDL2Window(_sdl2,
 								SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 								width, height,
-								SDL_WINDOW_OPENGL);
+								SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 
 		_window.setTitle(title);
 		if (fullscreen)
@@ -150,6 +150,11 @@ class SdlApp
 
 	}
 
+	void onResize(ref const(SDL_Event) event)
+	{
+
+	}
+
 	ref window()
 	{
 		return _window;
@@ -193,6 +198,7 @@ protected:
 		switch(event.type)
 		{
 			case SDL_QUIT:
+quitLabel:
 				if (aboutQuit()) _running = false;
 			break;
 			case SDL_KEYDOWN:
@@ -217,6 +223,31 @@ protected:
 				processMouseWheel(event);
 				onMouseWheel(event);
 			break;
+			case SDL_WINDOWEVENT:
+                switch (event.window.event)
+                {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+					_width = event.window.data1;
+					_height = event.window.data2;
+					onResize(event);
+					goto case;
+                case SDL_WINDOWEVENT_MAXIMIZED:
+                case SDL_WINDOWEVENT_MOVED:
+                	return;
+                case SDL_WINDOWEVENT_CLOSE:
+                    goto quitLabel;
+version(none) // if SDL2 version is 2.0.5 or higher
+{
+                case SDL_WINDOWEVENT_SHOWN:
+                case SDL_WINDOWEVENT_EXPOSED:
+                //case SDL_WINDOWEVENT_TAKE_FOCUS:
+                    OnWindowActivate(event.window.data1, event.window.data2);
+                    return;
+}
+                default:
+					SDL_Log("Window %d: unknown event %d", event.window.windowID, event.window.event); 
+					return;
+                }
 			default:
 		}
 	}
