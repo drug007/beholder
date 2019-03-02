@@ -207,7 +207,9 @@ class DemoApplication : NuklearApp, Parent
 	auto currSimulationTimestamp() const { return _current_timestamp.toUTC; }
 	auto currSimulationTimestamp(SysTime value)
 	{
-		auto current_simulation_timestamp = value;
+		_current_timestamp = value;
+		foreach(s; _simulators)
+			s.onSimulation(_current_timestamp);
 	}
 
 	override void onIdle()
