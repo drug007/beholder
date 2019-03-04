@@ -1,18 +1,6 @@
 module gldata;
 
-struct Vertex
-{
-	import gfm.math : vec3f, vec4f;
-	vec3f position;
-	vec4f color;
-	float heading;
-	uint  source;
-	uint  number;
-	uint  timestamp_hi;
-	uint  timestamp_lo;
-}
-
-class GLData
+class GLData(V)
 {
 	this(OpenGL gl, GLProgram program)
 	{
@@ -23,7 +11,7 @@ class GLData
 		_ibo = new GLBuffer(gl, GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW);
 
 		// Create an OpenGL vertex description from the Vertex structure.
-		_vs = new VertexSpecification!Vertex(program);
+		_vs = new VertexSpecification!V(program);
 
 		_vao = new GLVAO(gl);
 	}
@@ -120,7 +108,7 @@ private:
 
 	GLBuffer      _vbo, _ibo;
 	GLVAO         _vao;
-	VertexSpecification!Vertex _vs;
+	VertexSpecification!V _vs;
 	size_t        _length;
 	
 	GLenum _indexKind;

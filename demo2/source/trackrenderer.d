@@ -6,6 +6,18 @@ import gldata : GLData;
 /// Value of index that indicating primitive restart
 enum PrimitiveRestartIndex = 0xFFFF;
 
+struct Vertex
+{
+	import gfm.math : vec3f, vec4f;
+	vec3f position;
+	vec4f color;
+	float heading;
+	uint  source;
+	uint  number;
+	uint  timestamp_hi;
+	uint  timestamp_lo;
+}
+
 class TrackRenderer : Renderer
 {
 	import beholder.camera : Camera;
@@ -263,7 +275,7 @@ class TrackRenderer : Renderer
 			_program = new GLProgram(_gl, program_source);
 		}
 
-		_gldata = new GLData(_gl, _program);
+		_gldata = new GLData!Vertex(_gl, _program);
 	}
 
 	~this()
@@ -318,6 +330,6 @@ private:
 	import gfm.opengl;
 	OpenGL    _gl;
 	GLProgram _program;
-	GLData    _gldata;
+	GLData!Vertex _gldata;
 	Camera    _camera;
 }

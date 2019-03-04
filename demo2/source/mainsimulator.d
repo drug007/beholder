@@ -2,7 +2,7 @@ module mainsimulator;
 
 import common : Simulator;
 
-import gldata : Vertex;
+import trackrenderer : TrackVertex = Vertex;
 import gfm.math : vec3f, vec4f;
 import std.math : PI;
 
@@ -190,7 +190,7 @@ private:
 	import timestamp_storage : TimestampStorage;
 	import trackrenderer : TrackRenderer;
 
-	Vertex[] _track_vertices;
+	TrackVertex[] _track_vertices;
 	uint[] _track_indices;
 	TrackRenderer _track_renderer;
 
@@ -217,7 +217,7 @@ private:
 			clr.g = tmp.g;
 			clr.b = tmp.b;
 			clr.a = 1;
-			v = Vertex(m.pos, clr, atan2(m.vel.y, m.vel.x));
+			v = TrackVertex(m.pos, clr, atan2(m.vel.y, m.vel.x));
 		}
 	}
 
