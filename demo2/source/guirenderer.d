@@ -114,7 +114,8 @@ class GUIRenderer : Renderer
 			float finish = _app.lastTimestamp.stdTime;
 			nk_slider_float(_app.ctx, 0.0001, &value, finish, value*typeof(value).epsilon);
 			nk_label(_app.ctx, text("value: ", SysTime(cast(long)value, UTC()), "\0").ptr, NK_TEXT_LEFT);
-			_app.currSimulationTimestamp = SysTime(cast(long) value);
+			if (_app.simulationState != _app.SimulationState.playing)
+				_app.currSimulationTimestamp = SysTime(cast(long) value);
 		}
 		nk_end(_app.ctx);
 

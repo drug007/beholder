@@ -201,6 +201,11 @@ class DemoApplication : NuklearApp
 		}
 	}
 
+	auto simulationState() const pure nothrow 
+	{
+		return _simulation_state;
+	}
+
 	auto lastTimestamp() const { return _last_timestamp; }
 	auto currSimulationTimestamp() const { return _current_timestamp.toUTC; }
 	auto currSimulationTimestamp(SysTime value)
