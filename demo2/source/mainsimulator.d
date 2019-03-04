@@ -49,12 +49,13 @@ struct Movable
 struct RDataSource
 {
 	vec3f pos0, pos;
-	float phi0, angle_speed, phi;
+	float phi0, angle_speed, phi, range;
 	SysTime start_timestamp, finish_timestamp, curr_timestamp;
 
-	this(vec3f pos, float p0, float as, SysTime st, SysTime ft)
+	this(vec3f pos, float r, float p0, float as, SysTime st, SysTime ft)
 	{
 		this.pos0 = pos;
+		this.range = r;
 		this.phi0 = p0;
 		this.angle_speed = as;
 		this.phi = phi0;
@@ -120,34 +121,35 @@ class MainSimulator : Simulator
 		{
 			// fix values to get deterministic value for debugging
 			_movables[0] = Movable([
-				Timepoint(vec3f( 7899, -9615, 0), SysTime(         0)),
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000)),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000)),
+				Timepoint(vec3f( -3899, -9615, 0), SysTime(          0)),
+				Timepoint(vec3f(-33462, 25537, 0), SysTime(180_000_000)),
+				Timepoint(vec3f(-39649, 39994, 0), SysTime(360_000_000)),
+				Timepoint(vec3f(-78649, 80994, 0), SysTime(720_000_000)),
 			]);
 			_movables[1] = Movable([
-				Timepoint(vec3f(-8462,  8537, 0), SysTime(30_000_000)),
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(60_000_000)),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(90_000_000)),
+				Timepoint(vec3f(-8462,  8537, 0), SysTime(130_000_000)),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(230_000_000)),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(330_000_000)),
 			]);
 			_movables[2] = Movable([
-				Timepoint(vec3f(-5649,  9994, 0), SysTime(30_000_000)),
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(60_000_000)),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(90_000_000)),
+				Timepoint(vec3f(-5649,  9994, 0), SysTime(120_000_000)),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(240_000_000)),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(350_000_000)),
 			]);
 			_movables[3] = Movable([
-				Timepoint(vec3f( 9818,  7221, 0), SysTime(30_000_000)),
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(60_000_000)),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(90_000_000)),
+				Timepoint(vec3f( 9818,  7221, 0), SysTime(130_000_000)),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(160_000_000)),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(190_000_000)),
 			]);
 			_movables[4] = Movable([
-				Timepoint(vec3f( 6059, -5893, 0), SysTime(30_000_000)),
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(60_000_000)),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(90_000_000)),
+				Timepoint(vec3f( 6059, -5893, 0), SysTime(130_000_000)),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(160_000_000)),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(190_000_000)),
 			]);
 			_movables[5] = Movable([
-				Timepoint(vec3f( 6723,  -595, 0), SysTime(30_000_000)),
-				Timepoint(vec3f(-8651,  3537, 0), SysTime(60_000_000)),
-				Timepoint(vec3f( 5605, -5733, 0), SysTime(90_000_000)),
+				Timepoint(vec3f( 6723,  -595, 0), SysTime(130_000_000)),
+				Timepoint(vec3f(-8651,  3537, 0), SysTime(160_000_000)),
+				Timepoint(vec3f( 5605, -5733, 0), SysTime(190_000_000)),
 			]);
 			_movables[6] = Movable([
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000)),
@@ -174,13 +176,13 @@ class MainSimulator : Simulator
 		_sources = uninitializedArray!(typeof(_sources))(3);
 		{
 			_sources[0] = RDataSource(
-				vec3f( 7000, -9000, 0), 0, 2*PI / 10, SysTime(         0), SysTime(360_000_000)
+				vec3f( 7000, -9000, 0), 200_000,  0, 2*PI / 10, SysTime(         0), SysTime(360_000_000)
 			);
 			_sources[1] = RDataSource(
-				vec3f(-8000,  8000, 0), 0, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
+				vec3f(-8000,  8000, 0), 400_000, PI/3, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
 			);
 			_sources[2] = RDataSource(
-				vec3f(-5000,  9999, 0), 0, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
+				vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, SysTime(30_000_000), SysTime(390_000_000)
 			);
 		}
 
@@ -300,10 +302,20 @@ private:
 			import std.math : atan2;
 			vec4f clr = void;
 			auto tmp = color(clr_idx++);
+version(all)
+{
+			clr.r = 0.7;
+			clr.g = 0.7;
+			clr.b = 0.7;
+			clr.a = 1;
+}
+else
+{
 			clr.r = tmp.r;
 			clr.g = tmp.g;
 			clr.b = tmp.b;
 			clr.a = 1;
+}
 			v = SourceVertex(s.pos, clr, s.phi, 200_000);
 		}
 	}

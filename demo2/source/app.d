@@ -104,8 +104,8 @@ class DemoApplication : NuklearApp
 		);
 
 		new GridRenderer(this);
-		new GUIRenderer(this);
 		_simulators ~= new MainSimulator(gl, this);
+		new GUIRenderer(this);
 
 		import std.datetime : UTC;
 		_last_timestamp = SysTime();
