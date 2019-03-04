@@ -22,10 +22,14 @@ struct Movable
 
 	void update(SysTime ts)
 	{
-		if (ts < tl.start)
+		if (ts < tl.start ||
+		    ts >= tl.finish)
+		{
+			vel = vec3f();
+			pos = vec3f();
 			return;
-		if (ts >= tl.finish)
-			return;
+		}
+
 		if (ts == curr_timestamp)
 			return;
 
