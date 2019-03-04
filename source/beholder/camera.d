@@ -82,25 +82,6 @@ protected:
     float _size;
     mat4f _projection, _view, _mvp_matrix, _model, _model_view;
 
-    /// Преобразование экранных координат в мировые.
-    /// Возвращает луч из камеры в мировых координатах.
-    vec3f screenPoint2worldRay(vec2f screenCoords) pure const
-    {
-        vec3f normalized;
-        normalized.x = (2.0f * screenCoords.x) / _window.x - 1.0f;
-        normalized.y = 1.0f - (2.0f * screenCoords.y) / _window.y;
-
-        vec4f rayClip = vec4f(normalized.xy, -1.0, 1.0);
-
-        vec4f rayEye = _projection.inverse * rayClip;
-        rayEye = vec4f(rayEye.xy, -1.0, 0.0);
-
-        vec3f rayWorld = (_view.inverse * rayEye).xyz;
-        rayWorld.normalize;
-
-        return rayWorld;
-    }
-
     void updateMatrices()
     {
         auto aspect_ratio= _window.x/_window.y;

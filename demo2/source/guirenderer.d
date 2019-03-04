@@ -77,14 +77,31 @@ class GUIRenderer : Renderer
 		nk_style_pop_color(_app.ctx);
 		nk_style_pop_style_item(_app.ctx);
 
-		auto width = _app.window.getWidth;
-		if (nk_begin(_app.ctx, "Parameters", nk_rect(width -230 - 30, 50, 230, 450),
+		const width  = _app.window.getWidth;
+		const height = _app.window.getHeight;
+		const panel_width = 430;
+		if (nk_begin(_app.ctx, "Parameters", nk_rect(width - panel_width - 30, 50, panel_width, 450),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
 			nk_layout_row_dynamic(_app.ctx, 12, 1);
 			import std.conv : text;
-			nk_label(_app.ctx, text("Mouse position: ", _app.mouseX, " ", _app.mouseY, "\0").ptr, NK_TEXT_LEFT);
+			nk_label(_app.ctx, text("Screen coordinates: ", _app.mouseX, " ", _app.mouseY, "\0").ptr, NK_TEXT_LEFT);
+			
+			import gfm.math : vec3f, vec4f, cross;
+
+			const ndc = vec3f(2.0*_app.mouseX/width-1.0, 2.0*_app.mouseY/height-1, -1);
+			const pos = _app.camera.position;
+			const u = (_app.camera.projection*_app.camera.model).inverse;
+			const rn = u * vec4f(ndc.xy, 0, 1);
+			const rf = u * vec4f(ndc.xy, 1, 1);
+			const p1 = rn.xyz / rn.w + pos;
+			const p2 = rf.xyz / rf.w + pos;
+			const p3 = vec3f(-5000, 9999, 0);
+			const d = (p2 - p1).cross(p1 - p3).magnitude / (p2 - p1).magnitude;
+			nk_label(_app.ctx, text("World coordinates: ", p1.x, " ", p1.y, "\0").ptr, NK_TEXT_LEFT);
+			nk_label(_app.ctx, text("distance: ", d, "\0").ptr, NK_TEXT_LEFT);
+			
 			with(_app.camera.position)
 				nk_label(_app.ctx, text("Camera position: ", x, " ", y, "\0").ptr, NK_TEXT_LEFT);
 			with(_app.camera)
@@ -94,7 +111,6 @@ class GUIRenderer : Renderer
 		}
 		nk_end(_app.ctx);
 		
-		const height = _app.window.getHeight;
 		const padding = 10;
 		const panel_height = 60;
 		if (nk_begin(_app.ctx, "Timeline", 
