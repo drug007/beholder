@@ -100,7 +100,7 @@ class DemoApplication : NuklearApp
 		_camera = new Camera(
 			vec2f(_width, _height), 
 			vec3f(0, 0, 0),
-			15_000
+			150_000
 		);
 
 		new GridRenderer(this);

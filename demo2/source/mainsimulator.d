@@ -46,6 +46,43 @@ struct Movable
 	}
 }
 
+struct RDataSource
+{
+	vec3f pos0, pos;
+	float phi0, angle_speed, phi;
+	SysTime start_timestamp, finish_timestamp, curr_timestamp;
+
+	this(vec3f pos, float p0, float as, SysTime st, SysTime ft)
+	{
+		this.pos0 = pos;
+		this.phi0 = p0;
+		this.angle_speed = as;
+		this.phi = phi0;
+		this.start_timestamp = st;
+		this.finish_timestamp = ft;
+		this.curr_timestamp = st;
+	}
+
+	void reset()
+	{
+		pos = vec3f();
+	}
+
+	void update(SysTime ts)
+	{
+		if (ts < start_timestamp ||
+		    ts >= finish_timestamp)
+		{
+			reset;
+			return;
+		}
+
+		pos = pos0;
+		phi = phi0 + angle_speed * (ts - start_timestamp).total!"hnsecs"/1e7;
+		curr_timestamp = ts;
+	}
+}
+
 struct Entry
 {
 	uint interval_idx;
@@ -134,6 +171,19 @@ class MainSimulator : Simulator
 			]);
 		}
 
+		_sources = uninitializedArray!(typeof(_sources))(3);
+		{
+			_sources[0] = RDataSource(
+				vec3f( 7000, -9000, 0), 0, 2*PI / 10, SysTime(         0), SysTime(360_000_000)
+			);
+			_sources[1] = RDataSource(
+				vec3f(-8000,  8000, 0), 0, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
+			);
+			_sources[2] = RDataSource(
+				vec3f(-5000,  9999, 0), 0, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
+			);
+		}
+
 		import std.array : appender;
 		auto intervals = appender!(Entry[])();
 
@@ -146,6 +196,12 @@ class MainSimulator : Simulator
 			}
 		}
 
+		foreach(uint i, ref s; _sources)
+		{
+			intervals ~= Entry(i, 0, s.start_timestamp);
+			intervals ~= Entry(i, 1, s.finish_timestamp);
+		}
+
 		import std.algorithm : sort, map;
 		_intervals = intervals.data;
 		_intervals.sort!"a.timestamp < b.timestamp";
@@ -153,6 +209,7 @@ class MainSimulator : Simulator
 		_ts_storage.addTimestamps(_intervals.map!"a.timestamp.stdTime");
 
 		_track_vertices = uninitializedArray!(typeof(_track_vertices))(_movables.length);
+		_source_vertices = uninitializedArray!(typeof(_source_vertices))(_sources.length);
 
 		updateVertices;
 		updateIndices;
@@ -160,15 +217,23 @@ class MainSimulator : Simulator
 		_track_renderer = new TrackRenderer(gl, parent.camera);
 		parent.addRenderer(_track_renderer);
 		_track_renderer.update(_track_vertices, _track_indices);
+
+		_source_renderer = new RDataSourceRenderer(gl, parent.camera);
+		parent.addRenderer(_source_renderer);
+		_source_renderer.update(_source_vertices, _source_indices);
 	}
 
 	void onSimulation(SysTime new_timestamp)
 	{
 		foreach(ref m; _movables)
 			m.update(new_timestamp);
+		
+		foreach(ref s; _sources)
+			s.update(new_timestamp);
 
 		updateVertices;
 		_track_renderer.update(_track_vertices, _track_indices);
+		_source_renderer.update(_source_vertices, _source_indices);
 	}
 
 	void clearFinished()
@@ -194,12 +259,16 @@ private:
 	import gfm.opengl : OpenGL;
 	import timestamp_storage : TimestampStorage;
 	import trackrenderer : TrackRenderer, TrackVertex = Vertex;
+	import sourcerenderer : RDataSourceRenderer, SourceVertex = Vertex;
 
 	TrackVertex[] _track_vertices;
-	uint[] _track_indices;
+	SourceVertex[] _source_vertices;
+	uint[] _track_indices, _source_indices;
 	TrackRenderer _track_renderer;
+	RDataSourceRenderer _source_renderer;
 
 	Movable[] _movables;
+	RDataSource[] _sources;
 	Entry[] _intervals;
 	TimestampStorage _ts_storage;
 
@@ -224,6 +293,19 @@ private:
 			clr.a = 1;
 			v = TrackVertex(m.pos, clr, atan2(m.vel.y, m.vel.x));
 		}
+
+		clr_idx = 0;
+		foreach(ref s, ref v; lockstep(_sources, _source_vertices))
+		{
+			import std.math : atan2;
+			vec4f clr = void;
+			auto tmp = color(clr_idx++);
+			clr.r = tmp.r;
+			clr.g = tmp.g;
+			clr.b = tmp.b;
+			clr.a = 1;
+			v = SourceVertex(s.pos, clr, s.phi, 200_000);
+		}
 	}
 
 	void updateIndices()
@@ -235,6 +317,10 @@ private:
 		_track_indices.length = _track_vertices.length;
 		import std.algorithm : copy;
 		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _track_indices);
+
+		_source_indices.length = _track_vertices.length;
+		import std.algorithm : copy;
+		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _source_indices);
 	}
 }
 
