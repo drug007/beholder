@@ -215,6 +215,11 @@ class DemoApplication : NuklearApp
 			s.onSimulation(_current_timestamp);
 	}
 
+	auto close() pure nothrow @nogc
+	{
+		_running = false;
+	}
+
 	override void onIdle()
 	{
 		if (_simulation_in_progress)

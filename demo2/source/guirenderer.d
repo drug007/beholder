@@ -77,6 +77,88 @@ class GUIRenderer : Renderer
 		nk_style_pop_color(_app.ctx);
 		nk_style_pop_style_item(_app.ctx);
 
+		if (nk_begin(_app.ctx, "menu", nk_rect(2, 2, 400, 30), 0))
+		{
+			nk_menubar_begin(_app.ctx);
+			scope(exit) nk_menubar_end(_app.ctx);
+
+			/* menu #1 */
+			nk_layout_row_begin(_app.ctx, NK_STATIC, 25, 5);
+			nk_layout_row_push(_app.ctx, 45);
+			if (nk_menu_begin_label(_app.ctx, "MENU", NK_TEXT_LEFT, nk_vec2(120, 200)))
+			{
+				enum MenuState { MENU_NONE, MENU_FILE }
+				static auto menu_state = MenuState.MENU_NONE;
+				nk_collapse_states state;
+
+				state = (menu_state == MenuState.MENU_FILE) ? NK_MAXIMIZED: NK_MINIMIZED;
+				if (nk_tree_state_push(_app.ctx, NK_TREE_TAB, "FILE", &state)) {
+					menu_state = MenuState.MENU_FILE;
+					if (nk_menu_item_label(_app.ctx, "Exit", NK_TEXT_LEFT))
+						_app.close;
+					nk_tree_pop(_app.ctx);
+				} else menu_state = (menu_state == MenuState.MENU_FILE) ? MenuState.MENU_NONE: menu_state;
+
+				nk_menu_end(_app.ctx);
+			}
+version(none)
+{
+			/* menu #2 */
+			nk_layout_row_push(_app.ctx, 60);
+			if (nk_menu_begin_label(_app.ctx, "ADVANCED", NK_TEXT_LEFT, nk_vec2(200, 600)))
+			{
+				enum MenuState {MENU_NONE,MENU_FILE, MENU_EDIT,MENU_VIEW,MENU_CHART}
+				static auto menu_state = MenuState.MENU_NONE;
+				nk_collapse_states state;
+
+				state = (menu_state == MenuState.MENU_FILE) ? NK_MAXIMIZED: NK_MINIMIZED;
+				if (nk_tree_state_push(_app.ctx, NK_TREE_TAB, "FILE", &state)) {
+					menu_state = MenuState.MENU_FILE;
+					nk_menu_item_label(_app.ctx, "New", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Open", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Save", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Close", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Exit", NK_TEXT_LEFT);
+					nk_tree_pop(_app.ctx);
+				} else menu_state = (menu_state == MenuState.MENU_FILE) ? MenuState.MENU_NONE: menu_state;
+
+				state = (menu_state == MenuState.MENU_EDIT) ? NK_MAXIMIZED: NK_MINIMIZED;
+				if (nk_tree_state_push(_app.ctx, NK_TREE_TAB, "EDIT", &state)) {
+					menu_state = MenuState.MENU_EDIT;
+					nk_menu_item_label(_app.ctx, "Copy", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Delete", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Cut", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Paste", NK_TEXT_LEFT);
+					nk_tree_pop(_app.ctx);
+				} else menu_state = (menu_state == MenuState.MENU_EDIT) ? MenuState.MENU_NONE: menu_state;
+
+				state = (menu_state == MenuState.MENU_VIEW) ? NK_MAXIMIZED: NK_MINIMIZED;
+				if (nk_tree_state_push(_app.ctx, NK_TREE_TAB, "VIEW", &state)) {
+					menu_state = MenuState.MENU_VIEW;
+					nk_menu_item_label(_app.ctx, "About", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Options", NK_TEXT_LEFT);
+					nk_menu_item_label(_app.ctx, "Customize", NK_TEXT_LEFT);
+					nk_tree_pop(_app.ctx);
+				} else menu_state = (menu_state == MenuState.MENU_VIEW) ? MenuState.MENU_NONE: menu_state;
+
+				state = (menu_state == MenuState.MENU_CHART) ? NK_MAXIMIZED: NK_MINIMIZED;
+				if (nk_tree_state_push(_app.ctx, NK_TREE_TAB, "CHART", &state)) {
+					size_t i = 0;
+					const values=[26.0f,13.0f,30.0f,15.0f,25.0f,10.0f,20.0f,40.0f,12.0f,8.0f,22.0f,28.0f];
+					menu_state = MenuState.MENU_CHART;
+					nk_layout_row_dynamic(_app.ctx, 150, 1);
+					nk_chart_begin(_app.ctx, NK_CHART_COLUMN, cast(int)values.length, 0, 50);
+					for (i = 0; i < values.length; ++i)
+						nk_chart_push(_app.ctx, values[i]);
+					nk_chart_end(_app.ctx);
+					nk_tree_pop(_app.ctx);
+				} else menu_state = (menu_state == MenuState.MENU_CHART) ? MenuState.MENU_NONE: menu_state;
+				nk_menu_end(_app.ctx);
+			}
+}
+		}
+		nk_end(_app.ctx);
+
 		const width  = _app.window.getWidth;
 		const height = _app.window.getHeight;
 		const panel_width = 430;
