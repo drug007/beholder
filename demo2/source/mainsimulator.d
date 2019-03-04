@@ -2,7 +2,6 @@ module mainsimulator;
 
 import common : Simulator;
 
-import trackrenderer : TrackVertex = Vertex;
 import gfm.math : vec3f, vec4f;
 import std.math : PI;
 
@@ -194,7 +193,7 @@ private:
 	import std.datetime : SysTime;
 	import gfm.opengl : OpenGL;
 	import timestamp_storage : TimestampStorage;
-	import trackrenderer : TrackRenderer;
+	import trackrenderer : TrackRenderer, TrackVertex = Vertex;
 
 	TrackVertex[] _track_vertices;
 	uint[] _track_indices;
