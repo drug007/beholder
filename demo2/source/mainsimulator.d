@@ -222,7 +222,9 @@ private:
 		import std.range : iota;
 		import std.conv : castFrom;
 
-		_indices = castFrom!ulong.to!uint(_vertices.length).iota.array;
+		_indices.length = _vertices.length;
+		import std.algorithm : copy;
+		copy(castFrom!ulong.to!uint(_vertices.length).iota, _indices);
 	}
 }
 
