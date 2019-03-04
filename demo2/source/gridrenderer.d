@@ -1,6 +1,6 @@
 module gridrenderer;
 
-import common : Parent, Renderer;
+import common : Renderer;
 import gldata : GLData;
 
 import gldata : Vertex;

@@ -1,6 +1,6 @@
 module guirenderer;
 
-import common : Parent, Renderer;
+import common : Renderer;
 
 class GUIRenderer : Renderer
 {

@@ -1,6 +1,6 @@
 module mainsimulator;
 
-import common : Parent, Simulator;
+import common : Simulator;
 
 import gldata : Vertex;
 import gfm.math : vec3f, vec4f;
@@ -50,9 +50,7 @@ struct Entry
 
 class MainSimulator : Simulator
 {
-	import trackrenderer : TrackRenderer;
-
-	this(Parent parent, TrackRenderer track_renderer)
+	this(Parent)(OpenGL gl, Parent parent)
 	{
 		import std.array : uninitializedArray;
 
@@ -149,13 +147,14 @@ class MainSimulator : Simulator
 
 		_ts_storage.addTimestamps(_intervals.map!"a.timestamp.stdTime");
 
-		_vertices = uninitializedArray!(typeof(_vertices))(_movables.length);
+		_track_vertices = uninitializedArray!(typeof(_track_vertices))(_movables.length);
 
 		updateVertices;
 		updateIndices;
 
-		_track_renderer = track_renderer;
-		_track_renderer.update(_vertices, _indices);
+		_track_renderer = new TrackRenderer(gl, parent.camera);
+		parent.addRenderer(_track_renderer);
+		_track_renderer.update(_track_vertices, _track_indices);
 	}
 
 	void onSimulation(SysTime new_timestamp)
@@ -164,7 +163,7 @@ class MainSimulator : Simulator
 			m.update(new_timestamp);
 
 		updateVertices;
-		_track_renderer.update(_vertices, _indices);
+		_track_renderer.update(_track_vertices, _track_indices);
 	}
 
 	void clearFinished()
@@ -187,10 +186,12 @@ class MainSimulator : Simulator
 
 private:
 	import std.datetime : SysTime;
+	import gfm.opengl : OpenGL;
 	import timestamp_storage : TimestampStorage;
+	import trackrenderer : TrackRenderer;
 
-	Vertex[] _vertices;
-	uint[] _indices;
+	Vertex[] _track_vertices;
+	uint[] _track_indices;
 	TrackRenderer _track_renderer;
 
 	Movable[] _movables;
@@ -207,7 +208,7 @@ private:
 
 		import std.range : lockstep;
 		uint clr_idx;
-		foreach(ref m, ref v; lockstep(_movables, _vertices))
+		foreach(ref m, ref v; lockstep(_movables, _track_vertices))
 		{
 			import std.math : atan2;
 			vec4f clr = void;
@@ -226,9 +227,9 @@ private:
 		import std.range : iota;
 		import std.conv : castFrom;
 
-		_indices.length = _vertices.length;
+		_track_indices.length = _track_vertices.length;
 		import std.algorithm : copy;
-		copy(castFrom!ulong.to!uint(_vertices.length).iota, _indices);
+		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _track_indices);
 	}
 }
 

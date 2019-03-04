@@ -59,16 +59,15 @@ struct Payload
 import rtree;
 alias RTreeIndex = RTree!(Payload, CoordType, NumberOfDimensions, CoordType);
 
-import common : Parent, Renderer, Simulator;
+import common : Renderer, Simulator;
 import guirenderer : GUIRenderer;
 import gridrenderer : GridRenderer;
-import trackrenderer : TrackRenderer;
 import mainsimulator : MainSimulator;
 import beholder.camera : Camera;
 
 import nuklearapp : NuklearApp;
 
-class DemoApplication : NuklearApp, Parent
+class DemoApplication : NuklearApp
 {
 	import std.datetime : Duration, SysTime;
 	import std.typecons : Nullable;
@@ -105,9 +104,8 @@ class DemoApplication : NuklearApp, Parent
 		);
 
 		new GridRenderer(this);
-		auto track_renderer = new TrackRenderer(this);
 		new GUIRenderer(this);
-		_simulators ~= new MainSimulator(this, track_renderer);
+		_simulators ~= new MainSimulator(gl, this);
 
 		import std.datetime : UTC;
 		_last_timestamp = SysTime();

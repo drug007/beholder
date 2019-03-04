@@ -13,10 +13,3 @@ interface Simulator
 
 	SysTime finishTimestamp();
 }
-
-interface Parent
-{
-	void addRenderer(Renderer);
-	void startSimulation();
-	void stopSimulation();
-}

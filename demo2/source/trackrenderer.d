@@ -1,6 +1,6 @@
 module trackrenderer;
 
-import common : Parent, Renderer;
+import common : Renderer;
 import gldata : GLData;
 
 /// Value of index that indicating primitive restart
@@ -9,12 +9,11 @@ enum PrimitiveRestartIndex = 0xFFFF;
 class TrackRenderer : Renderer
 {
 	import beholder.camera : Camera;
-	import demo : DemoApplication;
 
-	this(DemoApplication app)
+	this(OpenGL gl, Camera camera)
 	{
-		_gl = app.gl;
-		_camera = app.camera;
+		_gl = gl;
+		_camera = camera;
 		{
 			const program_source =
 				"#version 330 core
@@ -265,7 +264,6 @@ class TrackRenderer : Renderer
 		}
 
 		_gldata = new GLData(_gl, _program);
-		app.addRenderer(this);
 	}
 
 	~this()
