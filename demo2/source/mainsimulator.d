@@ -17,17 +17,18 @@ struct Movable
 
 	this(Timepoint[] points)
 	{
-		this.pos = vec3f(0, 0, 0);
-		this.vel = vec3f(0, 0, 0);
-		this.acc = vec3f(0, 0, 0);
-
 		tl = Timeline(points);
 	}
 
 	void update(SysTime ts)
 	{
+		if (ts < tl.start)
+			return;
+		if (ts >= tl.finish)
+			return;
 		if (ts == curr_timestamp)
 			return;
+
 		auto old_ts = curr_timestamp;
 		auto new_pos = tl.update(ts);
 		vel = (new_pos - pos)/(ts - curr_timestamp).total!"hnsecs"/1e7;
@@ -155,13 +156,6 @@ class MainSimulator : Simulator
 
 	void onSimulation(SysTime new_timestamp)
 	{
-		import std.array : front, back;
-
-		if (new_timestamp < _intervals.front.timestamp)
-			return;
-		if (new_timestamp > _intervals.back.timestamp)
-			return;
-
 		foreach(ref m; _movables)
 			m.update(new_timestamp);
 
