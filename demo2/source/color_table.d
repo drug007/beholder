@@ -1,6 +1,6 @@
 module color_table;
 
-import std.experimental.color.rgb : RGBAf32;
+import std.experimental.color : RGBAf32;
 import std.experimental.color.lab : LCh;
 
 struct ColorTable

@@ -26,8 +26,8 @@ class GLData(V)
 		if (isInputRange!V && isInputRange!I)
 	{
 		import std.range : ElementType;
-		import std.typecons : Unqual, AliasSeq;
-		import std.meta : staticIndexOf;
+		import std.traits : Unqual;
+		import std.meta : AliasSeq, staticIndexOf;
 
 		// Unqualified element type of the index range
 		alias IndexElementType = Unqual!(ElementType!I);

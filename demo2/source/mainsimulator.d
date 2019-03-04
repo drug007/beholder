@@ -251,7 +251,8 @@ struct Timeline
 	import mir.algorithm.iteration: all;
 	import mir.math.common: approxEqual;
 	import mir.ndslice.slice: Slice, sliced, mir_slice_kind;
-	import mir.ndslice.topology: vmap, MapIterator;
+	import mir.ndslice.topology: vmap;
+	import mir.ndslice.iterator : MapIterator;
 	import mir.interpolate.spline;
 	import mir.interpolate.pchip;
 	import mir.functional: naryFun;
