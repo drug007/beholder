@@ -256,7 +256,6 @@ struct Timeline
 	import std.container.array : Array;
 	private Array!Timepoint _points;
 	private vec3f _curr_value;
-	private Progress _in_progress;
 
 	float[] _t, _x, _y;
 	alias S = typeof(pchip!float(_t.idup.sliced, _x.idup.sliced));
@@ -264,7 +263,6 @@ struct Timeline
 
 	this(Timepoint[] points)
 	{
-		_in_progress = Progress.before;
 		_points.clear;
 		_points = points;
 		_t = _points[].map!"cast(float)a.timestamp.stdTime".array;
@@ -298,7 +296,6 @@ struct Timeline
 	auto clear()
 	{
 		_curr_value = _curr_value.init;
-		_in_progress = Progress.before;
 		update(SysTime(0));
 	}
 
@@ -307,24 +304,11 @@ struct Timeline
 		return _points;
 	}
 
-	enum Progress { before, inProgress, after, }
-
-	@property inProgress() const { return _in_progress; }
-
 	auto update(SysTime new_timestamp)
 	{
-		if (new_timestamp < start)
-		{
-			_in_progress = Progress.before;
+		if (new_timestamp < start ||
+		    new_timestamp >= finish) 
 			return _curr_value;
-		}
-		else if (new_timestamp >= finish)
-		{
-			_in_progress = Progress.after;
-			return _curr_value;
-		}
-		else
-			_in_progress = Progress.inProgress;
 
 		auto new_x = [cast(float)new_timestamp.stdTime].vmap(sx).front;
 		auto new_y = [cast(float)new_timestamp.stdTime].vmap(sy).front;
