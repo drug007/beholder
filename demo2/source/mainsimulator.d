@@ -13,6 +13,7 @@ struct Movable
 	vec3f acc;
 
 	Timeline tl;
+	private SysTime curr_timestamp;
 
 	this(Timepoint[] points)
 	{
@@ -25,11 +26,13 @@ struct Movable
 
 	void update(SysTime ts)
 	{
+		if (ts == curr_timestamp)
+			return;
+		auto old_ts = curr_timestamp;
 		auto new_pos = tl.update(ts);
-		auto new_vel = new_pos - pos;
-		if (new_vel.squaredMagnitude)
-			vel = new_vel;
+		vel = (new_pos - pos)/(ts - curr_timestamp).total!"hnsecs"/1e7;
 		pos = new_pos;
+		curr_timestamp = ts;
 	}
 }
 
