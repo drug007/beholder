@@ -20,13 +20,19 @@ struct Movable
 		tl = Timeline(points);
 	}
 
+	void reset()
+	{
+		vel = vec3f();
+		pos = vec3f();
+		acc = vec3f();
+	}
+
 	void update(SysTime ts)
 	{
 		if (ts < tl.start ||
 		    ts >= tl.finish)
 		{
-			vel = vec3f();
-			pos = vec3f();
+			reset;
 			return;
 		}
 
