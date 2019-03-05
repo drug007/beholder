@@ -71,6 +71,7 @@ class DemoApplication : NuklearApp
 {
 	import std.datetime : Duration, SysTime;
 	import std.typecons : Nullable;
+	import std.range : only;
 	import gfm.math : vec2f;
 
 	RTreeIndex index;
@@ -81,7 +82,7 @@ class DemoApplication : NuklearApp
 
 	private SimulationState _simulation_state;
 	private Array!Renderer  _renderers;
-	private Array!Simulator _simulators;
+	private MainSimulator _simulator;
 	private SysTime _current_timestamp;
 	private SysTime _start_timestamp;
 	private Duration _start_timeshift;
@@ -105,12 +106,12 @@ class DemoApplication : NuklearApp
 		);
 
 		new GridRenderer(this);
-		_simulators ~= new MainSimulator(gl, this);
+		_simulator = new MainSimulator(gl, this);
 		new GUIRenderer(this);
 
 		import std.datetime : UTC;
 		_last_timestamp = SysTime();
-		foreach(s; _simulators)
+		foreach(s; _simulator.only)
 		{
 			if (s.finishTimestamp > _last_timestamp)
 				_last_timestamp = s.finishTimestamp;
@@ -190,7 +191,7 @@ class DemoApplication : NuklearApp
 				_current_timestamp = SysTime();
 				_start_timestamp = SysTime();
 				_start_timeshift = Duration.zero;
-				foreach(sim; _simulators)
+				foreach(sim; _simulator.only)
 				{
 					if (auto s = cast(MainSimulator) sim)
 					{
@@ -217,7 +218,7 @@ class DemoApplication : NuklearApp
 	auto currSimulationTimestamp(SysTime value)
 	{
 		_current_timestamp = value;
-		foreach(s; _simulators)
+		foreach(s; _simulator.only)
 			s.onSimulation(_current_timestamp);
 	}
 
@@ -241,7 +242,7 @@ class DemoApplication : NuklearApp
 				{
 					_simulation_in_progress = false;
 					_current_timestamp += SimulationPeriod;
-					foreach(s; _simulators)
+					foreach(s; _simulator.only)
 					{
 						if (_current_timestamp < s.finishTimestamp)
 							_simulation_in_progress = true;
