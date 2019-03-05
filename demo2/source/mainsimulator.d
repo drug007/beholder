@@ -316,7 +316,7 @@ else
 			clr.b = tmp.b;
 			clr.a = 1;
 }
-			v = SourceVertex(s.pos, clr, s.phi, 200_000);
+			v = SourceVertex(s.pos, clr, s.phi, s.range);
 		}
 	}
 
