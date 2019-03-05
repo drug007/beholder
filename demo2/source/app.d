@@ -89,6 +89,7 @@ class DemoApplication : NuklearApp
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
 	private bool _simulation_in_progress;
+	private bool _editing_mode;
 	private SysTime _last_timestamp;
 
 	this(string title, int w, int h, NuklearApp.FullScreen flag)
@@ -201,9 +202,14 @@ class DemoApplication : NuklearApp
 		}
 	}
 
-	auto simulationState() const pure nothrow 
+	auto simulationState() const pure nothrow @nogc
 	{
 		return _simulation_state;
+	}
+
+	auto editingMode() const pure nothrow @nogc
+	{
+		return _editing_mode;
 	}
 
 	auto lastTimestamp() const { return _last_timestamp; }
