@@ -82,6 +82,19 @@ struct RDataSource
 		phi = phi0 + angle_speed * (ts - start_timestamp).total!"hnsecs"/1e7;
 		curr_timestamp = ts;
 	}
+
+	auto beamPosition(SysTime ts)
+	{
+		if (ts < start_timestamp ||
+		    ts >= finish_timestamp)
+		{
+			return vec3f();
+		}
+
+		auto phi = phi0 + angle_speed * (ts - start_timestamp).total!"hnsecs"/1e7;
+		import std.math : sin, cos;
+		return pos0 + range*vec3f(sin(phi), cos(phi), 0);
+	}
 }
 
 struct Entry
@@ -216,6 +229,10 @@ class MainSimulator : Simulator
 		updateVertices;
 		updateIndices;
 
+		_track_renderer2 = new TrackRenderer2(gl, parent.camera);
+		parent.addRenderer(_track_renderer2);
+		_track_renderer2.update(_track_vertices, _track_indices);
+
 		_track_renderer = new TrackRenderer(gl, parent.camera);
 		parent.addRenderer(_track_renderer);
 		_track_renderer.update(_track_vertices, _track_indices);
@@ -256,17 +273,52 @@ class MainSimulator : Simulator
 		return _intervals[$-1].timestamp;
 	}
 
+	auto generateRData() nothrow
+	{
+		try
+		{
+			import std.parallelism : task, taskPool;
+			import rdata_generator : generateRData;
+			
+			auto t = task!generateRData(_movables, _sources, startTimestamp, finishTimestamp);
+			taskPool.put(t);
+			auto points = t.yieldForce;
+import std.stdio;
+
+			import std.algorithm : map;
+			import std.array : array;
+			import std.conv : castFrom;
+			import std.range : iota;
+			import trackrenderer2 : Vertex2 = Vertex;
+			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, vec4f(1, 1, 0, 1), p.heading)).array;
+			uint[] track_indices;
+			track_indices.length = track_vertices.length;
+			import std.algorithm : copy;
+			copy(castFrom!ulong.to!uint(track_vertices.length).iota, track_indices);
+
+			_track_renderer2.update(track_vertices, track_indices);
+
+			return "";
+		}
+		catch(Exception e)
+		{
+			return e.msg;
+		}
+	}
+
 private:
 	import std.datetime : SysTime;
 	import gfm.opengl : OpenGL;
 	import timestamp_storage : TimestampStorage;
 	import trackrenderer : TrackRenderer, TrackVertex = Vertex;
+	import trackrenderer2 : TrackRenderer2 = TrackRenderer, TrackVertex2 = Vertex;
 	import sourcerenderer : RDataSourceRenderer, SourceVertex = Vertex;
 
 	TrackVertex[] _track_vertices;
 	SourceVertex[] _source_vertices;
 	uint[] _track_indices, _source_indices;
 	TrackRenderer _track_renderer;
+	TrackRenderer2 _track_renderer2;
 	RDataSourceRenderer _source_renderer;
 
 	Movable[] _movables;

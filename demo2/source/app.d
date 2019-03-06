@@ -222,6 +222,11 @@ class DemoApplication : NuklearApp
 			s.onSimulation(_current_timestamp);
 	}
 
+	auto generateRData() nothrow
+	{
+		_simulator.generateRData;
+	}
+
 	auto close() pure nothrow @nogc
 	{
 		_running = false;
