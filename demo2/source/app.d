@@ -218,8 +218,9 @@ class DemoApplication : NuklearApp
 	auto currSimulationTimestamp(SysTime value)
 	{
 		_current_timestamp = value;
+		auto ray = _camera.unproject(mouseX, mouseY);
 		foreach(s; _simulator.only)
-			s.onSimulation(_current_timestamp);
+			s.onSimulation(_current_timestamp, ray);
 	}
 
 	auto generateRData() nothrow
@@ -241,6 +242,7 @@ class DemoApplication : NuklearApp
 			auto d = _current_timestamp - SysTime();
 			auto delta = currTimestamp - (_start_timestamp + d + _start_timeshift);
 			assert(delta > Duration.zero);
+			auto ray = camera.unproject(mouseX, mouseY);
 			if (delta >= SimulationPeriod)
 			{
 				do
@@ -251,7 +253,7 @@ class DemoApplication : NuklearApp
 					{
 						if (_current_timestamp < s.finishTimestamp)
 							_simulation_in_progress = true;
-						s.onSimulation(_current_timestamp);
+						s.onSimulation(_current_timestamp, ray);
 					}
 					delta -= SimulationPeriod;
 				} while (delta >= SimulationPeriod);

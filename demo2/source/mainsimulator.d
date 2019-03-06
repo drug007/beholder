@@ -240,9 +240,12 @@ class MainSimulator : Simulator
 		_source_renderer = new RDataSourceRenderer(gl, parent.camera);
 		parent.addRenderer(_source_renderer);
 		_source_renderer.update(_source_vertices, _source_indices);
+
+		_auxinfo_renderer = new AuxInfoRenderer(gl, parent.camera);
+		parent.addRenderer(_auxinfo_renderer);
 	}
 
-	void onSimulation(SysTime new_timestamp)
+	void onSimulation(SysTime new_timestamp, ray3f ray)
 	{
 		foreach(ref m; _movables)
 			m.update(new_timestamp);
@@ -253,6 +256,9 @@ class MainSimulator : Simulator
 		updateVertices;
 		_track_renderer.update(_track_vertices, _track_indices);
 		_source_renderer.update(_source_vertices, _source_indices);
+
+		// auto r = updateAuxInfo(new_timestamp, ray);
+		// _auxinfo_renderer.update(r[0], r[1]);
 	}
 
 	void clearFinished()
@@ -260,7 +266,7 @@ class MainSimulator : Simulator
 		foreach(ref m; _movables)
 			m.tl.clear;
 
-		onSimulation(SysTime(0));
+		onSimulation(SysTime(0), ray3f());
 	}
 
 	SysTime startTimestamp()
@@ -318,17 +324,21 @@ class MainSimulator : Simulator
 private:
 	import std.datetime : SysTime;
 	import gfm.opengl : OpenGL;
+	import gfm.math : ray3f;
 	import timestamp_storage : TimestampStorage;
 	import trackrenderer : TrackRenderer, TrackVertex = Vertex;
 	import trackrenderer2 : TrackRenderer2 = TrackRenderer, TrackVertex2 = Vertex;
 	import sourcerenderer : RDataSourceRenderer, SourceVertex = Vertex;
+	import auxinforenderer : AuxInfoRenderer, AuxInfoVertex = Vertex;
 
 	TrackVertex[] _track_vertices;
 	SourceVertex[] _source_vertices;
-	uint[] _track_indices, _source_indices;
+	AuxInfoVertex[] _auxinfo_vertices;
+	uint[] _track_indices, _source_indices, _auxinfo_indices;
 	TrackRenderer _track_renderer;
 	TrackRenderer2 _track_renderer2;
 	RDataSourceRenderer _source_renderer;
+	AuxInfoRenderer _auxinfo_renderer;
 
 	Movable[] _movables;
 	RDataSource[] _sources;
@@ -381,6 +391,26 @@ else
 		}
 	}
 
+	auto updateAuxInfo(SysTime ts, ray3f ray)
+	{
+		import auxinforenderer : Vertex;
+		Vertex[] vertices;
+		foreach(ref s; _sources)
+		{
+			foreach(ref m; _movables)
+			{
+				vertices ~= Vertex(m.pos, vec4f(1, 0, 0, 1));
+				//vertices ~= Vertex(ray.orig, vec4f(1, 0, 0, 1));
+				vertices ~= Vertex(s.beamPosition(ts), vec4f(1, 0, 0, 1));
+			}
+		}
+
+		import std.typecons : tuple;
+		import std.array : array;
+		import std.range : iota;
+		return tuple(vertices, (cast(uint)vertices.length).iota.array);
+	}
+
 	void updateIndices()
 	{
 		import std.array : array;
@@ -394,6 +424,10 @@ else
 		_source_indices.length = _track_vertices.length;
 		import std.algorithm : copy;
 		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _source_indices);
+
+		_auxinfo_indices.length = _auxinfo_vertices.length;
+		import std.algorithm : copy;
+		copy(castFrom!ulong.to!uint(_auxinfo_vertices.length).iota, _auxinfo_indices);
 	}
 }
 
