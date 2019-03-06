@@ -74,6 +74,23 @@ class Camera
 		return _view;
 	}
 
+	auto unproject(float x, float y)
+	{
+		return unproject(vec2f(x, y));
+	}
+
+	auto unproject(vec2f p0)
+	{
+		const ndc = vec3f(2.0*p0.x/_window.x-1.0, 2.0*p0.y/_window.y-1, -1);
+		const u = (_projection*_model).inverse;
+		const rn = u * vec4f(ndc.xy, 0, 1);
+		const rf = u * vec4f(ndc.xy, 1, 1);
+		const p1 = rn.xyz / rn.w + _position;
+		const p2 = rf.xyz / rf.w + _position;
+
+		return ray3f(p1, p2);
+	}
+
 protected:
     import gfm.math;
 

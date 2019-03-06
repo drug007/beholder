@@ -20,31 +20,26 @@ auto generateRData(Movable[] movables, RDataSource[] dsources, SysTime start, Sy
 
 	Point[] points;
 
-	try debug
+	try
 	{
-		writeln(start, "\t", finish);
-		foreach(l; iota(start.stdTime, finish.stdTime, 100_000))
+		foreach(int trk, ref m; movables[0..1])
 		{
-			auto t = SysTime(l, UTC());
-			foreach(ref s; dsources)
+			foreach(int src, ref s; dsources[0..$])
 			{
-				s.update(t);
-			}
-
-			foreach(int trk, ref m; movables[0..1])
-			{
-				m.update(t);
-				// writeln(m);
-				foreach(int src, ref s; dsources[0..1])
+				float curr_d = 1e7;
+				auto curr_m = m;
+				bool descending;
+				foreach(l; iota(start.stdTime, finish.stdTime, 100_000))
 				{
 					import std.math : sqrt, PI, sin, atan2;
+					
+					auto t = SysTime(l, UTC());
+					s.update(t);
+					m.update(t);
+					
 					const p1 = s.pos;
 					const p2 = s.beamPosition(t);
-					const r = (m.pos - s.pos).magnitude;
-					const betta = 3 * PI / 180.0;
-					const w = 0.1;//r * sin(betta/2);
 					import gfm.math : cross;
-					// const d = (p2 - p1).cross(p1 - m.pos).magnitude / (p2 - p1).squaredMagnitude;
 					float d = void;
 
 					int y;
@@ -71,17 +66,21 @@ auto generateRData(Movable[] movables, RDataSource[] dsources, SysTime start, Sy
 						}
 					}
 
-					if (d < w * w)
+					if (d < curr_d)
 					{
-						writeln(p1, " ", p2, "\t", trk, ": ", t, ", ", m.pos, " - ", "w: ", w, " ", sqrt(d));
+						descending = true;
+						curr_d = d;
+						curr_m = m;
+					}
+					if (descending && d > curr_d)
+					{
+						descending = false;
 						points ~= Point(src, trk, m.pos, atan2(m.vel.y, m.vel.x));
-						writeln(y);
+						curr_d = d;
 					}
 				}
 			}
-			// writeln(l/cast(double)(finish.stdTime-start.stdTime));
 		}
-		// writeln("total: ", points.length);
 	}
 	catch(Exception e)
 	{

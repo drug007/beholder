@@ -93,7 +93,7 @@ struct RDataSource
 
 		auto phi = phi0 + angle_speed * (ts - start_timestamp).total!"hnsecs"/1e7;
 		import std.math : sin, cos;
-		return pos0 + range*vec3f(sin(phi), cos(phi), 0);
+		return pos0 + range*vec3f(cos(phi), -sin(phi), 0);
 	}
 }
 
@@ -283,14 +283,23 @@ class MainSimulator : Simulator
 			auto t = task!generateRData(_movables, _sources, startTimestamp, finishTimestamp);
 			taskPool.put(t);
 			auto points = t.yieldForce;
-import std.stdio;
 
 			import std.algorithm : map;
 			import std.array : array;
 			import std.conv : castFrom;
 			import std.range : iota;
 			import trackrenderer2 : Vertex2 = Vertex;
-			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, vec4f(1, 1, 0, 1), p.heading)).array;
+			import color_table : ColorTable;
+
+			auto c = cast(uint) _movables.length;
+			auto color = ColorTable(c.iota.array);
+
+			static convert(C)(C c)
+			{
+				return vec4f(c.r, c.g, c.b, 1.0);
+			}
+
+			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.heading)).array;
 			uint[] track_indices;
 			track_indices.length = track_vertices.length;
 			import std.algorithm : copy;

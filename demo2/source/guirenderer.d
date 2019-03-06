@@ -121,19 +121,8 @@ class GUIRenderer : Renderer
 			import std.conv : text;
 			nk_label(_app.ctx, text("Screen coordinates: ", _app.mouseX, " ", _app.mouseY, "\0").ptr, NK_TEXT_LEFT);
 			
-			import gfm.math : vec3f, vec4f, cross;
-
-			const ndc = vec3f(2.0*_app.mouseX/width-1.0, 2.0*_app.mouseY/height-1, -1);
-			const pos = _app.camera.position;
-			const u = (_app.camera.projection*_app.camera.model).inverse;
-			const rn = u * vec4f(ndc.xy, 0, 1);
-			const rf = u * vec4f(ndc.xy, 1, 1);
-			const p1 = rn.xyz / rn.w + pos;
-			const p2 = rf.xyz / rf.w + pos;
-			const p3 = vec3f(-5000, 9999, 0);
-			const d = (p2 - p1).cross(p1 - p3).magnitude / (p2 - p1).magnitude;
-			nk_label(_app.ctx, text("World coordinates: ", p1.x, " ", p1.y, "\0").ptr, NK_TEXT_LEFT);
-			nk_label(_app.ctx, text("distance: ", d, "\0").ptr, NK_TEXT_LEFT);
+			auto un = _app.camera.unproject(_app.mouseX, _app.mouseY);
+			nk_label(_app.ctx, text("World coordinates: ", un.orig.x, " ", un.orig.y, "\0").ptr, NK_TEXT_LEFT);
 			
 			with(_app.camera.position)
 				nk_label(_app.ctx, text("Camera position: ", x, " ", y, "\0").ptr, NK_TEXT_LEFT);
