@@ -38,10 +38,9 @@ struct Movable
 		if (ts == curr_timestamp)
 			return;
 
-		auto old_ts = curr_timestamp;
-		auto new_pos = tl.update(ts);
-		vel = (new_pos - pos)/(ts - curr_timestamp).total!"hnsecs"/1e7;
-		pos = new_pos;
+		tl.update(ts);
+		pos = tl.value;
+		vel = tl.derivative;
 		curr_timestamp = ts;
 	}
 }
@@ -458,7 +457,7 @@ struct Timeline
 
 	import std.container.array : Array;
 	private Array!Timepoint _points;
-	private vec3f _curr_value;
+	private vec3f _value, _derivative;
 
 	float[] _t, _x, _y;
 	alias S = typeof(pchip!float(_t.idup.sliced, _x.idup.sliced));
@@ -475,7 +474,7 @@ struct Timeline
 		auto t = _t.idup.sliced;
 		auto x = _x.idup.sliced;
 		auto y = _y.idup.sliced;
-		sx = pchip!float(t, x);//, SplineBoundaryType.secondDerivative);
+		sx = pchip!float(t, x);
 		sy = pchip!float(t, y);
 	}
 
@@ -491,15 +490,20 @@ struct Timeline
 		return _points[$-1].timestamp;
 	}
 
-	auto currValue() const
+	auto value() const nothrow @nogc @safe
 	{
-		return _curr_value;
+		return _value;
+	}
+
+	auto derivative() const nothrow @nogc @safe
+	{
+		return _derivative;
 	}
 
 	auto clear()
 	{
-		_curr_value = _curr_value.init;
-		update(SysTime(0));
+		_value = vec3f();
+		_derivative = vec3f();
 	}
 
 	auto points() const
@@ -507,16 +511,25 @@ struct Timeline
 		return _points;
 	}
 
-	auto update(SysTime new_timestamp)
+	auto update(SysTime ts)
 	{
-		if (new_timestamp < start ||
-		    new_timestamp >= finish) 
-			return _curr_value;
+		auto point = calculate(ts);
 
-		auto new_x = [cast(float)new_timestamp.stdTime].vmap(sx).front;
-		auto new_y = [cast(float)new_timestamp.stdTime].vmap(sy).front;
+		_value = point[0];
+		_derivative = point[1];
+	}
 
-		_curr_value = vec3f(new_x, new_y, 0);
-		return _curr_value;
+	auto calculate(SysTime ts)
+	{
+		import std.typecons : tuple;
+		if (ts < start ||
+		    ts >= finish) 
+			return tuple(vec3f(), vec3f());
+
+		auto new_x = sx.withDerivative(ts.stdTime);
+		auto new_y = sy.withDerivative(ts.stdTime);
+
+		return tuple(vec3f(new_x[0], new_y[0], 0),
+					 vec3f(new_x[1], new_y[1], 0));
 	}
 }
