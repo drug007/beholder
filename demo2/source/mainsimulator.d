@@ -440,40 +440,30 @@ struct Timepoint
 
 struct Timeline
 {
-	import mir.algorithm.iteration: all;
-	import mir.math.common: approxEqual;
-	import mir.ndslice.slice: Slice, sliced, mir_slice_kind;
-	import mir.ndslice.topology: vmap;
-	import mir.ndslice.iterator : MapIterator;
+	import std.typecons : Tuple;
+	import mir.ndslice.slice: sliced;
 	import mir.interpolate.spline;
 	import mir.interpolate.pchip;
-	import mir.functional: naryFun;
 
 	import std.algorithm : map;
 	import std.array : array;
-	import std.traits : ReturnType;
 
 	import gfm.math : Vector;
 
 	import std.container.array : Array;
 	private Array!Timepoint _points;
-	private vec3f _value, _derivative;
+	private Tuple!(vec3f, vec3f) _state;
 
-	float[] _t, _x, _y;
-	alias S = typeof(pchip!float(_t.idup.sliced, _x.idup.sliced));
+	alias S = typeof(pchip!float((float[]).init.idup.sliced, (float[]).init.sliced));
 	S sx, sy;
 
 	this(Timepoint[] points)
 	{
-		_points.clear;
 		_points = points;
-		_t = _points[].map!"cast(float)a.timestamp.stdTime".array;
-		_x = _points[].map!"a.pos.x".array;
-		_y = _points[].map!"a.pos.y".array;
+		auto t = _points[].map!"cast(float)a.timestamp.stdTime".array.idup.sliced;
+		auto x = _points[].map!"a.pos.x".array.sliced;
+		auto y = _points[].map!"a.pos.y".array.sliced;
 
-		auto t = _t.idup.sliced;
-		auto x = _x.idup.sliced;
-		auto y = _y.idup.sliced;
 		sx = pchip!float(t, x);
 		sy = pchip!float(t, y);
 	}
@@ -492,18 +482,17 @@ struct Timeline
 
 	auto value() const nothrow @nogc @safe
 	{
-		return _value;
+		return _state[0];
 	}
 
 	auto derivative() const nothrow @nogc @safe
 	{
-		return _derivative;
+		return _state[1];
 	}
 
 	auto clear()
 	{
-		_value = vec3f();
-		_derivative = vec3f();
+		_state = typeof(_state)();
 	}
 
 	auto points() const
@@ -513,10 +502,7 @@ struct Timeline
 
 	auto update(SysTime ts)
 	{
-		auto point = calculate(ts);
-
-		_value = point[0];
-		_derivative = point[1];
+		_state = calculate(ts);
 	}
 
 	auto calculate(SysTime ts)
