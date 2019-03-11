@@ -12,6 +12,28 @@ struct Point
 	float heading;
 }
 
+auto distanceFromPointToSegment(V)(V p, V a, V b)
+{
+	import gfm.math : dot;
+
+	auto n = (b - a);
+	const t = (p - a).dot(n) / n.squaredMagnitude;
+
+	if (t < 0)
+		return a.distanceTo(p);
+	else if (t > 1)
+		return b.distanceTo(p);
+
+	version(none)
+	{
+		const w = a - p;
+		n.normalize;
+		return (w - w.dot(n) * n).magnitude;
+	}
+	else
+		return (a + n*t).distanceTo(p);
+}
+
 auto generateRData(Movable[] movables, RDataSource[] dsources, SysTime start, SysTime finish) nothrow
 {
 	import std.datetime : UTC;
@@ -36,35 +58,8 @@ auto generateRData(Movable[] movables, RDataSource[] dsources, SysTime start, Sy
 					auto t = SysTime(l, UTC());
 					s.update(t);
 					m.update(t);
-					
-					const p1 = s.pos;
-					const p2 = s.beamPosition(t);
-					import gfm.math : cross;
-					float d = void;
 
-					int y;
-					{
-						import gfm.math : dot;
-						const w0 = p1 - m.pos;
-						const w1 = p2 - m.pos;
-						const v  = p1 - p2;
-						if (w0.dot(v) <= 0)
-						{
-							d = (p1 - m.pos).squaredMagnitude;
-							y = 1;
-						}
-						else
-						if (w1.dot(v) >= 0)
-						{
-							d = (p2 - m.pos).squaredMagnitude;
-							y = 2;
-						}
-						else
-						{
-							d = (p2 - p1).cross(p1 - m.pos).magnitude / (p2 - p1).squaredMagnitude;
-							y = 3;
-						}
-					}
+					const d = distanceFromPointToSegment(m.pos, s.pos, s.beamPosition(t));
 
 					if (d < curr_d)
 					{
