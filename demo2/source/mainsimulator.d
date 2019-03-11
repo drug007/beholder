@@ -442,20 +442,17 @@ struct Timeline
 {
 	import std.typecons : Tuple;
 	import mir.ndslice.slice: sliced;
-	import mir.interpolate.spline;
-	import mir.interpolate.pchip;
+	import mir.interpolate.pchip : pchip;
 
 	import std.algorithm : map;
 	import std.array : array;
-
-	import gfm.math : Vector;
 
 	import std.container.array : Array;
 	private Array!Timepoint _points;
 	private Tuple!(vec3f, vec3f) _state;
 
-	alias S = typeof(pchip!float((float[]).init.idup.sliced, (float[]).init.sliced));
-	S sx, sy;
+	alias Interpolator = typeof(pchip!float((float[]).init.idup.sliced, (float[]).init.sliced));
+	Interpolator sx, sy;
 
 	this(Timepoint[] points)
 	{
