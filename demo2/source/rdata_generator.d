@@ -9,15 +9,15 @@ struct Point
 	int source;
 	int track;
 	vec3f pos;
-	float heading;
+	vec3f vel;
 	SysTime timestamp;
 
-	this(int source, int track, vec3f pos, float heading, SysTime timestamp)
+	this(int source, int track, vec3f pos, vec3f vel, SysTime timestamp)
 	{
 		this.source    = source;
 		this.track     = track;
 		this.pos       = pos;
-		this.heading   = heading;
+		this.vel       = vel;
 		this.timestamp = timestamp;
 	}
 
@@ -55,8 +55,20 @@ struct Point
 				serializer.putValue(pos.z);
 			}
 
-			serializer.putEscapedKey("heading");
-			serializer.putValue(heading);
+			serializer.putEscapedKey("velocity");
+			{
+				auto state3 = serializer.objectBegin;
+				scope(exit) serializer.objectEnd(state3);
+
+				serializer.putEscapedKey("x");
+				serializer.putValue(vel.x);
+
+				serializer.putEscapedKey("y");
+				serializer.putValue(vel.y);
+
+				serializer.putEscapedKey("z");
+				serializer.putValue(vel.z);
+			}
 
 			serializer.putEscapedKey("timestamp");
 			{
@@ -137,7 +149,7 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 					if (!grad_is_positive && new_grad_is_positive)
 					{
 						const r = m.calculate(curr_t);
-						points ~= Point(src+1, trk+1, r[0], atan2(r[1].y, r[1].x), curr_t);
+						points ~= Point(src+1, trk+1, r[0], r[1], curr_t);
 					}
 					grad_is_positive = new_grad_is_positive;
 					curr_d = d;

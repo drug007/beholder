@@ -11,7 +11,7 @@ struct Vertex
 	import gfm.math : vec3f, vec4f;
 	vec3f position;
 	vec4f color;
-	float heading;
+	vec3f velocity;
 	uint  source;
 	uint  number;
 	uint  timestamp_hi;
@@ -33,14 +33,14 @@ class TrackRenderer : Renderer
 				#if VERTEX_SHADER
 				layout(location = 0) in vec3  position;
 				layout(location = 1) in vec4  color;
-				layout(location = 2) in float heading;
+				layout(location = 2) in vec3  velocity;
 				layout(location = 3) in uint  source;
 				layout(location = 4) in uint  number;
 				layout(location = 5) in uint  timestamp_hi;
 				layout(location = 6) in uint  timestamp_lo;
 
 				out vec4 vColor;
-				out float vHeading;
+				out vec3 vVelocity;
 				out float v_size;
 				
 				flat out uint current_source;
@@ -61,7 +61,7 @@ class TrackRenderer : Renderer
 					v_size = M_SQRT_2 * size + 2.0*(linewidth + 1.5*antialias);
 					gl_PointSize = v_size;
 					vColor = color;
-					vHeading = heading;
+					vVelocity = velocity;
 					
 					current_source = source;
 					current_number = number;
@@ -72,7 +72,7 @@ class TrackRenderer : Renderer
 
 				#if FRAGMENT_SHADER
 				in vec4 vColor;
-				in float vHeading;
+				in vec3 vVelocity;
 				in float v_size;
 				flat in uint current_source;
 				flat in uint current_number;
@@ -254,7 +254,7 @@ class TrackRenderer : Renderer
 				
 				void main()
 				{
-					vec2 rotation = vec2(cos(vHeading), sin(vHeading));
+					vec2 rotation = vVelocity.xy/length(vVelocity.xy);
 
 					vec2 p = gl_PointCoord.xy - vec2(0.5,0.5);
 					p = vec2(rotation.x*p.x - rotation.y*p.y,

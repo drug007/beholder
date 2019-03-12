@@ -307,7 +307,7 @@ class MainSimulator : Simulator
 				return vec4f(c.r, c.g, c.b, 1.0);
 			}
 
-			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.heading)).array;
+			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.vel)).array;
 			uint[] track_indices;
 			track_indices.length = track_vertices.length;
 			import std.algorithm : copy;
@@ -366,7 +366,7 @@ private:
 			clr.g = tmp.g;
 			clr.b = tmp.b;
 			clr.a = 1;
-			v = TrackVertex(m.pos, clr, atan2(m.vel.y, m.vel.x));
+			v = TrackVertex(m.pos, clr, m.vel);
 		}
 
 		clr_idx = 0;
