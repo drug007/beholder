@@ -10,6 +10,66 @@ struct Point
 	int track;
 	vec3f pos;
 	float heading;
+	SysTime timestamp;
+
+	this(int source, int track, vec3f pos, float heading, SysTime timestamp)
+	{
+		this.source    = source;
+		this.track     = track;
+		this.pos       = pos;
+		this.heading   = heading;
+		this.timestamp = timestamp;
+	}
+
+	void serialize(S)(ref S serializer) const
+	{
+		auto state1 = serializer.objectBegin;
+		scope(exit) serializer.objectEnd(state1);
+
+		serializer.putEscapedKey("kind");
+		serializer.putValue("TheKind");
+		serializer.putEscapedKey("payload");
+		
+		{
+			auto state2 = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(state2);
+
+			serializer.putEscapedKey("source");
+			serializer.putValue(source);
+
+			serializer.putEscapedKey("track");
+			serializer.putValue(track);
+
+			serializer.putEscapedKey("pos");
+			{
+				auto state3 = serializer.objectBegin;
+				scope(exit) serializer.objectEnd(state3);
+
+				serializer.putEscapedKey("x");
+				serializer.putValue(pos.x);
+
+				serializer.putEscapedKey("y");
+				serializer.putValue(pos.y);
+
+				serializer.putEscapedKey("z");
+				serializer.putValue(pos.z);
+			}
+
+			serializer.putEscapedKey("heading");
+			serializer.putValue(heading);
+
+			serializer.putEscapedKey("timestamp");
+			{
+				import std.format : sformat;
+
+				char[31] buffer = void;
+				auto str = timestamp.toUTC.toISOExtString;
+				sformat(buffer[], "%-31s", str);
+				
+				serializer.putValue(str);
+			}
+		}
+	}
 }
 
 auto distanceFromPointToSegment(V)(V p, V a, V b)
@@ -77,7 +137,7 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 					if (!grad_is_positive && new_grad_is_positive)
 					{
 						const r = m.calculate(curr_t);
-						points ~= Point(src, trk, r[0], atan2(r[1].y, r[1].x));
+						points ~= Point(src+1, trk+1, r[0], atan2(r[1].y, r[1].x), curr_t);
 					}
 					grad_is_positive = new_grad_is_positive;
 					curr_d = d;
@@ -85,6 +145,10 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 				}
 			}
 		}
+
+		import asdf, std.algorithm;
+		import std.stdio;
+		writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
 	}
 	catch(Exception e)
 	{
