@@ -7,12 +7,11 @@ import std.math : PI;
 
 struct Movable
 {
-	vec3f pos;
-	vec3f vel;
-	vec3f acc;
+	import std.typecons : tuple, Tuple;
 
+	private Tuple!(vec3f, vec3f) _state;
+	private SysTime _curr_timestamp;
 	Timeline tl;
-	private SysTime curr_timestamp;
 
 	this(Timepoint[] points)
 	{
@@ -21,27 +20,31 @@ struct Movable
 
 	void reset()
 	{
-		vel = vec3f();
-		pos = vec3f();
-		acc = vec3f();
+		_state = tuple(vec3f(), vec3f());
+		_curr_timestamp = SysTime();
 	}
 
 	void update(SysTime ts)
 	{
-		if (ts < tl.start ||
-		    ts >= tl.finish)
-		{
-			reset;
-			return;
-		}
+		_state = calculate(ts);
+		_curr_timestamp = ts;
+	}
 
-		if (ts == curr_timestamp)
-			return;
+	auto calculate(SysTime ts) const nothrow @safe
+	{
+		return tl.calculate(ts);
+	}
 
-		tl.update(ts);
-		pos = tl.value;
-		vel = tl.derivative;
-		curr_timestamp = ts;
+	@property
+	auto pos() const nothrow @nogc @safe
+	{
+		return _state[0];
+	}
+
+	@property
+	auto vel() const nothrow @nogc @safe
+	{
+		return _state[1];
 	}
 }
 
@@ -82,7 +85,7 @@ struct RDataSource
 		curr_timestamp = ts;
 	}
 
-	auto beamPosition(SysTime ts)
+	auto beamPosition(SysTime ts) const nothrow @safe
 	{
 		if (ts < start_timestamp ||
 		    ts >= finish_timestamp)
@@ -285,7 +288,7 @@ class MainSimulator : Simulator
 			import std.parallelism : task, taskPool;
 			import rdata_generator : generateRData;
 			
-			auto t = task!generateRData(_movables, _sources, startTimestamp, finishTimestamp);
+			auto t = task!generateRData(_movables, _sources);
 			taskPool.put(t);
 			auto points = t.yieldForce;
 
@@ -502,7 +505,7 @@ struct Timeline
 		_state = calculate(ts);
 	}
 
-	auto calculate(SysTime ts)
+	auto calculate(SysTime ts) const nothrow @safe
 	{
 		import std.typecons : tuple;
 		if (ts < start ||

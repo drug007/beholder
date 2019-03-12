@@ -34,45 +34,54 @@ auto distanceFromPointToSegment(V)(V p, V a, V b)
 		return (a + n*t).distanceTo(p);
 }
 
-auto generateRData(Movable[] movables, RDataSource[] dsources, SysTime start, SysTime finish) nothrow
+auto distance(ref const(Movable) m, ref const(RDataSource) s, SysTime t)
 {
-	import std.datetime : UTC;
+	const mm = m.calculate(t);	
+	const p1 = s.pos0;
+	const p2 = s.beamPosition(t);
+
+	return distanceFromPointToSegment(mm[0], p1, p2);
+}
+
+auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
+{
 	import std.range : iota;
-	import std.stdio;
 
 	Point[] points;
 
 	try
 	{
-		foreach(int trk, ref m; movables[0..1])
+		foreach(int trk, ref m; movables[0..$])
 		{
 			foreach(int src, ref s; dsources[0..$])
-			{
-				float curr_d = 1e7;
-				auto curr_m = m;
-				bool descending;
-				foreach(l; iota(start.stdTime, finish.stdTime, 100_000))
+			{				
+				import std.math : atan2;
+				import std.datetime : msecs, UTC;
+
+				const start  = m.tl.start  > s.start_timestamp  ? m.tl.start  : s.start_timestamp;
+				const finish = m.tl.finish < s.finish_timestamp ? m.tl.finish : s.finish_timestamp;
+				assert(start < finish);
+								
+				const delta = 1.msecs;
+				assert(finish - start > delta);
+
+				SysTime curr_t = start;
+				float curr_d = distance(m, s, curr_t);
+
+				bool grad_is_positive = true;
+				while(curr_t < finish)
 				{
-					import std.math : sqrt, PI, sin, atan2;
-					
-					auto t = SysTime(l, UTC());
-					s.update(t);
-					m.update(t);
-
-					const d = distanceFromPointToSegment(m.pos, s.pos, s.beamPosition(t));
-
-					if (d < curr_d)
+					const d = distance(m, s, curr_t+delta);
+					const grad = d - curr_d;
+					const new_grad_is_positive = (grad >= 0);
+					if (!grad_is_positive && new_grad_is_positive)
 					{
-						descending = true;
-						curr_d = d;
-						curr_m = m;
+						const r = m.calculate(curr_t);
+						points ~= Point(src, trk, r[0], atan2(r[1].y, r[1].x));
 					}
-					if (descending && d > curr_d)
-					{
-						descending = false;
-						points ~= Point(src, trk, m.pos, atan2(m.vel.y, m.vel.x));
-						curr_d = d;
-					}
+					grad_is_positive = new_grad_is_positive;
+					curr_d = d;
+					curr_t += delta;
 				}
 			}
 		}
