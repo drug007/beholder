@@ -27,32 +27,44 @@ struct Point
 		scope(exit) serializer.objectEnd(state1);
 
 		serializer.putEscapedKey("kind");
-		serializer.putValue("TheKind");
+		serializer.putValue("target_innovation_");
 		serializer.putEscapedKey("payload");
 		
 		{
 			auto state2 = serializer.objectBegin;
 			scope(exit) serializer.objectEnd(state2);
 
-			serializer.putEscapedKey("source");
-			serializer.putValue(source);
+			serializer.putEscapedKey("id");
+			{
+				auto state3 = serializer.objectBegin;
+				scope(exit) serializer.objectEnd(state3);
+				
+				serializer.putEscapedKey("source");
+				serializer.putValue(source);
 
-			serializer.putEscapedKey("track");
-			serializer.putValue(track);
+				serializer.putEscapedKey("track");
+				serializer.putValue(track);
+			}
 
-			serializer.putEscapedKey("pos");
+			serializer.putEscapedKey("position");
 			{
 				auto state3 = serializer.objectBegin;
 				scope(exit) serializer.objectEnd(state3);
 
-				serializer.putEscapedKey("x");
-				serializer.putValue(pos.x);
+				serializer.putEscapedKey("decart");
+				{
+					auto state4 = serializer.objectBegin;
+					scope(exit) serializer.objectEnd(state4);
 
-				serializer.putEscapedKey("y");
-				serializer.putValue(pos.y);
+					serializer.putEscapedKey("x");
+					serializer.putValue(pos.x);
 
-				serializer.putEscapedKey("z");
-				serializer.putValue(pos.z);
+					serializer.putEscapedKey("y");
+					serializer.putValue(pos.y);
+
+					serializer.putEscapedKey("z");
+					serializer.putValue(pos.z);
+				}
 			}
 
 			serializer.putEscapedKey("velocity");
@@ -160,7 +172,7 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 
 		import asdf, std.algorithm;
 		import std.stdio;
-		writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
+		stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
 	}
 	catch(Exception e)
 	{

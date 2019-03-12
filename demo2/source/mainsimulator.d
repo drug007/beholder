@@ -402,7 +402,6 @@ else
 			foreach(ref m; _movables)
 			{
 				vertices ~= Vertex(m.pos, vec4f(1, 0, 0, 1));
-				//vertices ~= Vertex(ray.orig, vec4f(1, 0, 0, 1));
 				vertices ~= Vertex(s.beamPosition(ts), vec4f(1, 0, 0, 1));
 			}
 		}
@@ -516,6 +515,6 @@ struct Timeline
 		auto new_y = sy.withDerivative(ts.stdTime);
 
 		return tuple(vec3f(new_x[0], new_y[0], 0),
-					 vec3f(new_x[1], new_y[1], 0));
+					 vec3f(new_x[1]*1e7, new_y[1]*1e7, 0));
 	}
 }
