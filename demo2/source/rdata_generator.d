@@ -140,19 +140,20 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 			foreach(int src, ref s; dsources[0..$])
 			{				
 				import std.math : atan2;
-				import std.datetime : msecs, UTC;
+				import std.datetime : msecs, UTC, Duration;
 
 				const start  = m.tl.start  > s.start_timestamp  ? m.tl.start  : s.start_timestamp;
 				const finish = m.tl.finish < s.finish_timestamp ? m.tl.finish : s.finish_timestamp;
 				assert(start < finish);
 								
-				const delta = 1.msecs;
-				assert(finish - start > delta);
+				const base_delta = 100.msecs;
+				assert(finish - start > base_delta);
 
 				SysTime curr_t = start;
 				float curr_d = distance(m, s, curr_t);
 
 				bool grad_is_positive = true;
+				Duration delta = base_delta;
 				while(curr_t < finish)
 				{
 					const d = distance(m, s, curr_t+delta);
@@ -160,8 +161,16 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 					const new_grad_is_positive = (grad >= 0);
 					if (!grad_is_positive && new_grad_is_positive)
 					{
+						const e = 1.0f;
+						if (grad > e)
+						{
+							delta /= 2;
+							assert(delta > Duration.zero);
+							continue;
+						}
 						const r = m.calculate(curr_t);
 						points ~= Point(src+1, trk+1, r[0], r[1], curr_t);
+						delta = base_delta;
 					}
 					grad_is_positive = new_grad_is_positive;
 					curr_d = d;
