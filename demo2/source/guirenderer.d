@@ -84,7 +84,7 @@ class GUIRenderer : Renderer
 			scope(exit) nk_menubar_end(_app.ctx);
 
 			/* menu #1 */
-			nk_layout_row_begin(_app.ctx, NK_STATIC, menu_bar_height, 2);
+			nk_layout_row_begin(_app.ctx, NK_STATIC, menu_bar_height, 3);
 			nk_layout_row_push(_app.ctx, 35);
 			if (nk_menu_begin_label(_app.ctx, "MENU", NK_TEXT_LEFT, nk_vec2(120, 200)))
 			{
@@ -106,6 +106,11 @@ class GUIRenderer : Renderer
 			if (nk_button_label(_app.ctx, "Generate"))
 			{
 				_app.generateRData();
+			}
+			nk_layout_row_push(_app.ctx, 80);
+			if (nk_button_label(_app.ctx, "Reset"))
+			{
+				_app.resetRData();
 			}
 		}
 		nk_end(_app.ctx);

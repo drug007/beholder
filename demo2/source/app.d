@@ -232,12 +232,18 @@ class DemoApplication : NuklearApp
 			import asdf, std.algorithm;
 			import std.stdio;
 			stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
-			stderr.writeln(points.length);
+			writeln(points.length);
 		}
 		catch(Exception e)
 		{
-
+			return e.msg;
 		}
+		return "";
+	}
+
+	auto resetRData()
+	{
+		_simulator.resetRData;
 	}
 
 	auto close() pure nothrow @nogc

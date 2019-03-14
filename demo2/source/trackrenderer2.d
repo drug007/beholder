@@ -280,11 +280,7 @@ class TrackRenderer : Renderer
 
 	~this()
 	{
-		if (_gldata !is null)
-		{
-			_gldata.destroy;
-			_gldata = null;
-		}
+		clear;
 	}
 
 	import std.range : isInputRange;
@@ -292,6 +288,21 @@ class TrackRenderer : Renderer
 		if (isInputRange!V && isInputRange!I)
 	{
 		_gldata.setData(vertices, indices);
+	}
+
+	protected void clear()
+	{
+		if (_gldata !is null)
+		{
+			_gldata.destroy;
+			_gldata = null;
+		}
+	}
+
+	void reset()
+	{
+		clear;
+		_gldata = new GLData!Vertex(_gl, _program);
 	}
 
 	void onRender()

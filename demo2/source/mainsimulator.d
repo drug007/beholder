@@ -316,6 +316,11 @@ class MainSimulator : Simulator
 		return points;
 	}
 
+	auto resetRData()
+	{
+		_track_renderer2.reset;
+	}
+
 private:
 	import std.datetime : SysTime;
 	import gfm.opengl : OpenGL;

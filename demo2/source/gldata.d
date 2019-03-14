@@ -4,6 +4,9 @@ class GLData(V)
 {
 	this(OpenGL gl, GLProgram program)
 	{
+		assert(gl);
+		assert(program);
+
 		_indexKind = GL_UNSIGNED_INT;
 		_indexTypeSize = 4;
 
