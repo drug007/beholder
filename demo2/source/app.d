@@ -225,7 +225,19 @@ class DemoApplication : NuklearApp
 
 	auto generateRData() nothrow
 	{
-		_simulator.generateRData;
+		try
+		{
+			auto points = _simulator.generateRData;
+
+			import asdf, std.algorithm;
+			import std.stdio;
+			stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
+			stderr.writeln(points.length);
+		}
+		catch(Exception e)
+		{
+
+		}
 	}
 
 	auto close() pure nothrow @nogc

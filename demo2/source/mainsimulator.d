@@ -281,46 +281,39 @@ class MainSimulator : Simulator
 		return _intervals[$-1].timestamp;
 	}
 
-	auto generateRData() nothrow
+	auto generateRData()
 	{
-		try
+		import std.parallelism : task, taskPool;
+		import rdata_generator : generateRData;
+		
+		auto t = task!generateRData(_movables, _sources);
+		taskPool.put(t);
+		auto points = t.yieldForce;
+
+		import std.algorithm : map;
+		import std.array : array;
+		import std.conv : castFrom;
+		import std.range : iota;
+		import trackrenderer2 : Vertex2 = Vertex;
+		import color_table : ColorTable;
+
+		auto c = cast(uint) _movables.length;
+		auto color = ColorTable(c.iota.array);
+
+		static convert(C)(C c)
 		{
-			import std.parallelism : task, taskPool;
-			import rdata_generator : generateRData;
-			
-			auto t = task!generateRData(_movables, _sources);
-			taskPool.put(t);
-			auto points = t.yieldForce;
-
-			import std.algorithm : map;
-			import std.array : array;
-			import std.conv : castFrom;
-			import std.range : iota;
-			import trackrenderer2 : Vertex2 = Vertex;
-			import color_table : ColorTable;
-
-			auto c = cast(uint) _movables.length;
-			auto color = ColorTable(c.iota.array);
-
-			static convert(C)(C c)
-			{
-				return vec4f(c.r, c.g, c.b, 1.0);
-			}
-
-			Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.vel)).array;
-			uint[] track_indices;
-			track_indices.length = track_vertices.length;
-			import std.algorithm : copy;
-			copy(castFrom!ulong.to!uint(track_vertices.length).iota, track_indices);
-
-			_track_renderer2.update(track_vertices, track_indices);
-
-			return "";
+			return vec4f(c.r, c.g, c.b, 1.0);
 		}
-		catch(Exception e)
-		{
-			return e.msg;
-		}
+
+		Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.vel)).array;
+		uint[] track_indices;
+		track_indices.length = track_vertices.length;
+		import std.algorithm : copy;
+		copy(castFrom!ulong.to!uint(track_vertices.length).iota, track_indices);
+
+		_track_renderer2.update(track_vertices, track_indices);
+
+		return points;
 	}
 
 private:

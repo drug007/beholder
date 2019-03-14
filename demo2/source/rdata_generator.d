@@ -129,8 +129,6 @@ auto distance(ref const(Movable) m, ref const(RDataSource) s, SysTime t)
 
 auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 {
-	import std.range : iota;
-
 	Point[] points;
 
 	try
@@ -178,10 +176,6 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 				}
 			}
 		}
-
-		import asdf, std.algorithm;
-		import std.stdio;
-		stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
 	}
 	catch(Exception e)
 	{
