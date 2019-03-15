@@ -72,21 +72,25 @@ class TrackRenderer : Renderer
 
 					vec4 pos = gl_in[0].gl_Position;
 					vec4 center = mvp_matrix * pos;
+					
+					float c = dot(normalize(t.xy), vec2(0, 1));
+					float s = sin(acos(c));
+					mat2 rot = mat2(c, -s, s, c);
 
-					gl_Position = mvp_matrix * (pos+vec4(a, 0, 0, 0));
+					gl_Position = mvp_matrix * (pos+vec4(rot*vec2(a, 0), 0, 0));
 					fColor = vec4(0, 0, 1, 1);
 					EmitVertex();
 
 					int count = 10;
 					for(int i = 1; i < 3*count; i++)
 					{
-						vec4 offset = vec4(a * cos(i*M_PI/count), b * sin(i*M_PI/count), 0, 0);
-						gl_Position = mvp_matrix * (pos+offset);
+						vec2 offset = rot * vec2(a * cos(i*M_PI/count), b * sin(i*M_PI/count));
+						gl_Position = mvp_matrix * (pos+vec4(offset, 0, 0));
 						fColor = vec4(0, 0, 1, 1);
 						EmitVertex();
 
 						gl_Position = center;
-						fColor = vec4(1, 0, 0, 1);
+						fColor = vec4(0, 1, 0, 1);
 						EmitVertex();
 					}
 
