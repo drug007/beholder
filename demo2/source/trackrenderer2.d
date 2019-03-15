@@ -50,7 +50,7 @@ class TrackRenderer : Renderer
 
 				#if GEOMETRY_SHADER
 				layout(points) in;
-				layout(line_strip, max_vertices = 3) out;
+				layout(triangle_strip, max_vertices = 40) out;
 
 				uniform mat4 mvp_matrix;
 				
@@ -58,23 +58,37 @@ class TrackRenderer : Renderer
 				in vec4 v_pos_error[];
 				out vec4 fColor;  // Output to fragment shader
 
+				const float M_PI = 3.141592654;
+
 				void main()
 				{
 					fColor = vColor[0];
 
 					vec4 t = vec4(v_pos_error[0].xy, 0, 0);
 					vec4 r = vec4(v_pos_error[0].zw, 0, 0);
-					gl_Position = mvp_matrix * vec4((gl_in[0].gl_Position+r).xyz, 1.0);
-					fColor = vec4(0, 1, 0, 1);
-					EmitVertex();
 
-					gl_Position = mvp_matrix * vec4(gl_in[0].gl_Position.xyz, 1.0);
-					fColor = vec4(1, 0, 0, 1);
-					EmitVertex();
+					float a = length(t.xy);
+					float b = length(r.xy);
 
-					gl_Position = mvp_matrix * vec4((gl_in[0].gl_Position+t).xyz, 1.0);
+					vec4 pos = gl_in[0].gl_Position;
+					vec4 center = mvp_matrix * pos;
+
+					gl_Position = mvp_matrix * (pos+vec4(a, 0, 0, 0));
 					fColor = vec4(0, 0, 1, 1);
 					EmitVertex();
+
+					int count = 10;
+					for(int i = 1; i < 3*count; i++)
+					{
+						vec4 offset = vec4(a * cos(i*M_PI/count), b * sin(i*M_PI/count), 0, 0);
+						gl_Position = mvp_matrix * (pos+offset);
+						fColor = vec4(0, 0, 1, 1);
+						EmitVertex();
+
+						gl_Position = center;
+						fColor = vec4(1, 0, 0, 1);
+						EmitVertex();
+					}
 
 					EndPrimitive();
 				}
