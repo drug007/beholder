@@ -305,7 +305,18 @@ class MainSimulator : Simulator
 			return vec4f(c.r, c.g, c.b, 1.0);
 		}
 
-		Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convert(color(p.source)), p.vel)).array;
+		static convertError(V)(V v)
+		{
+			import std.math : atan;
+			import gfm.math : mat3f;
+			const angle = atan(v.z);
+			const m = mat3f.rotateZ(angle);
+			const tangent = m * vec3f(v.x,   0, 0);
+			const radial  = m * vec3f(  0, v.y, 0);
+			return vec4f(tangent.xy, radial.xy);
+		}
+
+		Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convertError(p.pos_error), convert(color(p.source)), p.vel)).array;
 		uint[] track_indices;
 		track_indices.length = track_vertices.length;
 		import std.algorithm : copy;

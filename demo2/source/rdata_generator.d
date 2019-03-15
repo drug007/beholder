@@ -2,6 +2,7 @@ module rdata_generator;
 
 import std.datetime : SysTime;
 import mainsimulator : Movable, RDataSource;
+import gfm.math : vec3f;
 
 struct Point
 {
@@ -9,14 +10,16 @@ struct Point
 	int source;
 	int track;
 	vec3f pos;
+	vec3f pos_error;
 	vec3f vel;
 	SysTime timestamp;
 
-	this(int source, int track, vec3f pos, vec3f vel, SysTime timestamp)
+	this(int source, int track, vec3f pos, vec3f pos_error, vec3f vel, SysTime timestamp)
 	{
 		this.source    = source;
 		this.track     = track;
 		this.pos       = pos;
+		this.pos_error = pos_error;
 		this.vel       = vel;
 		this.timestamp = timestamp;
 	}
@@ -64,6 +67,20 @@ struct Point
 
 					serializer.putEscapedKey("z");
 					serializer.putValue(pos.z);
+				}
+				serializer.putEscapedKey("error");
+				{
+					auto state4 = serializer.objectBegin;
+					scope(exit) serializer.objectEnd(state4);
+
+					serializer.putEscapedKey("x");
+					serializer.putValue(pos_error.x);
+
+					serializer.putEscapedKey("y");
+					serializer.putValue(pos_error.y);
+
+					serializer.putEscapedKey("z");
+					serializer.putValue(pos_error.z);
 				}
 			}
 
@@ -127,6 +144,24 @@ auto distance(ref const(Movable) m, ref const(RDataSource) s, SysTime t)
 	return distanceFromPointToSegment(mm[0], p1, p2);
 }
 
+auto calculateMse(vec3f origin, vec3f polar_mse, vec3f point) pure @nogc @safe
+{
+	auto vector = point - origin;
+	const range = vector.magnitude;
+	vector.normalize;
+
+	import std.math : abs, tan, sin;
+	import gfm.math : angleBetween;
+
+	assert((abs(vector.x) > 0) || (abs(vector.y) > 0));
+
+	float x = range*sin(polar_mse.x);
+	float y = polar_mse.y;
+	float xy = vector.y/vector.x;
+
+	return vec3f(x, y, xy);
+}
+
 auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 {
 	Point[] points;
@@ -167,7 +202,9 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 							continue;
 						}
 						const r = m.calculate(curr_t);
-						points ~= Point(src+1, trk+1, r[0], r[1], curr_t);
+						import std.math : PI;
+						const mse = calculateMse(s.pos0, vec3f(2 * PI/180, 400, float.nan), r[0]);
+						points ~= Point(src+1, trk+1, r[0], mse, r[1], curr_t);
 						delta = base_delta;
 					}
 					grad_is_positive = new_grad_is_positive;
