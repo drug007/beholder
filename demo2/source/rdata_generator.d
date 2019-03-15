@@ -4,7 +4,7 @@ import std.datetime : SysTime;
 import mainsimulator : Movable, RDataSource;
 import gfm.math : vec3f;
 
-struct Point
+struct RDataPoint
 {
 	import gfm.math : vec3f;
 	int source;
@@ -195,7 +195,7 @@ auto calculateMse(vec3f origin, vec3f polar_mse, vec3f point) pure @nogc @safe
 
 auto generateRData(RDataSourceRange)(Movable[] movables, RDataSourceRange dsources) nothrow
 {
-	Point[] points;
+	RDataPoint[] points;
 
 	try
 	{
@@ -235,7 +235,7 @@ auto generateRData(RDataSourceRange)(Movable[] movables, RDataSourceRange dsourc
 						const r = m.calculate(curr_t);
 						import std.math : PI;
 						const mse = calculateMse(s.pos0, s.error, r[0]);
-						points ~= Point(s.id, trk+1, r[0], mse, r[1], curr_t);
+						points ~= RDataPoint(s.id, trk+1, r[0], mse, r[1], curr_t);
 						delta = base_delta;
 					}
 					grad_is_positive = new_grad_is_positive;

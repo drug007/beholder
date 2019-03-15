@@ -261,10 +261,10 @@ class MainSimulator : Simulator
 				100, vec3f( 7000, -9000, 0), 400_000,  0, 2*PI / 10, vec3f(1.8*PI/180, 400, float.nan), SysTime(         0), SysTime(360_000_000)
 			);
 			_sources[301] = RDataSource(
-				301, vec3f(-8000,  8000, 0), 700_000, PI/3, 2*PI / 10, vec3f(8*PI/180, 800, float.nan), SysTime(30_000_000), SysTime(390_000_000)
+				301, vec3f(-8000,  18000, 0), 700_000, PI/3, 2*PI / 10, vec3f(8*PI/180, 800, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
 			_sources[202] = RDataSource(
-				202, vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, vec3f(4*PI/180, 300, float.nan), SysTime(30_000_000), SysTime(390_000_000)
+				202, vec3f(-42000,  -9000, 0), 150_000,  0, 2*PI / 5, vec3f(4*PI/180, 300, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
 		}
 
@@ -323,6 +323,7 @@ class MainSimulator : Simulator
 			s.update(new_timestamp);
 
 		updateVertices;
+		updateRDataIndices(new_timestamp);
 		_track_renderer.update(_track_vertices, _track_indices);
 		_source_renderer.update(_source_vertices, _source_indices);
 
@@ -360,43 +361,9 @@ class MainSimulator : Simulator
 		
 		auto t = task!generateRData(_movables, _sources);
 		taskPool.put(t);
-		auto points = t.yieldForce;
+		_rdata_points = t.yieldForce;
 
-		import std.algorithm : map;
-		import std.array : array;
-		import std.conv : castFrom;
-		import std.range : iota;
-		import error_renderer : Vertex;
-		import color_table : ColorTable;
-
-		auto c = cast(uint) _movables.length;
-		auto color = ColorTable(c.iota.array);
-
-		static convert(C)(C c)
-		{
-			return vec4f(c.r, c.g, c.b, 1.0);
-		}
-
-		static convertError(V)(V v)
-		{
-			import std.math : atan;
-			import gfm.math : mat3f;
-			const angle = atan(v.z);
-			const m = mat3f.rotateZ(angle);
-			const tangent = m * vec3f(v.x,   0, 0);
-			const radial  = m * vec3f(  0, v.y, 0);
-			return vec4f(tangent.xy, radial.xy);
-		}
-
-		auto track_vertices = points.map!(p=>Vertex(p.pos, convertError(p.pos_error), convert(color(p.source)), p.vel)).array;
-		uint[] track_indices;
-		track_indices.length = track_vertices.length;
-		import std.algorithm : copy;
-		copy(castFrom!ulong.to!uint(track_vertices.length).iota, track_indices);
-
-		_track_renderer2.update(track_vertices, track_indices);
-
-		return points;
+		return _rdata_points;
 	}
 
 	auto resetRData()
@@ -413,6 +380,7 @@ private:
 	import error_renderer : ErrorRenderer;
 	import sourcerenderer : RDataSourceRenderer, SourceVertex = Vertex;
 	import auxinforenderer : AuxInfoRenderer, AuxInfoVertex = Vertex;
+	import rdata_generator : RDataPoint;
 
 	TrackVertex[] _track_vertices;
 	SourceVertex[] _source_vertices;
@@ -427,6 +395,7 @@ private:
 	RDataSource[uint] _sources;
 	Entry[] _intervals;
 	TimestampStorage _ts_storage;
+	RDataPoint[] _rdata_points;
 
 	void updateVertices()
 	{
@@ -510,6 +479,52 @@ else
 		_auxinfo_indices.length = _auxinfo_vertices.length;
 		import std.algorithm : copy;
 		copy(castFrom!ulong.to!uint(_auxinfo_vertices.length).iota, _auxinfo_indices);
+	}
+
+	void updateRDataIndices(SysTime timestamp)
+	{
+		import std.algorithm : map;
+		import std.array : array;
+		import std.conv : castFrom;
+		import std.range : iota;
+		import error_renderer : Vertex;
+		import color_table : ColorTable;
+
+		if (_rdata_points.length == 0)
+			return;
+
+		auto c = cast(uint) _movables.length;
+		auto color = ColorTable(c.iota.array);
+
+		static convert(C)(C c)
+		{
+			return vec4f(c.r, c.g, c.b, 1.0);
+		}
+
+		static convertError(V)(V v)
+		{
+			import std.math : atan;
+			import gfm.math : mat3f;
+			const angle = atan(v.z);
+			const m = mat3f.rotateZ(angle);
+			const tangent = m * vec3f(v.x,   0, 0);
+			const radial  = m * vec3f(  0, v.y, 0);
+			return vec4f(tangent.xy, radial.xy);
+		}
+
+		auto track_vertices = _rdata_points.map!(p=>Vertex(p.pos, convertError(p.pos_error), convert(color(p.source)), p.vel));
+		uint[] track_indices;
+		track_indices.reserve(track_vertices.length);
+		int i;
+		foreach(ref p; _rdata_points)
+		{
+			import std.datetime : seconds;
+			if (timestamp - 5.seconds < p.timestamp && p.timestamp <= timestamp)
+				track_indices ~= i;
+			i++;
+		}
+
+		_track_renderer2.update(track_vertices, track_indices);
 	}
 }
 
