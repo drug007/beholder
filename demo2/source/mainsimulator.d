@@ -420,9 +420,9 @@ else
 		import std.algorithm : copy;
 		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _track_indices);
 
-		_source_indices.length = _track_vertices.length;
+		_source_indices.length = _source_vertices.length;
 		import std.algorithm : copy;
-		copy(castFrom!ulong.to!uint(_track_vertices.length).iota, _source_indices);
+		copy(castFrom!ulong.to!uint(_source_vertices.length).iota, _source_indices);
 
 		_auxinfo_indices.length = _auxinfo_vertices.length;
 		import std.algorithm : copy;
