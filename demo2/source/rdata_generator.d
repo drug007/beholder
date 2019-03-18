@@ -203,7 +203,7 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 						}
 						const r = m.calculate(curr_t);
 						import std.math : PI;
-						const mse = calculateMse(s.pos0, vec3f(2 * PI/180, 400, float.nan), r[0]);
+						const mse = calculateMse(s.pos0, s.error, r[0]);
 						points ~= Point(src+1, trk+1, r[0], mse, r[1], curr_t);
 						delta = base_delta;
 					}

@@ -53,13 +53,15 @@ struct RDataSource
 	vec3f pos0, pos;
 	float phi0, angle_speed, phi, range;
 	SysTime start_timestamp, finish_timestamp, curr_timestamp;
+	vec3f error;
 
-	this(vec3f pos, float r, float p0, float as, SysTime st, SysTime ft)
+	this(vec3f pos, float r, float p0, float as, vec3f error, SysTime st, SysTime ft)
 	{
 		this.pos0 = pos;
 		this.range = r;
 		this.phi0 = p0;
 		this.angle_speed = as;
+		this.error = error;
 		this.phi = phi0;
 		this.start_timestamp = st;
 		this.finish_timestamp = ft;
@@ -191,13 +193,13 @@ class MainSimulator : Simulator
 		_sources = uninitializedArray!(typeof(_sources))(3);
 		{
 			_sources[0] = RDataSource(
-				vec3f( 7000, -9000, 0), 200_000,  0, 2*PI / 10, SysTime(         0), SysTime(360_000_000)
+				vec3f( 7000, -9000, 0), 400_000,  0, 2*PI / 10, vec3f(1.8*PI/180, 400, float.nan), SysTime(         0), SysTime(360_000_000)
 			);
 			_sources[1] = RDataSource(
-				vec3f(-8000,  8000, 0), 400_000, PI/3, 2*PI / 10, SysTime(30_000_000), SysTime(390_000_000)
+				vec3f(-8000,  8000, 0), 700_000, PI/3, 2*PI / 10, vec3f(8*PI/180, 800, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
 			_sources[2] = RDataSource(
-				vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, SysTime(30_000_000), SysTime(390_000_000)
+				vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, vec3f(4*PI/180, 300, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
 		}
 
