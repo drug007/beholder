@@ -103,6 +103,59 @@ struct RDataSource
 		import std.math : sin, cos;
 		return pos0 + range*vec3f(cos(phi), -sin(phi), 0);
 	}
+
+	void serialize(S)(ref S serializer) const
+	{
+		import std.format : sformat;
+		char[8] buffer;
+		auto str = sformat(buffer[], "%d", id);
+		
+		serializer.putEscapedKey(str);
+		auto s2 = serializer.objectBegin;
+		scope(exit) serializer.objectEnd(s2);
+		
+		serializer.putEscapedKey("update_period");
+		serializer.putValue(2*PI/angle_speed);
+		
+		serializer.putEscapedKey("polar_mse");
+		{
+			auto s3 = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(s3);
+
+			serializer.putEscapedKey("x");
+			serializer.putValue(error.x);
+
+			serializer.putEscapedKey("y");
+			serializer.putValue(error.y);
+
+			serializer.putEscapedKey("z");
+			serializer.putValue(error.z);
+		}
+		
+		serializer.putEscapedKey("elevation_error_kind");
+		serializer.putValue("Polar");
+		
+		serializer.putEscapedKey("hierarchy_kind");
+		serializer.putValue("Subordinate");
+
+		serializer.putEscapedKey("position");
+		{
+			auto s3 = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(s3);
+
+			serializer.putEscapedKey("x");
+			serializer.putValue(pos0.x);
+
+			serializer.putEscapedKey("y");
+			serializer.putValue(pos0.y);
+
+			serializer.putEscapedKey("z");
+			serializer.putValue(pos0.z);
+		}
+		
+		serializer.putEscapedKey("lag");
+		serializer.putNumberValue(0);
+	}
 }
 
 struct Entry
@@ -276,6 +329,11 @@ class MainSimulator : Simulator
 
 		// auto r = updateAuxInfo(new_timestamp, ray);
 		// _auxinfo_renderer.update(r[0], r[1]);
+	}
+
+	auto rdataSource() const
+	{
+		return _sources;
 	}
 
 	void clearFinished()

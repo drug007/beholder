@@ -223,6 +223,41 @@ class DemoApplication : NuklearApp
 			s.onSimulation(_current_timestamp, ray);
 	}
 
+	private void serializeRDataSource(R)(R r)
+	{
+		import asdf, std.algorithm, std.array;
+		import std.stdio;
+
+		auto app = appender!string;
+		auto serializer = jsonSerializer!"\t"(&app.put!(const(char)[]));
+		
+		{
+			auto state1 = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(state1);
+
+			serializer.putEscapedKey("kind");
+			serializer.putValue("config_");
+			
+			serializer.putEscapedKey("payload");
+			auto state = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(state);
+			serializer.putEscapedKey("source_no");
+			serializer.putNumberValue(1);
+
+			serializer.putEscapedKey("source_info");
+			auto s1 = serializer.objectBegin;
+			scope(exit) serializer.objectEnd(s1);
+
+			foreach(ref e; cast() r)
+			{
+				serializer.serializeValue(e);
+			}
+		}
+
+		serializer.flush;
+		stderr.writeln(app.data);
+	}
+
 	auto generateRData() nothrow
 	{
 		try
@@ -231,6 +266,7 @@ class DemoApplication : NuklearApp
 
 			import asdf, std.algorithm;
 			import std.stdio;
+			serializeRDataSource(_simulator.rdataSource.byValue);
 			stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
 			writeln(points.length);
 		}
