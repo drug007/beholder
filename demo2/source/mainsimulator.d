@@ -129,7 +129,7 @@ struct RDataSource
 			serializer.putValue(error.y);
 
 			serializer.putEscapedKey("z");
-			serializer.putValue(error.z);
+			serializer.putValue("nan");
 		}
 		
 		serializer.putEscapedKey("elevation_error_kind");
@@ -171,7 +171,6 @@ class MainSimulator : Simulator
 	{
 		import std.array : uninitializedArray;
 
-		_movables = uninitializedArray!(typeof(_movables))(10);
 		version(none)
 		{
 			foreach(ref e; _movables)
@@ -194,62 +193,62 @@ class MainSimulator : Simulator
 		else
 		{
 			// fix values to get deterministic value for debugging
-			_movables[0] = Movable(
+			_movables ~= Movable(
 				44, [
 				Timepoint(vec3f( -3899, -9615, 0), SysTime(          0)),
 				Timepoint(vec3f(-33462, 25537, 0), SysTime(180_000_000)),
 				Timepoint(vec3f(-39649, 39994, 0), SysTime(360_000_000)),
 				Timepoint(vec3f(-78649, 80994, 0), SysTime(720_000_000)),
 			]);
-			_movables[1] = Movable(
+			_movables ~= Movable(
 				64, [
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(130_000_000)),
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(230_000_000)),
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(330_000_000)),
 			]);
-			_movables[2] = Movable(
+			_movables ~= Movable(
 				65, [
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(120_000_000)),
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(240_000_000)),
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(350_000_000)),
 			]);
-			_movables[3] = Movable(
+			_movables ~= Movable(
 				18, [
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(130_000_000)),
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(160_000_000)),
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(190_000_000)),
 			]);
-			_movables[4] = Movable(
+			_movables ~= Movable(
 				19, [
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(130_000_000)),
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(160_000_000)),
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(190_000_000)),
 			]);
-			_movables[5] = Movable(
+			_movables ~= Movable(
 				20, [
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(130_000_000)),
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(160_000_000)),
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(190_000_000)),
 			]);
-			_movables[6] = Movable(
+			_movables ~= Movable(
 				113, [
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000)),
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(60_000_000)),
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(90_000_000)),
 			]);
-			_movables[7] = Movable(
+			_movables ~= Movable(
 				234, [
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(30_000_000)),
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(60_000_000)),
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(90_000_000)),
 			]);
-			_movables[8] = Movable(
+			_movables ~= Movable(
 				235, [
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(30_000_000)),
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(60_000_000)),
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(90_000_000)),
 			]);
-			_movables[9] = Movable(
+			_movables ~= Movable(
 				236, [
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(30_000_000)),
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(60_000_000)),

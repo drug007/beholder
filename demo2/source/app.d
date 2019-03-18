@@ -252,6 +252,11 @@ class DemoApplication : NuklearApp
 			{
 				serializer.serializeValue(e);
 			}
+
+			{
+				import mainsimulator;
+				serializer.serializeValue(RDataSource(1, vec3f(0, 0, 0), 1e6, 0, 1, vec3f(1e6, 1e6, 1e6), SysTime(0), SysTime(long.max)));
+			}
 		}
 
 		serializer.flush;
@@ -266,8 +271,10 @@ class DemoApplication : NuklearApp
 
 			import asdf, std.algorithm;
 			import std.stdio;
+			stderr.writeln("[");
 			serializeRDataSource(_simulator.rdataSource.byValue);
-			stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty);
+			stderr.write(",");
+			stderr.writeln(points.sort!((a,b)=>a.timestamp < b.timestamp).serializeToJsonPretty[2..$]);
 			writeln(points.length);
 		}
 		catch(Exception e)

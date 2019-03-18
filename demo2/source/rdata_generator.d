@@ -54,60 +54,91 @@ struct Point
 				auto state3 = serializer.objectBegin;
 				scope(exit) serializer.objectEnd(state3);
 
-				serializer.putEscapedKey("decart");
+				serializer.putEscapedKey("value");
 				{
 					auto state4 = serializer.objectBegin;
 					scope(exit) serializer.objectEnd(state4);
 
-					serializer.putEscapedKey("x");
-					serializer.putValue(pos.x);
+					serializer.putEscapedKey("decart");
+					{
+						auto state5 = serializer.objectBegin;
+						scope(exit) serializer.objectEnd(state5);
 
-					serializer.putEscapedKey("y");
-					serializer.putValue(pos.y);
+						serializer.putEscapedKey("x");
+						serializer.putValue(pos.x);
 
-					serializer.putEscapedKey("z");
-					serializer.putValue(pos.z);
+						serializer.putEscapedKey("y");
+						serializer.putValue(pos.y);
+
+						serializer.putEscapedKey("z");
+						serializer.putValue(pos.z);
+					}
+
+					serializer.putEscapedKey("error");
+					{
+						auto state5 = serializer.objectBegin;
+						scope(exit) serializer.objectEnd(state5);
+
+						serializer.putEscapedKey("x");
+						serializer.putValue(pos_error.x);
+
+						serializer.putEscapedKey("y");
+						serializer.putValue(pos_error.y);
+
+						serializer.putEscapedKey("z");
+						serializer.putValue(pos_error.z);
+					}
+
+					serializer.putEscapedKey("state");
+					serializer.putValue("Updated");
 				}
-				serializer.putEscapedKey("error");
+
+				serializer.putEscapedKey("timestamp");
 				{
-					auto state4 = serializer.objectBegin;
-					scope(exit) serializer.objectEnd(state4);
+					import std.format : sformat;
 
-					serializer.putEscapedKey("x");
-					serializer.putValue(pos_error.x);
-
-					serializer.putEscapedKey("y");
-					serializer.putValue(pos_error.y);
-
-					serializer.putEscapedKey("z");
-					serializer.putValue(pos_error.z);
+					char[31] buffer = void;
+					auto str = timestamp.toUTC.toISOExtString;
+					sformat(buffer[], "%-31s", str);
+					
+					serializer.putValue(str);
 				}
 			}
 
 			serializer.putEscapedKey("velocity");
 			{
-				auto state3 = serializer.objectBegin;
-				scope(exit) serializer.objectEnd(state3);
+				auto state4 = serializer.objectBegin;
+				scope(exit) serializer.objectEnd(state4);
 
-				serializer.putEscapedKey("x");
-				serializer.putValue(vel.x);
+				serializer.putEscapedKey("decart");
+				{
+					auto state5 = serializer.objectBegin;
+					scope(exit) serializer.objectEnd(state5);
 
-				serializer.putEscapedKey("y");
-				serializer.putValue(vel.y);
+					serializer.putEscapedKey("x");
+					serializer.putValue(vel.x);
 
-				serializer.putEscapedKey("z");
-				serializer.putValue(vel.z);
-			}
+					serializer.putEscapedKey("y");
+					serializer.putValue(vel.y);
 
-			serializer.putEscapedKey("timestamp");
-			{
-				import std.format : sformat;
+					serializer.putEscapedKey("z");
+					serializer.putValue(vel.z);
+				}
 
-				char[31] buffer = void;
-				auto str = timestamp.toUTC.toISOExtString;
-				sformat(buffer[], "%-31s", str);
-				
-				serializer.putValue(str);
+				serializer.putEscapedKey("error");
+				{
+					auto state5 = serializer.objectBegin;
+					scope(exit) serializer.objectEnd(state5);
+
+					serializer.putEscapedKey("x");
+					serializer.putValue("nan");
+
+					serializer.putEscapedKey("y");
+					serializer.putValue("nan");
+
+					serializer.putEscapedKey("z");
+					serializer.putValue("nan");
+				}
 			}
 		}
 	}
