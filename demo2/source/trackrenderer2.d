@@ -43,7 +43,6 @@ class TrackRenderer : Renderer
 				void main()
 				{
 					gl_Position = vec4(position.xyz, 1.0);
-					vColor = color;
 					v_pos_error = pos_error;
 				}
 				#endif
@@ -53,16 +52,12 @@ class TrackRenderer : Renderer
 				layout(triangle_strip, max_vertices = 40) out;
 
 				uniform mat4 mvp_matrix;
-				
-				in vec4 vColor[]; // Output from vertex shader for each vertex
 				in vec4 v_pos_error[];
-				out vec4 fColor;  // Output to fragment shader
-
-				const float M_PI = 3.141592654;
+				varying float sigma;
 
 				void main()
 				{
-					fColor = vColor[0];
+					const float M_PI = 3.141592654;
 
 					vec4 t = vec4(v_pos_error[0].xy, 0, 0);
 					vec4 r = vec4(v_pos_error[0].zw, 0, 0);
@@ -78,7 +73,7 @@ class TrackRenderer : Renderer
 					mat2 rot = mat2(c, -s, s, c);
 
 					gl_Position = mvp_matrix * (pos+vec4(rot*vec2(a, 0), 0, 0));
-					fColor = vec4(0, 0, 1, 1);
+					sigma = 1;
 					EmitVertex();
 
 					int count = 10;
@@ -86,11 +81,11 @@ class TrackRenderer : Renderer
 					{
 						vec2 offset = rot * vec2(a * cos(i*M_PI/count), b * sin(i*M_PI/count));
 						gl_Position = mvp_matrix * (pos+vec4(offset, 0, 0));
-						fColor = vec4(0, 0, 1, 1);
+						sigma = 1;
 						EmitVertex();
 
 						gl_Position = center;
-						fColor = vec4(0, 1, 0, 1);
+						sigma = 0;
 						EmitVertex();
 					}
 
@@ -99,12 +94,25 @@ class TrackRenderer : Renderer
 				#endif
 
 				#if FRAGMENT_SHADER
-				in vec4 fColor;
 				out vec4 color_out;
+				varying float sigma;
 
 				void main()
 				{
-					color_out = fColor;
+					if (sigma > 0.66)
+					{
+						float a = smoothstep(0.8, 0.999, sigma);
+						color_out = vec4(0, 0, 1, a);
+					}
+					else if (sigma > 0.33)
+					{
+						float a = smoothstep(0.5, 0.666, sigma);
+						color_out = vec4(0, 0.5, 0.5, a);
+					}
+					else
+					{
+						color_out = vec4(0, 0.8, 0, a);
+					}
 				}
 				#endif
 			";
