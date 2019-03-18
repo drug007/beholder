@@ -1,4 +1,4 @@
-module trackrenderer2;
+module error_renderer;
 
 import common : Renderer;
 import gldata : GLData;
@@ -15,7 +15,7 @@ struct Vertex
 	vec3f velocity;
 }
 
-class TrackRenderer : Renderer
+class ErrorRenderer : Renderer
 {
 	import beholder.camera : Camera;
 
@@ -111,7 +111,7 @@ class TrackRenderer : Renderer
 					}
 					else
 					{
-						color_out = vec4(0, 0.8, 0, a);
+						color_out = vec4(0, 0.8, 0, 1);
 					}
 				}
 				#endif

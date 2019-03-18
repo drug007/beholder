@@ -231,7 +231,7 @@ class MainSimulator : Simulator
 		updateVertices;
 		updateIndices;
 
-		_track_renderer2 = new TrackRenderer2(gl, parent.camera);
+		_track_renderer2 = new ErrorRenderer(gl, parent.camera);
 		parent.addRenderer(_track_renderer2);
 		_track_renderer2.update(_track_vertices, _track_indices);
 
@@ -294,7 +294,7 @@ class MainSimulator : Simulator
 		import std.array : array;
 		import std.conv : castFrom;
 		import std.range : iota;
-		import trackrenderer2 : Vertex2 = Vertex;
+		import error_renderer : Vertex;
 		import color_table : ColorTable;
 
 		auto c = cast(uint) _movables.length;
@@ -316,7 +316,7 @@ class MainSimulator : Simulator
 			return vec4f(tangent.xy, radial.xy);
 		}
 
-		Vertex2[] track_vertices = points.map!(p=>Vertex2(p.pos, convertError(p.pos_error), convert(color(p.source)), p.vel)).array;
+		auto track_vertices = points.map!(p=>Vertex(p.pos, convertError(p.pos_error), convert(color(p.source)), p.vel)).array;
 		uint[] track_indices;
 		track_indices.length = track_vertices.length;
 		import std.algorithm : copy;
@@ -338,7 +338,7 @@ private:
 	import gfm.math : ray3f;
 	import timestamp_storage : TimestampStorage;
 	import trackrenderer : TrackRenderer, TrackVertex = Vertex;
-	import trackrenderer2 : TrackRenderer2 = TrackRenderer, TrackVertex2 = Vertex;
+	import error_renderer : ErrorRenderer;
 	import sourcerenderer : RDataSourceRenderer, SourceVertex = Vertex;
 	import auxinforenderer : AuxInfoRenderer, AuxInfoVertex = Vertex;
 
@@ -347,7 +347,7 @@ private:
 	AuxInfoVertex[] _auxinfo_vertices;
 	uint[] _track_indices, _source_indices, _auxinfo_indices;
 	TrackRenderer _track_renderer;
-	TrackRenderer2 _track_renderer2;
+	ErrorRenderer _track_renderer2;
 	RDataSourceRenderer _source_renderer;
 	AuxInfoRenderer _auxinfo_renderer;
 
