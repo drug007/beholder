@@ -162,15 +162,15 @@ auto calculateMse(vec3f origin, vec3f polar_mse, vec3f point) pure @nogc @safe
 	return vec3f(x, y, xy);
 }
 
-auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
+auto generateRData(RDataSourceRange)(Movable[] movables, RDataSourceRange dsources) nothrow
 {
 	Point[] points;
 
 	try
 	{
-		foreach(int trk, ref m; movables[0..$])
+		foreach(int trk, ref m; movables)
 		{
-			foreach(int src, ref s; dsources[0..$])
+			foreach(ref s; dsources)
 			{				
 				import std.math : atan2;
 				import std.datetime : msecs, UTC, Duration;
@@ -204,7 +204,7 @@ auto generateRData(Movable[] movables, RDataSource[] dsources) nothrow
 						const r = m.calculate(curr_t);
 						import std.math : PI;
 						const mse = calculateMse(s.pos0, s.error, r[0]);
-						points ~= Point(src+1, trk+1, r[0], mse, r[1], curr_t);
+						points ~= Point(s.id, trk+1, r[0], mse, r[1], curr_t);
 						delta = base_delta;
 					}
 					grad_is_positive = new_grad_is_positive;

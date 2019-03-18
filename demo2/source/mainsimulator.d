@@ -12,9 +12,11 @@ struct Movable
 	private Tuple!(vec3f, vec3f) _state;
 	private SysTime _curr_timestamp;
 	Timeline tl;
+	uint id;
 
-	this(Timepoint[] points)
+	this(uint id, Timepoint[] points)
 	{
+		this.id = id;
 		tl = Timeline(points);
 	}
 
@@ -50,13 +52,15 @@ struct Movable
 
 struct RDataSource
 {
+	uint id;
 	vec3f pos0, pos;
 	float phi0, angle_speed, phi, range;
 	SysTime start_timestamp, finish_timestamp, curr_timestamp;
 	vec3f error;
 
-	this(vec3f pos, float r, float p0, float as, vec3f error, SysTime st, SysTime ft)
+	this(uint id, vec3f pos, float r, float p0, float as, vec3f error, SysTime st, SysTime ft)
 	{
+		this.id = id;
 		this.pos0 = pos;
 		this.range = r;
 		this.phi0 = p0;
@@ -137,69 +141,78 @@ class MainSimulator : Simulator
 		else
 		{
 			// fix values to get deterministic value for debugging
-			_movables[0] = Movable([
+			_movables[0] = Movable(
+				44, [
 				Timepoint(vec3f( -3899, -9615, 0), SysTime(          0)),
 				Timepoint(vec3f(-33462, 25537, 0), SysTime(180_000_000)),
 				Timepoint(vec3f(-39649, 39994, 0), SysTime(360_000_000)),
 				Timepoint(vec3f(-78649, 80994, 0), SysTime(720_000_000)),
 			]);
-			_movables[1] = Movable([
+			_movables[1] = Movable(
+				64, [
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(130_000_000)),
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(230_000_000)),
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(330_000_000)),
 			]);
-			_movables[2] = Movable([
+			_movables[2] = Movable(
+				65, [
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(120_000_000)),
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(240_000_000)),
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(350_000_000)),
 			]);
-			_movables[3] = Movable([
+			_movables[3] = Movable(
+				18, [
 				Timepoint(vec3f( 9818,  7221, 0), SysTime(130_000_000)),
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(160_000_000)),
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(190_000_000)),
 			]);
-			_movables[4] = Movable([
+			_movables[4] = Movable(
+				19, [
 				Timepoint(vec3f( 6059, -5893, 0), SysTime(130_000_000)),
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(160_000_000)),
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(190_000_000)),
 			]);
-			_movables[5] = Movable([
+			_movables[5] = Movable(
+				20, [
 				Timepoint(vec3f( 6723,  -595, 0), SysTime(130_000_000)),
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(160_000_000)),
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(190_000_000)),
 			]);
-			_movables[6] = Movable([
+			_movables[6] = Movable(
+				113, [
 				Timepoint(vec3f(-8651,  3537, 0), SysTime(30_000_000)),
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(60_000_000)),
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(90_000_000)),
 			]);
-			_movables[7] = Movable([
+			_movables[7] = Movable(
+				234, [
 				Timepoint(vec3f( 5605, -5733, 0), SysTime(30_000_000)),
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(60_000_000)),
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(90_000_000)),
 			]);
-			_movables[8] = Movable([
+			_movables[8] = Movable(
+				235, [
 				Timepoint(vec3f(-6263,  5981, 0), SysTime(30_000_000)),
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(60_000_000)),
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(90_000_000)),
 			]);
-			_movables[9] = Movable([
+			_movables[9] = Movable(
+				236, [
 				Timepoint(vec3f( 8599, -2917, 0), SysTime(30_000_000)),
 				Timepoint(vec3f(-8462,  8537, 0), SysTime(60_000_000)),
 				Timepoint(vec3f(-5649,  9994, 0), SysTime(90_000_000)),
 			]);
 		}
 
-		_sources = uninitializedArray!(typeof(_sources))(3);
 		{
-			_sources[0] = RDataSource(
-				vec3f( 7000, -9000, 0), 400_000,  0, 2*PI / 10, vec3f(1.8*PI/180, 400, float.nan), SysTime(         0), SysTime(360_000_000)
+			_sources[100] = RDataSource(
+				100, vec3f( 7000, -9000, 0), 400_000,  0, 2*PI / 10, vec3f(1.8*PI/180, 400, float.nan), SysTime(         0), SysTime(360_000_000)
 			);
-			_sources[1] = RDataSource(
-				vec3f(-8000,  8000, 0), 700_000, PI/3, 2*PI / 10, vec3f(8*PI/180, 800, float.nan), SysTime(30_000_000), SysTime(390_000_000)
+			_sources[301] = RDataSource(
+				301, vec3f(-8000,  8000, 0), 700_000, PI/3, 2*PI / 10, vec3f(8*PI/180, 800, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
-			_sources[2] = RDataSource(
-				vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, vec3f(4*PI/180, 300, float.nan), SysTime(30_000_000), SysTime(390_000_000)
+			_sources[202] = RDataSource(
+				202, vec3f(-5000,  9999, 0), 150_000,  0, 2*PI / 5, vec3f(4*PI/180, 300, float.nan), SysTime(30_000_000), SysTime(390_000_000)
 			);
 		}
 
@@ -354,7 +367,7 @@ private:
 	AuxInfoRenderer _auxinfo_renderer;
 
 	Movable[] _movables;
-	RDataSource[] _sources;
+	RDataSource[uint] _sources;
 	Entry[] _intervals;
 	TimestampStorage _ts_storage;
 
@@ -381,7 +394,7 @@ private:
 		}
 
 		clr_idx = 0;
-		foreach(ref s, ref v; lockstep(_sources, _source_vertices))
+		foreach(ref s, ref v; lockstep(_sources.byValue, _source_vertices))
 		{
 			import std.math : atan2;
 			vec4f clr = void;
