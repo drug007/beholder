@@ -65,7 +65,7 @@ import gridrenderer : GridRenderer;
 import mainsimulator : MainSimulator;
 import beholder.camera : Camera;
 
-import nuklearapp : NuklearApp;
+import beholder.nuklearapp : NuklearApp;
 
 class DemoApplication : NuklearApp
 {

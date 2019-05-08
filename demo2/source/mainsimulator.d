@@ -401,7 +401,7 @@ private:
 	{
 		import std.range : iota;
 		import std.array : array;
-		import color_table : ColorTable;
+		import beholder.color_table : ColorTable;
 		auto c = cast(uint) _movables.length;
 		auto color = ColorTable(c.iota.array);
 
@@ -488,7 +488,7 @@ else
 		import std.conv : castFrom;
 		import std.range : iota;
 		import error_renderer : Vertex;
-		import color_table : ColorTable;
+		import beholder.color_table : ColorTable;
 
 		if (_rdata_points.length == 0)
 			return;

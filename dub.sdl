@@ -8,5 +8,9 @@ dependency "gfm:opengl" version="~>7.0.0"
 dependency "color" version="~>0.0.7"
 dependency "rtree" version="~>0.0.1"
 dependency "taggedalgebraic" version="~>0.10.11"
+dependency "nukleared" path="./nukleared"
+
+lflags "-L../nukleared/lib" "-lnukleared" "-lnuklear_sdl_gl3" "-lGL" "-lSDL2"
+
 license "BSL-1.0"
 targetType "library"

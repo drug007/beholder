@@ -13,7 +13,6 @@
 		"mir-core": "0.2.1",
 		"mir-linux-kernel": "1.0.1",
 		"mir-random": "2.2.2",
-		"nukleared": {"path":"../nukleared"},
 		"rtree": "0.0.1",
 		"taggedalgebraic": "0.10.12"
 	}

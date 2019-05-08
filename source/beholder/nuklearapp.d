@@ -1,6 +1,6 @@
-module nuklearapp;
+module beholder.nuklearapp;
 
-import sdlapp : SdlApp;
+import beholder.sdlapp : SdlApp;
 
 class NuklearApp : SdlApp
 {

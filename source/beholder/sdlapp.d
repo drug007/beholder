@@ -1,4 +1,4 @@
-module sdlapp;
+module beholder.sdlapp;
 
 class SdlApp
 {

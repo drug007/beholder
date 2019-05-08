@@ -1,34 +1,30 @@
+module beholder.color_table;
+
+import std.experimental.color : RGBAf32;
+import std.experimental.color.lab : LCh;
+
 struct ColorTable
 {
-	import std.experimental.color.hsx : HSL;
-	import std.experimental.color : RGBAf32;
-	import std.random : uniform;
-	import std.math : fmod;
-
 	RGBAf32[uint] tbl;
 
 	this(uint[] numbers)
 	{
-		// Первый цвет фиксированный (без учета кол-ва цветов)
-		{
-			auto hue = 2/3.;
-			auto saturation = 0.9;
-			auto lightness = 0.03;
-
-			auto rgba = cast(RGBAf32) HSL!float(hue, saturation, lightness);
-			rgba.a = 1.0;
-			tbl[numbers[0]] = rgba;
-		}
-		// Обрабатываем остальные цвета
+		auto lch = LCh!float(100, 100, 0);
 		const l = numbers.length;
-		foreach(i; 1..l)
+		foreach(i; 0..l/2)
 		{
-			auto hue = fmod(2/3. + (i + 1.5) / cast(float) l, 1.0);
-			auto saturation = 0.8 + uniform(0, 20)/100.0;
-			auto lightness = 0.5 + uniform(0, 20)/100.0;
+			import std.math : PI;
+			lch.radians = i * 2 * PI / l;
+			auto rgba = cast(RGBAf32) lch;
+			tbl[numbers[i]] = rgba;
+		}
 
-			auto rgba = cast(RGBAf32) HSL!float(hue, saturation, lightness);
-			rgba.a = 1.0;
+		lch.C = 50;
+		foreach(i; l/2..l)
+		{
+			import std.math : PI;
+			lch.radians = i * 2 * PI / l;
+			auto rgba = cast(RGBAf32) lch;
 			tbl[numbers[i]] = rgba;
 		}
 	}
