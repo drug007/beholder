@@ -2,57 +2,57 @@ module beholder.camera;
 
 class Camera
 {
-    this(vec2f window, vec3f position, float size)
-    {
-        _projection = mat4f.identity;
-        _mvp_matrix = mat4f.identity;
-        _model      = mat4f.identity;
-        _view       = mat4f.identity;
+	this(vec2f window, vec3f position, float size)
+	{
+		_projection = mat4f.identity;
+		_mvp_matrix = mat4f.identity;
+		_model      = mat4f.identity;
+		_view       = mat4f.identity;
 
-        _position   = position;
-        _window     = window;
-        _size       = size < 0 ? 0 : size;
+		_position   = position;
+		_window     = window;
+		_size       = size < 0 ? 0 : size;
 
-        updateMatrices;
-    }
+		updateMatrices;
+	}
 
-    auto size(float size)
-    {
-        _size = size;
-        updateMatrices();
-    }
+	auto size(float size)
+	{
+		_size = size;
+		updateMatrices();
+	}
 
-    auto size() const
-    {
-        return _size;
-    }
+	auto size() const
+	{
+		return _size;
+	}
 
-    auto window(vec2f window)
-    {
-        _window = window;
-        updateMatrices();
-    }
+	auto window(vec2f window)
+	{
+		_window = window;
+		updateMatrices();
+	}
 
 	auto window()
 	{
 		return _window;
 	}
 
-    auto position() const
-    {
-        return _position;
-    }
+	auto position() const
+	{
+		return _position;
+	}
 
-    auto position(vec3f position)
-    {
-        _position = position;
-        updateMatrices();
-    }
+	auto position(vec3f position)
+	{
+		_position = position;
+		updateMatrices();
+	}
 
-    ref mvpMatrix()
-    {
-        return _mvp_matrix;
-    }
+	ref mvpMatrix()
+	{
+		return _mvp_matrix;
+	}
 
 	ref projection()
 	{
@@ -92,30 +92,30 @@ class Camera
 	}
 
 protected:
-    import gfm.math;
+	import gfm.math;
 
-    vec2f _window;
-    vec3f _position;
-    float _size;
-    mat4f _projection, _view, _mvp_matrix, _model, _model_view;
+	vec2f _window;
+	vec3f _position;
+	float _size;
+	mat4f _projection, _view, _mvp_matrix, _model, _model_view;
 
-    void updateMatrices()
-    {
-        auto aspect_ratio= _window.x/_window.y;
+	void updateMatrices()
+	{
+		auto aspect_ratio= _window.x/_window.y;
 
-        if(_window.x <= _window.y)
-            _projection = mat4f.orthographic(-_size, +_size,-_size/aspect_ratio, +_size/aspect_ratio, -_size, +_size);
-        else
-            _projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, -_size, +_size);
+		if(_window.x <= _window.y)
+			_projection = mat4f.orthographic(-_size, +_size,-_size/aspect_ratio, +_size/aspect_ratio, -_size, +_size);
+		else
+			_projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, -_size, +_size);
 
-        _view = mat4f.lookAt(
-            vec3f(_position.x, _position.y, +_size), // Camera has world coordinates
-            vec3f(_position.x, _position.y, -_size), // and looks at origin
-            vec3f(0, 1, 0)  // "Head" is up
-        );
+		_view = mat4f.lookAt(
+			vec3f(_position.x, _position.y, +_size), // Camera has world coordinates
+			vec3f(_position.x, _position.y, -_size), // and looks at origin
+			vec3f(0, 1, 0)  // "Head" is up
+		);
 
 		_model_view = _view * _model;
 
-        _mvp_matrix = _projection * _model_view;
-    }
+		_mvp_matrix = _projection * _model_view;
+	}
 }
