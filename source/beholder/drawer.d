@@ -1,30 +1,164 @@
 module beholder.drawer;
 
 import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray, 
-	isSomeString, isPointer, isSomeChar, isAssociativeArray, isBoolean;
+	isSomeString, isPointer, isSomeChar, isAssociativeArray, isBoolean,
+	isInstanceOf;
 import std.range : ElementType;
+import taggedalgebraic : TaggedAlgebraic;
 
 enum textBufferSize = 1024;
-enum itemHeight = 21;
+enum itemHeight = 11;
 enum fieldWidth = 80;
 
-struct Drawer(T) if (
-	!isAggregateType!T && 
-	!isPointer!T &&
-	(!isArray!T || isSomeString!T) &&
-	!isAssociativeArray!T
-)
+auto drawer(Args...)(Args args)
+{
+	return Drawer!(Args)(args);
+}
+
+template DrawerOf(alias A)
+{
+	alias DrawerOf = Drawer!(typeof(A));
+}
+
+template Drawer(T)
+{
+	static if (Description!T.kind == Kind.oneliner)
+	{
+		static if (isInstanceOf!(TaggedAlgebraic, T))
+			alias Drawer = DrawerOnelinerTaggedAlgebraic!T;
+		else static if (isNullableLike!T)
+			alias Drawer = DrawerOnelinerNullableLike!T;
+		else static if (isAliasThised!T)
+		{
+			// get type of the first alias thised member
+			alias U = typeof(mixin("T." ~ __traits(getAliasThis, T)[0]));
+			alias Drawer = Drawer!U;
+		}
+		else
+			alias Drawer = DrawerOneliner!T;
+	}
+	else static if (Description!T.kind == Kind.compiletimeList)
+	{
+		alias Drawer = DrawerCtList!T;
+	}
+	else static if (Description!T.kind == Kind.runtimeList)
+	{
+		alias Drawer = DrawerRtList!T;
+	}
+	else static if (Description!T.kind == Kind.assocArray)
+	{
+		alias Drawer = DrawerAssocArray!T;
+	}
+	else static if (Description!T.kind == Kind.aggregate)
+	{
+		alias Drawer = DrawerAggregate!T;
+	}
+	else
+		static assert(0, "Unsupported type: " ~ T.stringof);
+}
+
+mixin template ImplementHeight()
+{
+	private float _height = itemHeight;
+
+	@property
+	auto height() inout { return _height; }
+
+	@property
+	auto height(float v) { _height = v; }
+}
+
+// TODO: Not thread safe solution!
+private static int __list_drawer_char_id_counter;
+
+mixin template ImplementDrawList()
+{
+	/// let every instance be unique
+	private char[8] _char_id;
+
+	void draw(Context)(Context ctx, const(char)[] header, ref const(T) a)
+	{
+		import core.stdc.stdio : snprintf;
+		import nuklear_sdl_gl3;
+
+		char[textBufferSize] buffer;
+
+		// I'm pretty sure that a drawing method is not
+		// a good place to initialize id (like ctor is).
+		// The problem is absense of ability to define
+		// default ctor for structs so generating of id
+		// in struct ctor demands explicit ctor call and
+		// that complicates code generation.
+		// At least it allows to have id only for part of
+		// structure, not for all like it would be in case
+		// of classes
+
+		// init id if needed
+		if (_char_id == _char_id.init)
+		{
+			import core.stdc.stdio : snprintf;
+			typeof(_char_id) buf;
+			// hope we won't have 10 millions of instances
+			snprintf(buf.ptr, buf.length, "%07d", __list_drawer_char_id_counter++);
+			// reverse char id to place more rapidly changing char
+			// in start of line to accelerate its comparing
+			import std.algorithm : reverse;
+			_char_id[0..$-1] = buf[0..$-1].reverse;
+			_char_id[$-1] = 0;
+		}
+
+		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
+		{
+			if (a.length)
+			{
+				assert(wrapper.length == a.length);
+				nk_list_view view;
+				// set layout height for the whole list view
+				// it lets nk_list_view calculates its parameters
+				nk_layout_row_dynamic(ctx, height, 1);
+				if (nk_list_view_begin(ctx, &view, _char_id.ptr, NK_WINDOW_BORDER, itemHeight, cast(int) a.length)) 
+				{
+					foreach(i; 0..view.count)
+					{
+						static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
+						{
+							snprintfValue(buffer[], a.keys[view.begin + i]);
+							wrapper[view.begin + i].draw(ctx, buffer, a[a.keys[view.begin + i]]);
+						}
+						else
+							wrapper[view.begin + i].draw(ctx, "", a[view.begin + i]);
+					}
+					nk_list_view_end(&view);
+				}
+			}
+			nk_tree_pop(ctx);
+		}
+	}
+}
+
+struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 {
 	int selected;
 
-	this(const(T) t) {
+	this(const(Base) t) {
 		// by default do nothing
 	}
 
-	float draw(Context, T)(Context ctx, const(char)[] header, T t)
+	mixin ImplementHeight;
+
+	float measure() inout
 	{
-		import core.stdc.stdio : snprintf;
-		import std.traits : isIntegral, isFloatingPoint;
+		return height;
+	}
+
+	auto makeLayout()
+	{
+		assert(height == itemHeight);
+	}
+
+	void draw(Context, Derived : Base)(Context ctx, const(char)[] header, Derived t)
+	{
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
@@ -32,254 +166,15 @@ struct Drawer(T) if (
 		if (header.length)
 			l = snprintf(buffer.ptr, buffer.length, "%s: ", header.ptr);
 		
-		// format specifier depends on type, also string should be
-		// passed using `.ptr` member
-		static if (is(T == enum))
-			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.enumToString.ptr);
-		else static if (isIntegral!T)
-			snprintf(buffer[l..$].ptr, buffer.length-l, "%d", t);
-		else static if (isFloatingPoint!T)
-			snprintf(buffer[l..$].ptr, buffer.length-l, "%f", t);
-		else static if (isBoolean!T)
-			snprintf(buffer[l..$].ptr, buffer.length-l, t ? "true" : "false");
-		else static if (isSomeString!T)
-			snprintf(buffer[l..$].ptr, buffer.length-l, "%s", t.ptr);
-		else
-			static assert(0, T.stringof);
+		snprintfValue!Base(buffer[l..$], t);
 
+		nk_layout_row_dynamic(ctx, height, 1);
 		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
-
-		return ctx.current.layout.row.height;
 	}
 }
-
-struct Drawer(T) if (isPointer!T && !isAggregateType!T)
-{
-	int selected;
-
-	this(T t) {
-		// by default do nothing
-	}
-
-	float draw(Context, T)(Context ctx, const(char)[] header, T t)
-	{
-		import core.stdc.stdio : sprintf;
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		if (header.length)
-			snprintf(buffer.ptr, buffer.length, "%s: %x", header.ptr, t);
-		else
-			snprintf(buffer.ptr, buffer.length, "%x", t);
-		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
-		return ctx.current.layout.row.height;
-	}
-}
-
-struct Drawer(T) if (isStaticArray!T && !isSomeChar!(ElementType!T))
-{
-	import std.range : ElementType;
-
-	import nuklear_sdl_gl3 : nk_collapse_states;
-
-	nk_collapse_states collapsed;
-	int selected;
-	Drawer!(ElementType!T)[T.length] state;
-
-	this(const T a)
-	{
-		static foreach(i; 0..a.length)
-			state[i] = Drawer!(ElementType!T)(a[i]);
-	}
-
-	float draw(Context, T)(Context ctx, const(char)[] header, ref T a)
-	{
-		import core.stdc.stdio : sprintf;
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		float height = 0;
-
-		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
-		{
-			assert(state.length == a.length);
-			nk_list_view view;
-			// set layout height for the whole list view
-			// it lets nk_list_view calculates its parameters
-			nk_layout_row_dynamic(ctx, itemHeight*(a.length+1), 1);
-			if (nk_list_view_begin(ctx, &view, "statarr", NK_WINDOW_BORDER, itemHeight, a.length)) 
-			{
-				// set layout for list view elements to draw them properly
-				nk_layout_row_dynamic(ctx, itemHeight, 1);
-				foreach(i; 0..view.count)
-				{
-					height += state[view.begin + i].draw(ctx, "", a[view.begin + i]);
-				}
-				nk_list_view_end(&view);
-			}
-			nk_tree_pop(ctx);
-			// restore layout height
-			nk_layout_row_dynamic(ctx, itemHeight, 1);
-		}
-		return height;
-	}
-}
-
-struct Drawer(T) if (isStaticArray!T && isSomeChar!(ElementType!T))
-{
-	int selected;
-
-	this(ref const(T) t) {
-		// by default do nothing
-	}
-
-	float draw(Context)(Context ctx, const(char)[] header, ref const(T) t)
-	{
-		import std.algorithm : min;
-		import core.stdc.stdio : sprintf;
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		auto l = min(textBufferSize-1, t.length)-header.length;
-		if (header.length)
-			snprintf(buffer.ptr, l, "%s: %s", header.ptr, t.ptr);
-		else
-			snprintf(buffer.ptr, l, "%s", t.ptr);
-		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
-		return ctx.current.layout.row.height;
-	}
-}
-
-struct Drawer(A) if (!isSomeString!A && isDynamicArray!A)
-{
-	import std.array : uninitializedArray;
-	import std.range : ElementType;
-
-	import nuklear_sdl_gl3 : nk_collapse_states;
-
-	nk_collapse_states collapsed;
-	Drawer!(ElementType!A)[] state;
-
-	this(const A a)
-	{
-		update(a);
-	}
-
-	void update(const A a)
-	{
-		state = uninitializedArray!(typeof(state))(a.length);
-		foreach(i; 0..a.length)
-			state[i] = Drawer!(ElementType!A)(a[i]);
-	}
-
-	/// draws all elements
-	float draw(Context)(Context ctx, const(char)[] header, const(A) a)
-	{
-		import core.stdc.stdio : sprintf;
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		float height = 0;
-
-		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
-		{
-			assert(state.length == a.length);
-			nk_list_view view;
-			nk_layout_row_dynamic(ctx, itemHeight * 25, 1);
-			if (nk_list_view_begin(ctx, &view, "dynarr", NK_WINDOW_BORDER, itemHeight, cast(int)a.length)) 
-			{
-				foreach(i; 0..view.count)
-				{
-					snprintf(buffer.ptr, buffer.length, "%s[%ld]", header.ptr, view.begin + i);
-					height += state[view.begin + i].draw(ctx, buffer, a[view.begin + i]);
-				}
-				nk_list_view_end(&view);
-			}
-			nk_tree_pop(ctx);
-		}
-
-		return height;
-	}
-
-	/// draws part of elements
-	float draw(Context)(Context ctx, A a, Drawer!(ElementType!A)[] state)
-	{
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		float height = 0;
-
-		assert(state.length == a.length);
-		foreach(i; 0..a.length)
-		{
-			height += state[i].draw(ctx, "", a[i]);
-		}
-		return height;
-	}
-}
-
-struct Drawer(A) if (isAssociativeArray!A)
-{
-	import std.array : uninitializedArray;
-	import std.range : ElementType;
-
-	import nuklear_sdl_gl3 : nk_collapse_states;
-
-	nk_collapse_states collapsed;
-	alias Value = typeof(A.init.values[0]);
-	alias Key   = typeof(A.init.keys[0]);
-	Drawer!Value[] state;
-
-	this(const A a)
-	{
-		update(a);
-	}
-
-	void update(const A a)
-	{
-		state = uninitializedArray!(typeof(state))(a.length);
-		foreach(i; 0..a.length)
-			state[i] = Drawer!Value(a[a.keys[i]]);
-	}
-
-	/// draws all elements
-	float draw(Context)(Context ctx, const(char)[] header, const(A) a)
-	{
-		import core.stdc.stdio : sprintf;
-		import nuklear_sdl_gl3;
-
-		char[textBufferSize] buffer;
-		float height = 0;
-
-		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
-		{
-			assert(state.length == a.length);
-			nk_list_view view;
-			nk_layout_row_dynamic(ctx, itemHeight * 25, 1);
-			if (nk_list_view_begin(ctx, &view, "dynarr", NK_WINDOW_BORDER, itemHeight, cast(int)a.length)) 
-			{
-				foreach(i; 0..view.count)
-				{
-					snprintf(buffer.ptr, buffer.length, "%s[%ld]", header.ptr, view.begin + i);
-					height += state[view.begin + i].draw(ctx, buffer, a[a.keys[view.begin + i]]);
-				}
-				nk_list_view_end(&view);
-			}
-			nk_tree_pop(ctx);
-		}
-
-		return height;
-	}
-}
-
-import std.traits : isInstanceOf;
-import taggedalgebraic : TaggedAlgebraic;
 
 // non Nullable TaggedAlgebraic aggregate type
-struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
+struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T.kind == Kind.oneliner && isInstanceOf!(TaggedAlgebraic, T) && !isNullableLike!T)
 {
 	struct Payload
 	{
@@ -289,30 +184,43 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 		}
 	}
 
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	TaggedAlgebraic!Payload wrapper;
 
-	nk_collapse_states collapsed;
-	int selected;
-	TaggedAlgebraic!Payload state;
-
-	this(ref const(T) t)
+	this()(auto ref const(TaggedAlgebraic!U) t)
 	{
 		update(t);
 	}
 
-	/// updates size of underlying data
-	void update()(auto ref inout(T) t)
+	// Useful if TaggedAlgebraic contains another TarggedAlgeraic
+	private auto selected(int v) { wrapper.selected = v; }
+
+	mixin ImplementHeight;
+
+	auto measure() inout
 	{
+		return wrapper.height;
+	}
+
+	auto makeLayout()
+	{
+		wrapper.makeLayout;
+		height = wrapper.height;
+	}
+
+	/// updates size of underlying data
+	void update()(auto ref inout(TaggedAlgebraic!U) t)
+	{
+		alias TU = TaggedAlgebraic!U;
 		Lexit:
 		final switch (t.kind)
 		{
 			static foreach(i; 0..t.Union.tupleof.length)
 			{
-		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
+		mixin("case TU.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
 					import taggedalgebraic : TypeOf, get;
-					alias PayloadType = TypeOf!(mixin("T.Kind." ~ t.Union.tupleof[i].stringof));
-					state = Drawer!PayloadType(t.get!PayloadType);
+					alias PayloadType = TypeOf!(mixin("TU.Kind." ~ t.Union.tupleof[i].stringof));
+					wrapper = Drawer!PayloadType(t.get!PayloadType);
 					break Lexit;
 				}
 			}
@@ -320,85 +228,88 @@ struct Drawer(T) if (isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
 	}
 
 	/// draws current value
-	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(TaggedAlgebraic!U) t)
 	{
-		import nuklear_sdl_gl3;
-
-		float height = 0;
+		alias TU = TaggedAlgebraic!U;
 		Lexit:
 		final switch (t.kind)
 		{
 			static foreach(i; 0..t.Union.tupleof.length)
 			{
-		mixin("case T.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
+		mixin("case TU.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
 					import taggedalgebraic : TypeOf, get;
 					enum FieldName = t.Union.tupleof[i].stringof;
-					alias FieldType = TypeOf!(mixin("T.Kind." ~ FieldName));
+					alias FieldType = TypeOf!(mixin("TU.Kind." ~ FieldName));
 					alias DrawerType = Drawer!FieldType;
-					if (cast(int)state.kind != cast(int)t.kind)
+					if (cast(int)wrapper.kind != cast(int)t.kind)
 					{
-						auto old_collapsed = state.collapsed;
-						auto old_selected  = state.selected;
-						state = Drawer!FieldType(t.get!FieldType);
-						with(state.get!DrawerType)
-						{
-							collapsed = old_collapsed;
-							selected  = old_selected;
-						}
+						auto old_selected  = wrapper.selected;
+						wrapper = Drawer!FieldType(t.get!FieldType);
+						wrapper.get!DrawerType.selected  = old_selected;
 					}
-					height += state.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
+					wrapper.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
 					break Lexit;
 				}
 			}
 		}
-
-		return height;
 	}
 }
 
 // Nullable, non TaggedAlgebraic aggregate type
-struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && isNullable!T)
+struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner && !isInstanceOf!(TaggedAlgebraic, T) && isNullableLike!T)
 {
 	import std.traits : isSomeFunction, ReturnType, isArray, hasMember;
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
-	nk_collapse_states collapsed;
 	int selected;
 
 	static if (hasMember!(T, "get"))
 	{
 		enum memberTypeIsGet = true;
-		alias State = Drawer!(ReturnType!(T.get));
+		alias Wrapper = Drawer!(ReturnType!(T.get));
 	}
 	else static if (hasMember!(T, "value"))
 	{
 		enum memberTypeIsGet = false;
-		alias State = Drawer!(ReturnType!(T.value));
+		alias Wrapper = Drawer!(ReturnType!(T.value));
 	}
 	else
 		static assert(0);
 
-	State state;
+	Wrapper wrapper;
 
 	this()(auto ref const(T) t)
 	{
 		update(t);
 	}
 
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		return wrapper.height;
+	}
+
+	auto makeLayout()
+	{
+		wrapper.makeLayout;
+		height = wrapper.height;
+	}
+
 	/// updates size of underlying data
 	void update()(auto ref inout(T) t)
 	{
 		static if(memberTypeIsGet)
-			state = t.isNull ? State() : State(t.get);
+			wrapper = t.isNull ? Wrapper() : Wrapper(t.get);
 		else
-			state = t.isNull ? State() : State(t.value);
+			wrapper = t.isNull ? Wrapper() : Wrapper(t.value);
 	}
 
 	/// draws all fields
-	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import core.stdc.stdio : sprintf;
+		import core.stdc.stdio : snprintf;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
@@ -415,18 +326,169 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 
 			nk_layout_row_dynamic(ctx, itemHeight, 1);
 			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
-			return itemHeight;
+			return;
 		}
 
 		static if(memberTypeIsGet)
-			return state.draw(ctx, buffer[0..l], t.get);
+			wrapper.draw(ctx, buffer[0..l], t.get);
 		else
-			return state.draw(ctx, buffer[0..l], t.value);
+			wrapper.draw(ctx, buffer[0..l], t.value);
+	}
+}
+
+struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
+{
+	import std.range : ElementType;
+
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	int selected;
+	Drawer!(ElementType!T)[T.length] wrapper;
+
+	this(const T a)
+	{
+		static foreach(i; 0..a.length)
+			wrapper[i] = Drawer!(ElementType!T)(a[i]);
+	}
+
+	mixin ImplementDrawList;
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+			h += e.measure;
+
+		return h;
+	}
+
+	auto makeLayout()
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure;
+			h += e.height;
+			e.makeLayout;
+		}
+		height = h;
+	}
+}
+
+struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
+{
+	import std.array : uninitializedArray;
+	import std.range : ElementType;
+
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	Drawer!(ElementType!T)[] wrapper;
+
+	this(const T a)
+	{
+		update(a);
+	}
+
+	mixin ImplementDrawList;
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+			h += e.measure;
+
+		return h;
+	}
+
+	auto makeLayout()
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure;
+			h += e.height;
+			e.makeLayout;
+		}
+		height = h;
+	}
+
+	void update(const T a)
+	{
+		wrapper = uninitializedArray!(typeof(wrapper))(a.length);
+		foreach(i; 0..a.length)
+			wrapper[i] = Drawer!(ElementType!T)(a[i]);
+	}
+
+	/// draws part of elements
+	version (none) void draw(Context)(Context ctx, T a, Drawer!(ElementType!A)[] wrapper)
+	{
+		import nuklear_sdl_gl3;
+
+		char[textBufferSize] buffer;
+
+		assert(wrapper.length == a.length);
+		foreach(i; 0..a.length)
+		{
+			wrapper[i].draw(ctx, "", a[i]);
+		}
+	}
+}
+
+struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
+{
+	import std.array : uninitializedArray;
+	import std.range : ElementType;
+
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	alias Value = typeof(T.init.values[0]);
+	alias Key   = typeof(T.init.keys[0]);
+	Drawer!Value[] wrapper;
+
+	this(const T a)
+	{
+		update(a);
+	}
+
+	void update(const T a)
+	{
+		wrapper = uninitializedArray!(typeof(wrapper))(a.length);
+		foreach(i; 0..a.length)
+			wrapper[i] = Drawer!Value(a[a.keys[i]]);
+	}
+
+	mixin ImplementDrawList;
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+			h += e.measure;
+
+		return h;
+	}
+
+	auto makeLayout()
+	{
+		float h = 0;
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure;
+			h += e.height;
+			e.makeLayout;
+		}
+		height = h;
 	}
 }
 
 // Non Nullable, non TagggedAlgebraic aggregate type
-struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && !isNullable!T)
+struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 {
 	import std.algorithm : among;
 	import std.traits : isSomeFunction, ReturnType, isArray;
@@ -461,6 +523,39 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 		update(t);
 	}
 
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			return itemHeight;
+
+		float h = 0;
+		static foreach(member; DrawableMembers!T)
+		{
+			h += mixin("state_" ~ member ~ ".measure");
+		}
+		return h;
+	}
+
+	auto makeLayout()
+	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = itemHeight;
+			return;
+		}
+
+		float h = 0;
+		static foreach(member; DrawableMembers!T)
+		{
+			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
+			h += mixin("state_" ~ member ~ ".height");
+			mixin("state_" ~ member ~ ".makeLayout;");
+		}
+		height = h;
+	}
+
 	/// updates size of underlying data
 	void update()(auto ref const(T) t)
 	{
@@ -484,11 +579,9 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 	}
 
 	/// draws all fields
-	float draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import nuklear_sdl_gl3;
-		
-		float height = 0;
 
 		static if (DrawnAsAvailable)
 		{
@@ -506,7 +599,7 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 		}
 		else
 		{
-			import core.stdc.stdio : sprintf;
+			import core.stdc.stdio : snprintf;
 			
 			char[textBufferSize] buffer;
 			snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
@@ -518,17 +611,98 @@ struct Drawer(T) if (isAggregateType!T && !isInstanceOf!(TaggedAlgebraic, T) && 
 				
 				static foreach(member; DrawableMembers!t) 
 				{
-					mixin("height += state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
+					mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
 				}
 			}
 		}
-		return height;
 	}
 }
 
 //*****************************************************************************
 // helpers
 //*****************************************************************************
+
+enum Kind : byte { oneliner, runtimeList, compiletimeList, aggregate, assocArray, }
+
+import std.meta : AliasSeq;
+
+alias SupportedBasicTypeSequence = AliasSeq!(
+	bool, byte, ubyte, short, ushort, int, uint, long, ulong, float, 
+	double, char, wchar, dchar, );
+
+template Description(T)
+{
+	import std.meta : anySatisfy;
+	import std.traits : Unqual;
+
+	private enum Predicat(T1) = is(Unqual!T == T1);
+
+	static if (is(T == enum) || anySatisfy!(Predicat, SupportedBasicTypeSequence))
+	{
+		enum kind = Kind.oneliner;
+	}
+	else static if (isAssociativeArray!T)
+	{
+		enum kind = Kind.assocArray;
+	}
+	else static if (isAliasThised!T)
+	{
+		static if (DrawableMembers!T.length > 1)
+			enum kind = Kind.aggregate;
+		else
+			enum kind = Kind.oneliner;
+	}
+	else static if (isInstanceOf!(TaggedAlgebraic, T))
+	{
+		enum kind = Kind.oneliner;
+	}
+	else static if (isNullableLike!T || isPointer!T)
+	{
+		enum kind = Kind.oneliner;
+	}
+	else static if (isSomeString!T)
+	{
+		enum kind = Kind.oneliner;
+	}
+	else static if (isArray!T && isSomeChar!(ElementType!T))
+	{
+		enum kind = Kind.oneliner;
+	}
+	else static if (isStaticArray!T)
+	{
+		enum kind = Kind.compiletimeList;
+	}
+	else static if (isDynamicArray!T || isAssociativeArray!T)
+	{
+		enum kind = Kind.runtimeList;
+	}
+	else static if (isAggregateType!T)
+	{
+		enum kind = Kind.aggregate;
+	}
+	else
+		static assert(0, "Unhandled case: " ~ T.stringof);
+}
+
+unittest
+{
+	static assert( Description!int.kind == Kind.oneliner);
+	static assert( Description!(int[]).kind == Kind.runtimeList);
+
+	import std.typecons : Nullable;
+	static assert( Description!(Nullable!int).kind == Kind.oneliner);
+
+	static assert( Description!(char[6]).kind == Kind.oneliner);
+	static assert( Description!(bool[6]).kind == Kind.compiletimeList);
+
+	struct Payload
+	{
+		string str;
+	}
+	
+	static assert( Description!(Payload).kind == Kind.aggregate);
+	static assert( Description!(TaggedAlgebraic!Payload).kind == Kind.oneliner);
+}
 
 @nogc @safe nothrow
 private string enumToString(E)(E e) if (is(E == enum))
@@ -542,9 +716,59 @@ private string enumToString(E)(E e) if (is(E == enum))
 	return "Unrepresentable by " ~ Unqual!E.stringof ~ " value";
 }
 
+@nogc nothrow
+private void snprintfValue(T)(char[] buffer, auto ref const(T) t)
+{
+	/** TODO Known drawback
+	It would be better if the function takes `t` as `inout` instead
+	of `const` qualifier. But now it's possible that T is `inout` but 
+	passed argument has `const` qualifier and compilation fails.
+	*/
+	import core.stdc.stdio : snprintf;
+	import std.traits : isIntegral, isFloatingPoint;
+		
+	// format specifier depends on type, also string should be
+	// passed using `.ptr` member
+	static if (is(T == enum))
+		snprintf(&buffer[0], buffer.length, "%s", t.enumToString.ptr);
+	else static if (isIntegral!T)
+		snprintf(&buffer[0], buffer.length, "%d", t);
+	else static if (isFloatingPoint!T)
+		snprintf(&buffer[0], buffer.length, "%f", t);
+	else static if (isBoolean!T)
+		snprintf(&buffer[0], buffer.length, t ? "true" : "false");
+	else static if (isSomeString!T)
+		snprintf(&buffer[0], buffer.length, "%s", t.ptr);
+	else static if (isSomeChar!T)
+		snprintf(&buffer[0], buffer.length, "%c", t);
+	else static if (isPointer!T)
+		snprintf(&buffer[0], buffer.length, "%x", t);
+	else static if (isStaticArray!T && isSomeChar!(ElementType!T))
+		snprintf(&buffer[0], buffer.length, "%s", t.ptr);
+	else static if (isSomeChar!T)
+		snprintf(&buffer[0], buffer.length, "%c", t);
+	else
+		static assert(0, "Type `" ~ T.stringof ~ "` is not supported");
+}
+
+@nogc nothrow
+private void snprintfValue(T, U)(char[] buffer, auto ref const(U) u) if (isAggregateType!U)
+{
+	auto t = mixin("u." ~ __traits(getAliasThis, U)[0]);
+	snprintfValue!T(buffer, t);
+}
+
 import std.traits : isTypeTuple;
 
-private template isNullable(T)
+private template isAliasThised(T)
+{
+	static if (isAggregateType!T)
+		enum isAliasThised = __traits(getAliasThis, T).length;
+	else
+		enum isAliasThised = false;
+}
+
+private template isNullableLike(T)
 {
 	import std.traits : hasMember;
 
@@ -559,11 +783,11 @@ private template isNullable(T)
 		is(typeof(__traits(getMember, T, "nullify")) == void)
 	)
 	{
-		enum isNullable = true;
+		enum isNullableLike = true;
 	}
 	else
 	{
-		enum isNullable = false;
+		enum isNullableLike = false;
 	}
 }
 

@@ -11,21 +11,237 @@ class NuklearApplication : Application
 	import std.typecons : Nullable;
 	import gfm.math : vec2f;
 	import nuklear_sdl_gl3;
+	import beholder.drawer : drawer, DrawerOf;
 
 	enum MAX_VERTEX_MEMORY = 512 * 1024;
 	enum MAX_ELEMENT_MEMORY = 128 * 1024;
 
-    nk_context* ctx;
+	nk_context* ctx;
 
-    this(string title, int w, int h, Application.FullScreen flag)
-    {
-        super(title, w, h, flag);
+	import std.typetuple : AliasSeq;
+	import beholder.drawer : SupportedBasicTypeSequence;
 
-        ctx = nk_sdl_init(&window());
-        nk_font_atlas *atlas;
-        nk_sdl_font_stash_begin(&atlas);
-        nk_sdl_font_stash_end();
-    }
+	// init values for fields of supported built in types
+	alias BasicTypeValuesSequence = AliasSeq!(
+		/* bool   */            true, 
+		/* byte   */             127, 
+		/* ubyte  */             255, 
+		/* short  */       short.min, 
+		/* ushort */           65535, 
+		/* int,   */       -1000_000,
+		/* uint   */         200_000, 
+		/* long   */  16_000_000_000, 
+		/* ulong  */ -16_000_000_000, 
+		/* float  */ 1.234567890123456789e10, 
+		/* double */ 1.234567890123456789e10, 
+		/* char   */ 'A', 
+		/* wchar  */ 'B', 
+		/* dchar  */ 'C',
+	);
+
+	/** not supported built in types
+		void
+		cent
+		ucent
+		real
+		ifloat
+		idouble
+		ireal
+		cfloat
+		cdouble
+		creal
+	*/
+
+	static foreach(T; SupportedBasicTypeSequence)
+	{
+		// generate code like `float float_value;`
+		mixin(T.stringof ~ " " ~ T.stringof ~ "_value;");
+		// generate code like `DrawerOf!float_value float_drawer;`
+		mixin("DrawerOf!" ~ T.stringof ~ "_value " ~ T.stringof ~ "_drawer;");
+	}
+
+	/** Derived types:
+		pointer
+		array
+			dynamic array of some char (string)
+			dynamic array of non some char (string)
+			static array of some char
+			static array of non some char
+		associative array
+		function - not applicable
+		delegate - not applicable
+	**/
+
+	double* double_ptr;
+	char[]  dyn_arr_of_char;
+	int[]   dyn_arr_of_int, empty_int_arr;
+	char[6] st_arr_of_char;
+	int[6]  st_arr_of_int;
+	string[string] aa_str_str;
+	int[int] aa_int_int;
+
+	DrawerOf!double_ptr      double_ptr_drawer;
+	DrawerOf!dyn_arr_of_char dyn_arr_of_char_drawer;
+	DrawerOf!dyn_arr_of_int  dyn_arr_of_int_drawer;
+	DrawerOf!st_arr_of_char  st_arr_of_char_drawer;
+	DrawerOf!st_arr_of_int   st_arr_of_int_drawer;
+	DrawerOf!aa_str_str      aa_str_str_drawer;
+	DrawerOf!aa_int_int      aa_int_int_drawer;
+	DrawerOf!empty_int_arr   empty_int_arr_drawer;
+
+	/** User defined types
+		enum
+		struct
+		union - not implemented
+		class - not implemented
+	*/
+
+	enum TestEnum : ulong { left, middle, right, }
+
+	struct Nested
+	{
+		float[] farr;
+		string str;
+	}
+
+	struct TestStruct
+	{
+		int i;
+		float f;
+		string str;
+		Nested nested;
+	}
+
+	TestEnum   test_enum;
+	TestStruct test_struct;
+
+	DrawerOf!test_enum     test_enum_drawer;
+	DrawerOf!test_struct test_struct_drawer;
+
+	TaggedAlgebraic!TestStruct tagged_algebraic1, tagged_algebraic2;
+	DrawerOf!tagged_algebraic1 tagged_algebraic1_drawer;
+	DrawerOf!tagged_algebraic2 tagged_algebraic2_drawer;
+
+	Nullable!int nullable_int1, nullable_int2;
+	Nullable!TestStruct nullable_test_struct1, nullable_test_struct2;
+
+	DrawerOf!nullable_int1 nullable_int1_drawer;
+	DrawerOf!nullable_int2 nullable_int2_drawer;
+	DrawerOf!nullable_test_struct1 nullable_test_struct1_drawer;
+	DrawerOf!nullable_test_struct2 nullable_test_struct2_drawer;
+
+	struct TaWrapper
+	{
+		private TaggedAlgebraic!TestStruct _ta;
+
+		ref auto get() { return _ta; }
+
+		alias get this;
+
+		this(T)(auto ref T t)
+		{
+			_ta = t;
+		}
+	}
+
+	TaWrapper ta_wrapper;
+	DrawerOf!ta_wrapper ta_wrapper_drawer;
+
+	struct IntWrapper
+	{
+		int value;
+		alias value this;
+
+		this(int v)
+		{
+			value = v;
+		}
+	}
+
+	IntWrapper int_wrapper;
+	DrawerOf!int_wrapper int_wrapper_drawer;
+	
+	this(string title, int w, int h, Application.FullScreen flag)
+	{
+		super(title, w, h, flag);
+
+		ctx = nk_sdl_init(&window());
+		nk_font_atlas *atlas;
+		nk_sdl_font_stash_begin(&atlas);
+		nk_sdl_font_stash_end();
+
+		// basic data types
+		static foreach(int i, T; SupportedBasicTypeSequence)
+		{
+			// generate code like `float_value = float.init;`
+			mixin(T.stringof ~ "_value = " ~ T.stringof ~ "(BasicTypeValuesSequence[i]);");
+			// generate code like `float_drawer = drawer(float_value);`
+			mixin(T.stringof ~ "_drawer = drawer(" ~ T.stringof ~ "_value);");
+		}
+
+		// derived data types
+		{
+			double_ptr = &double_value;
+			dyn_arr_of_char = cast(char[]) "Dynamic array of char";
+			dyn_arr_of_int = [1, 100, 200, 300, 1000];
+			st_arr_of_char = "abcdef";
+			st_arr_of_int = [ 11, 12, 13, 14, 15, 16, ];
+			aa_str_str = [ "abc" : "cba", "qwe" : "ewq", "asd" : "dsa"];
+			aa_int_int = [ 100 : 2, 200 : 3, 300 : 4];
+			empty_int_arr = null;
+
+			double_ptr_drawer      = drawer(double_ptr);
+			dyn_arr_of_char_drawer = drawer(dyn_arr_of_char);
+			dyn_arr_of_int_drawer  = drawer(dyn_arr_of_int);
+			st_arr_of_char_drawer  = drawer(st_arr_of_char);
+			st_arr_of_int_drawer   = drawer(st_arr_of_int);
+			aa_str_str_drawer      = drawer(aa_str_str);
+			aa_int_int_drawer      = drawer(aa_int_int);
+			empty_int_arr_drawer   = drawer(empty_int_arr);
+		}
+
+		// user defined types
+		{
+			test_enum   = TestEnum.middle;
+			test_struct = TestStruct(111, 1.23, "Test structure", Nested([3, 9, 11], "nested struct"));
+
+			test_struct_drawer = drawer(test_struct);
+		}
+
+		{
+			tagged_algebraic1 = test_struct.str;
+			tagged_algebraic2 = test_struct.nested;
+
+			tagged_algebraic1_drawer = drawer(tagged_algebraic1);
+			tagged_algebraic2_drawer = drawer(tagged_algebraic2);
+		}
+
+		{
+			nullable_int1.nullify;
+			nullable_int2 = 123456789;
+
+			nullable_int1_drawer = drawer(nullable_int1);
+			nullable_int2_drawer = drawer(nullable_int2);
+
+			nullable_test_struct1.nullify;
+			nullable_test_struct2 = test_struct;
+
+			nullable_test_struct1_drawer = drawer(nullable_test_struct1);
+			nullable_test_struct2_drawer = drawer(nullable_test_struct2);
+		}
+
+		{
+			ta_wrapper = test_struct.nested;
+			ta_wrapper_drawer = drawer(ta_wrapper);
+
+			int_wrapper = 456;
+			int_wrapper_drawer = drawer(int_wrapper);
+
+			import beholder.drawer : Description, Kind;
+			static assert(Description!(typeof(int_wrapper)).kind == Kind.oneliner,
+				"Aggregate with one member that is `alias thised` is oneliner");
+		}
+	}
 
 	~this()
 	{
@@ -36,12 +252,91 @@ class NuklearApplication : Application
 	{
 		super.draw();
 
-        if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 450),
-            NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
-            NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
-        {
-        }
-        nk_end(ctx);
+		if (nk_begin(ctx, "Basic data types values", nk_rect(25, 50, 230, 270),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			static foreach(T; SupportedBasicTypeSequence)
+			{
+				// generate code like:
+				// float_drawer.makeLayout;
+				// float_drawer.draw(ctx, `float value`, float_value);
+				mixin(T.stringof ~ "_drawer.makeLayout;");
+				mixin(T.stringof ~ "_drawer.draw(ctx, `" ~ T.stringof ~ "`, " ~ T.stringof ~ "_value);");
+			}
+		}
+		nk_end(ctx);
+
+		if (nk_begin(ctx, "Derived data types", nk_rect(25+230+25, 50, 250, 270),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			import std.conv : text;
+			double_ptr_drawer     .makeLayout;
+			double_ptr_drawer     .draw(ctx, `Pointer to double`, double_ptr);
+			dyn_arr_of_char_drawer.makeLayout;
+			dyn_arr_of_char_drawer.draw(ctx, `char[]`, dyn_arr_of_char);
+			st_arr_of_char_drawer .makeLayout;
+			st_arr_of_char_drawer .draw(ctx, `char[` ~ st_arr_of_char.length.text ~ `]`, st_arr_of_char);
+			aa_str_str_drawer     .makeLayout;
+			aa_str_str_drawer     .draw(ctx, `string[string]`, aa_str_str);
+			aa_int_int_drawer     .makeLayout;
+			aa_int_int_drawer     .draw(ctx, `int[int]`, aa_int_int);
+			dyn_arr_of_int_drawer .makeLayout;
+			dyn_arr_of_int_drawer .draw(ctx, `int[]`, dyn_arr_of_int);
+			st_arr_of_int_drawer  .makeLayout;
+			st_arr_of_int_drawer  .draw(ctx, `int[` ~ st_arr_of_int.length.text ~ `]`, st_arr_of_int);
+			empty_int_arr_drawer  .makeLayout;
+			empty_int_arr_drawer  .draw(ctx, `int[` ~ empty_int_arr.length.text ~ `]`, empty_int_arr);
+		}
+		nk_end(ctx);
+
+		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 270),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			test_enum_drawer  .makeLayout;
+			test_enum_drawer  .draw(ctx, `test enum`,   test_enum);
+			test_struct_drawer.makeLayout;
+			test_struct_drawer.draw(ctx, `test struct`, test_struct);
+
+			tagged_algebraic1_drawer.makeLayout;
+			tagged_algebraic1_drawer.draw(ctx, "TaggedAlgebraic #1", tagged_algebraic1);
+			tagged_algebraic2_drawer.makeLayout;
+			tagged_algebraic2_drawer.draw(ctx, "TaggedAlgebraic #2", tagged_algebraic2);
+
+			nullable_int1_drawer.makeLayout;
+			nullable_int1_drawer.draw(ctx, "Nullable!int w/o value", nullable_int1);
+			nullable_int2_drawer.makeLayout;
+			nullable_int2_drawer.draw(ctx, "Nullable!int with value", nullable_int2);
+
+			nullable_test_struct1_drawer.makeLayout;
+			nullable_test_struct1_drawer.draw(ctx, "Nullable!test_struct w/o value", nullable_test_struct1);
+			nullable_test_struct2_drawer.makeLayout;
+			nullable_test_struct2_drawer.draw(ctx, "Nullable!test_struct with value", nullable_test_struct2);
+
+			ta_wrapper_drawer.makeLayout;
+			ta_wrapper_drawer.draw(ctx, "TaggedAlgebraic", ta_wrapper);
+
+			int_wrapper_drawer.makeLayout;
+			int_wrapper_drawer.draw(ctx, "Int wrapper", int_wrapper);
+		}
+		nk_end(ctx);
+
+		if (nk_begin(ctx, "Debug", nk_rect(25+230+25+250+25+300+25, 50, 290, 450),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			enum height = 11;
+			int selected;
+			char[256] buffer;
+
+			snprintf(buffer.ptr, buffer.length, "height: %f", tagged_algebraic2_drawer.wrapper.state_farr.height);
+
+			nk_layout_row_dynamic(ctx, height, 1);
+			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+		}
+		nk_end(ctx);
 
 		nk_sdl_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_MEMORY, MAX_ELEMENT_MEMORY);
 	}
@@ -106,10 +401,10 @@ class NuklearApplication : Application
 
 int main(string[] args)
 {
-    auto app = new NuklearApplication("Demo gui application", 1200, 768, Application.FullScreen.no);
-    scope(exit) app.destroy();
+	auto app = new NuklearApplication("Demo gui application", 1200, 768, Application.FullScreen.no);
+	scope(exit) app.destroy();
 
 	app.run();
 
-    return 0;
+	return 0;
 }
