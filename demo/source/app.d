@@ -4,7 +4,6 @@ import gfm.math : vec3f, vec4f;
 import taggedalgebraic : TaggedAlgebraic;
 
 import beholder.application : Application;
-import beholder.drawer : Drawer;
 
 class NuklearApplication : Application
 {
@@ -160,6 +159,38 @@ class NuklearApplication : Application
 
 	IntWrapper int_wrapper;
 	DrawerOf!int_wrapper int_wrapper_drawer;
+
+	struct AStructDrawnAsString
+	{
+		int i;
+		float f;
+		bool b;
+
+		string drawnAs() const
+		{
+			return "This struct is drawn as string";
+		}
+	}
+
+	import beholder.drawer : renderingIgnore, Rendering;
+	
+	struct StructWithUDA
+	{
+		double d;
+		char ch;
+		AStructDrawnAsString struct_drawn_as_string;
+
+		@renderingIgnore
+		string you_should_not_see_this_field;
+
+		string str1;
+		double d2;
+		int[] ai;
+		@renderingIgnore
+		int ignored2;
+	}
+	StructWithUDA struct_with_uda;
+	DrawerOf!struct_with_uda struct_with_uda_drawer;
 	
 	this(string title, int w, int h, Application.FullScreen flag)
 	{
@@ -241,6 +272,11 @@ class NuklearApplication : Application
 			static assert(Description!(typeof(int_wrapper)).kind == Kind.oneliner,
 				"Aggregate with one member that is `alias thised` is oneliner");
 		}
+
+		{
+			struct_with_uda = StructWithUDA(100, 'D');
+			struct_with_uda_drawer = drawer(struct_with_uda);
+		}
 	}
 
 	~this()
@@ -291,7 +327,7 @@ class NuklearApplication : Application
 		}
 		nk_end(ctx);
 
-		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 270),
+		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 370),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
@@ -320,6 +356,9 @@ class NuklearApplication : Application
 
 			int_wrapper_drawer.makeLayout;
 			int_wrapper_drawer.draw(ctx, "Int wrapper", int_wrapper);
+
+			struct_with_uda_drawer.makeLayout;
+			struct_with_uda_drawer.draw(ctx, "Struct with UDA + drawAs", struct_with_uda);
 		}
 		nk_end(ctx);
 

@@ -8,16 +8,18 @@ import taggedalgebraic : TaggedAlgebraic;
 
 enum textBufferSize = 1024;
 enum itemHeight = 11;
-enum fieldWidth = 80;
 
 auto drawer(Args...)(Args args)
 {
-	return Drawer!(Args)(args);
+	return Drawer!Args(args);
 }
 
 template DrawerOf(alias A)
 {
-	alias DrawerOf = Drawer!(typeof(A));
+	static if (is(A))
+		alias DrawerOf = Drawer!A;
+	else
+		alias DrawerOf = Drawer!(typeof(A));
 }
 
 template Drawer(T)
@@ -527,33 +529,47 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	auto measure() inout
 	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return itemHeight;
-
-		float h = 0;
-		static foreach(member; DrawableMembers!T)
+		static if (DrawnAsAvailable)
 		{
-			h += mixin("state_" ~ member ~ ".measure");
+			return state_drawn_as.height;
 		}
-		return h;
+		else
+		{
+			if (collapsed == nk_collapse_states.NK_MINIMIZED)
+				return itemHeight;
+
+			float h = 0;
+			static foreach(member; DrawableMembers!T)
+			{
+				h += mixin("state_" ~ member ~ ".measure");
+			}
+			return h;
+		}
 	}
 
 	auto makeLayout()
 	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		static if (DrawnAsAvailable)
 		{
-			height = itemHeight;
-			return;
+			height = state_drawn_as.height;
 		}
-
-		float h = 0;
-		static foreach(member; DrawableMembers!T)
+		else
 		{
-			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
-			h += mixin("state_" ~ member ~ ".height");
-			mixin("state_" ~ member ~ ".makeLayout;");
+			if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			{
+				height = itemHeight;
+				return;
+			}
+			
+			float h = 0;
+			static foreach(member; DrawableMembers!T)
+			{
+				mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
+				h += mixin("state_" ~ member ~ ".height");
+				mixin("state_" ~ member ~ ".makeLayout;");
+			}
+			height = h;
 		}
-		height = h;
 	}
 
 	/// updates size of underlying data
@@ -585,7 +601,6 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 		static if (DrawnAsAvailable)
 		{
-			nk_layout_row_dynamic(ctx, itemHeight, 1);
 			static if (Cached)
 				state_drawn_as.draw(ctx, header, cached);
 			else
@@ -618,6 +633,15 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	}
 }
 
+/// Main rendering attribute type
+struct Rendering
+{
+	/// arguments
+	string[] args;
+}
+
+enum renderingIgnore = Rendering(["ignore"]);
+
 //*****************************************************************************
 // helpers
 //*****************************************************************************
@@ -635,9 +659,9 @@ template Description(T)
 	import std.meta : anySatisfy;
 	import std.traits : Unqual;
 
-	private enum Predicat(T1) = is(Unqual!T == T1);
+	private enum UnqualifiedEquality(T1) = is(Unqual!T == T1);
 
-	static if (is(T == enum) || anySatisfy!(Predicat, SupportedBasicTypeSequence))
+	static if (is(T == enum) || anySatisfy!(UnqualifiedEquality, SupportedBasicTypeSequence))
 	{
 		enum kind = Kind.oneliner;
 	}
@@ -760,6 +784,19 @@ private void snprintfValue(T, U)(char[] buffer, auto ref const(U) u) if (isAggre
 
 import std.traits : isTypeTuple;
 
+private template isIgnored(alias aggregate, string member)
+{
+	import std.traits : getUDAs, isType;
+	enum udas = [getUDAs!(__traits(getMember, aggregate, member), Rendering)];
+	enum isIgnored = ignore(udas);
+}
+
+private bool ignore(Rendering[] attrs)
+{
+	import std.algorithm.searching: canFind;
+	return attrs.canFind!(a => a.args == ["ignore"]);
+}
+
 private template isAliasThised(T)
 {
 	static if (isAggregateType!T)
@@ -835,22 +872,33 @@ private template Drawable(alias value, string member)
 	import std.traits : isTypeTuple, isSomeFunction;
 
 	static if (isItSequence!value)
+	{
 		enum Drawable = false;
-	else
-	static if (hasProtection!(value, member) && !isPublic!(value, member))
-			enum Drawable = false;
-	else
-	static if (isItSequence!(__traits(getMember, value, member)))
+	}
+	else static if (hasProtection!(value, member) && !isPublic!(value, member))
+	{
 		enum Drawable = false;
-	else
-	static if(member.among("__ctor", "__dtor"))
+	}
+	else static if (isItSequence!(__traits(getMember, value, member)))
+	{
 		enum Drawable = false;
-	else
-	static if (isReadableAndWritable!(value, member) && !isSomeFunction!(__traits(getMember, value, member)))
+	}
+	else static if(member.among("__ctor", "__dtor"))
+	{
+		enum Drawable = false;
+	}
+	else static if(isIgnored!(value, member))
+	{
+		enum Drawable = false;
+	}
+	else static if (isReadableAndWritable!(value, member) && !isSomeFunction!(__traits(getMember, value, member)))
+	{
 		enum Drawable = true;
-	else
-	static if (isReadable!(value, member))
+	}
+	else static if (isReadable!(value, member))
+	{
 		enum Drawable = isConstProperty!(value, member); // a readable property is getter
+	}
 	else
 		enum Drawable = false;
 }
