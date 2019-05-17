@@ -9,7 +9,7 @@ import beholder.drawer : Drawer;
 class NuklearApplication : Application
 {
 	import std.typecons : Nullable;
-	import gfm.math : vec2f;
+	import gfm.math : vec2f, vec3i;
 	import nuklear_sdl_gl3;
 	import beholder.drawer : drawer, DrawerOf;
 
@@ -20,6 +20,8 @@ class NuklearApplication : Application
 
 	import std.typetuple : AliasSeq;
 	import beholder.drawer : SupportedBasicTypeSequence;
+
+	nk_color[] color;
 
 	// init values for fields of supported built in types
 	alias BasicTypeValuesSequence = AliasSeq!(
@@ -169,6 +171,124 @@ class NuklearApplication : Application
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();
+
+		{
+			// color = [
+			// // 	// nk_color(  0,   0,   0, 255),
+			// // 	// nk_color(255,   0,   0, 255),
+			// // 	// nk_color(  0, 255,   0, 255),
+			// // 	// nk_color(255, 255,   0, 255),
+			// 	nk_color(255, 255,   0, 255),
+			// 	nk_color(255, 127,   0, 255),
+			// 	nk_color(255, 255, 127, 255),
+			// 	// nk_color(000, 000, 255, 255),
+			// // 	// nk_color(  0,   0, 255, 255),
+			// // 	// nk_color(255,   0, 255, 255),
+			// // 	// nk_color(  0, 255, 255, 255),
+			// // 	// nk_color(255, 255, 255, 255),
+			// ];
+
+			import std.range, std.algorithm, std.stdio;
+			auto byteRange = sequence!"10*n+15"(0).take((256)/10);
+			auto color2 = cartesianProduct(byteRange, byteRange, byteRange).map!(a=>nk_color(cast(ubyte)a[0], cast(ubyte)a[1], cast(ubyte)a[2], 255));
+			color ~= nk_color(0,   0,   0, 255);
+			bool running;
+			size_t counter;
+			enum threshold = 150.0;
+			do
+			{
+				running = false;
+				foreach(c2; color2)
+				{
+					const dist = ColourDistance(color[$-1], c2);
+					if (dist > threshold)
+					{
+						bool equal_to_existed;
+						foreach(existed; color)
+							if (ColourDistance(existed, c2) < threshold)
+							{
+								equal_to_existed = true;
+								break;
+							}
+
+						if (equal_to_existed)
+							continue;
+
+						// writefln("%s vs %s : %f", color[$-1], c2, dist);
+						writefln("%s", color[$-1]);
+						color ~= c2;
+					}
+				}
+			} while(running);
+
+			{
+				foreach(c1; color)
+					foreach(c2; color)
+					{
+						if (c1 == c2)
+							continue;
+						const dist = ColourDistance(c1, c2);
+						if (dist < threshold)
+							writefln("\t%s vs %s : %f", c1, c2, dist);
+					}
+			}
+
+			color = [
+				/*  1 */ nk_color(  0,   0,   0, 255),  
+				/*  2 */ nk_color( 15,  15,  85, 255), 
+				/*  3 */ nk_color( 15,  15, 175, 0), 
+				/*  4 */ nk_color( 15,  55, 255, 255), 
+				/*  5 */ nk_color( 15,  85, 125, 0), 
+				/*  6 */ nk_color( 15, 125, 205, 0), 
+				/*  7 */ nk_color( 15, 195, 245, 0), 
+				/*  8 */ nk_color( 85, 255, 255, 255), 
+				/*  9 */ nk_color( 15, 255, 185, 0), 
+				/* 10 */ nk_color( 95, 195,  65, 255), 
+				/* 11 */ nk_color(105, 245, 135, 0), 
+				/* 12 */ nk_color( 15, 255,  95, 0), 
+				/* 13 */ nk_color(125, 255,  15, 0), 
+				/* 14 */ nk_color( 15, 215,  15, 0), 
+				/* 15 */ nk_color( 15, 185, 135, 255), 
+				/* 16 */ nk_color( 15, 145,  55, 0), 
+				/* 17 */ nk_color( 15,  75,  15, 255), 
+				/* 18 */ nk_color(165, 195, 255, 0), 
+				/* 19 */ nk_color( 95, 175, 195, 0), 
+				/* 20 */ nk_color( 95, 105, 255, 0), 
+				/* 21 */ nk_color(105,  15, 245, 255), 
+				/* 22 */ nk_color( 95,  65, 175, 0), 
+				/* 23 */ nk_color( 95,  95,  65, 255),
+				/* 24 */ nk_color(155, 115, 135, 0), 
+				/* 25 */ nk_color(175, 195, 125, 0), 
+				/* 26 */ nk_color(185, 255, 185, 0), 
+				/* 27 */ nk_color( 95,  25,  15, 0), 
+				/* 28 */ nk_color(125,  15, 105, 0), 
+				/* 29 */ nk_color(205,  15, 155, 0), 
+				/* 30 */ nk_color(245,  15, 255, 255), 
+				/* 31 */ nk_color(215, 135, 205, 0), 
+				/* 32 */ nk_color(175,  65, 235, 0), 
+				/* 33 */ nk_color(235,  15,  55, 255), 
+				/* 34 */ nk_color(235,  85,  95, 0), 
+				/* 35 */ nk_color(235, 255,  95, 255), 
+				/* 36 */ nk_color(205, 215,  15, 0), 
+				/* 37 */ nk_color(155, 145,  15, 0), 
+				/* 38 */ nk_color(245, 135,  15, 255), 
+				/* 39 */ nk_color(175,  65,  15, 255), 
+			];
+
+			color = [
+				/*  1 */ nk_color( 15,  55, 255, 255), 
+				/*  2 */ nk_color(235,  15,  55, 255),
+				/*  3 */ nk_color( 95, 195,  65, 255), 
+				/*  4 */ nk_color(245,  15, 255, 255),
+				/*  5 */ nk_color(105,  15, 245, 255), 
+				/*  6 */ nk_color( 95,  95,  65, 0),
+				/*  7 */ nk_color( 15, 185, 135, 0),  
+				/*  8 */ nk_color( 85, 255, 255, 255),  
+				/*  9 */ nk_color(235, 255,  95, 255), 
+				/* 10 */ nk_color(245, 135,  15, 255), 
+				/* 11 */ nk_color(175,  65,  15, 255), 
+			];
+		}
 
 		// basic data types
 		static foreach(int i, T; SupportedBasicTypeSequence)
@@ -323,11 +443,11 @@ class NuklearApplication : Application
 		}
 		nk_end(ctx);
 
+		enum height = 11;
 		if (nk_begin(ctx, "Debug", nk_rect(25+230+25+250+25+300+25, 50, 290, 450),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
-			enum height = 11;
 			int selected;
 			char[256] buffer;
 
@@ -335,6 +455,63 @@ class NuklearApplication : Application
 
 			nk_layout_row_dynamic(ctx, height, 1);
 			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+		}
+		nk_end(ctx);
+
+		if (nk_begin(ctx, "Color", nk_rect(5, 5, 290, 750),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			char[256] buffer;
+			size_t counter = 1;
+			foreach(clr; color)
+			{
+				auto canvas = nk_window_get_canvas(ctx);
+				
+				nk_layout_row_dynamic(ctx, height, 3);
+				nk_rect space;
+				auto state = nk_widget(&space, ctx);
+				if (!state)
+					continue;
+
+				
+				snprintf(buffer.ptr, buffer.length, "[%03d]", counter++);
+				nk_label(ctx, buffer.ptr, NK_TEXT_LEFT);
+				nk_fill_rect(canvas, space, 0, clr);
+				snprintf(buffer.ptr, buffer.length, "%03d %03d %03d", clr.r, clr.g, clr.b);
+				nk_label(ctx, buffer.ptr, NK_TEXT_LEFT);
+			}
+		}
+		nk_end(ctx);
+		
+		if (nk_begin(ctx, "Color2", nk_rect(5 + 290 + 5, 5, 290, 750),
+			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+		{
+			char[256] buffer;
+			size_t counter = 1;
+			foreach(clr; color)
+			{
+				if (clr.a == 0)
+				{
+					counter++;
+					continue;
+				}
+				auto canvas = nk_window_get_canvas(ctx);
+				
+				nk_layout_row_dynamic(ctx, height, 3);
+				nk_rect space;
+				auto state = nk_widget(&space, ctx);
+				if (!state)
+					continue;
+
+				
+				snprintf(buffer.ptr, buffer.length, "[%03d]", counter++);
+				nk_label(ctx, buffer.ptr, NK_TEXT_LEFT);
+				nk_fill_rect(canvas, space, 0, clr);
+				snprintf(buffer.ptr, buffer.length, "%03d %03d %03d", clr.r, clr.g, clr.b);
+				nk_label(ctx, buffer.ptr, NK_TEXT_LEFT);
+			}
 		}
 		nk_end(ctx);
 
@@ -397,6 +574,22 @@ class NuklearApplication : Application
 		}
 		return false;
 	}
+}
+
+/** See https://www.compuphase.com/cmetric.htm
+* http://www.brucelindbloom.com/index.html?ColorCalculator.html
+*/
+import nuklear_sdl_gl3 : nk_color, nk_color_f;
+double ColourDistance(ref nk_color c1, ref nk_color c2)
+{
+	import std.math : sqrt;
+
+	long rmean = ( cast(long)c1.r + cast(long)c2.r ) / 2;
+	long r = cast(long)c1.r - cast(long)c2.r;
+	long g = cast(long)c1.g - cast(long)c2.g;
+	long b = cast(long)c1.b - cast(long)c2.b;
+
+	return sqrt(cast(double)((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8)));
 }
 
 int main(string[] args)
