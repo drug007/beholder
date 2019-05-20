@@ -16,8 +16,12 @@ auto drawer(Args...)(Args args)
 
 template DrawerOf(alias A)
 {
+	import std.traits : isSomeFunction, ReturnType;
+
 	static if (is(A))
 		alias DrawerOf = Drawer!A;
+	else static if (isSomeFunction!A)
+		alias DrawerOf = Drawer!(ReturnType!A);
 	else
 		alias DrawerOf = Drawer!(typeof(A));
 }
@@ -269,12 +273,12 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 	static if (hasMember!(T, "get"))
 	{
 		enum memberTypeIsGet = true;
-		alias Wrapper = Drawer!(ReturnType!(T.get));
+		alias Wrapper = DrawerOf!(T.get);
 	}
 	else static if (hasMember!(T, "value"))
 	{
 		enum memberTypeIsGet = false;
-		alias Wrapper = Drawer!(ReturnType!(T.value));
+		alias Wrapper = DrawerOf!(T.value);
 	}
 	else
 		static assert(0);
@@ -505,8 +509,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	static if (RenderedAsAvailable)
 	{
-		alias RenderedAsType = ReturnType!(T.renderedAs);
-		Drawer!RenderedAsType state_rendered_as;
+		DrawerOf!(T.renderedAs) state_rendered_as;
 		enum Cached = is(RenderedAsType : string);
 		static if(Cached)
 			RenderedAsType cached;
@@ -514,10 +517,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	else
 		static foreach(member; DrawableMembers!T) 
 		{
-			static if (isSomeFunction!(mixin("typeof(T." ~ member ~ ")")))
-				mixin("Drawer!(ReturnType!(T." ~ member ~ ")) state_" ~ member ~ ";");
-			else
-				mixin("Drawer!(typeof(T." ~ member ~ ")) state_" ~ member ~ ";");
+			mixin("DrawerOf!(T." ~ member ~ ") state_" ~ member ~ ";");
 		}
 
 	this()(auto ref const(T) t)
@@ -577,20 +577,15 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	{
 		static if (RenderedAsAvailable)
 		{
-			state_rendered_as = Drawer!(ReturnType!(T.renderedAs))(t.renderedAs);
+			state_rendered_as = drawer(t.renderedAs);
 			static if (Cached)
 				cached = t.renderedAs;
 		}
 		else
 		static foreach(member; DrawableMembers!T)
 		{{
-			static if (isSomeFunction!(mixin("typeof(t." ~ member ~ ")")))
-				mixin("state_" ~ member ~ " = Drawer!(ReturnType!(T." ~ member ~ "))(t." ~ member ~ ");");
-			else
-			{
-				alias Field = typeof(mixin("state_" ~ member));
-				mixin("state_" ~ member) = Field(mixin("t." ~ member ));
-			}
+			alias DrawerType = typeof(mixin("state_" ~ member));
+			mixin("state_" ~ member) = DrawerType(mixin("t." ~ member ));
 		}}
 	}
 
@@ -610,7 +605,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 		static if (DrawableMembers!t.length == 1)
 		{
 			static foreach(member; DrawableMembers!t)
-				mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
+				mixin("state_" ~ member ~ ".draw(ctx, `" ~ member ~"`, t." ~ member ~ ");");
 		}
 		else
 		{
