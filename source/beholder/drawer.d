@@ -622,12 +622,12 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 		}}
 	}
 
-	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length == 1) 
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length <= 1) 
 	{
 		drawFields(ctx, header, t);
 	}
 
-	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length >= 1) 
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length > 1) 
 	{
 		import nuklear_sdl_gl3;		
 		import core.stdc.stdio : snprintf;
