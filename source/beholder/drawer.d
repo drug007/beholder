@@ -782,13 +782,18 @@ private void snprintfValue(T, U)(char[] buffer, auto ref const(U) u) if (isAggre
 	snprintfValue!T(buffer, t);
 }
 
-import std.traits : isTypeTuple;
-
 private template isIgnored(alias aggregate, string member)
 {
 	import std.traits : getUDAs, isType;
-	enum udas = [getUDAs!(__traits(getMember, aggregate, member), Rendering)];
-	enum isIgnored = ignore(udas);
+	static if (isType!(__traits(getMember, aggregate, member)))
+	{
+		enum isIgnored = false;
+	}
+	else
+	{
+		enum udas = [getUDAs!(__traits(getMember, aggregate, member), Rendering)];
+		enum isIgnored = ignore(udas);
+	}
 }
 
 private bool ignore(Rendering[] attrs)
@@ -869,7 +874,7 @@ private template hasProtection(alias aggregate, string member)
 private template Drawable(alias value, string member)
 {
 	import std.algorithm : among;
-	import std.traits : isTypeTuple, isSomeFunction;
+	import std.traits : isSomeFunction;
 
 	static if (isItSequence!value)
 	{
