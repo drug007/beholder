@@ -494,31 +494,18 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 }
 
 // Non Nullable, non TagggedAlgebraic aggregate type
-struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
+struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAsAvailable!T)
 {
-	import std.algorithm : among;
 	import std.traits : isSomeFunction, ReturnType, isArray;
 	import nuklear_sdl_gl3 : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
 
-	// Unfortunately `hasMember` does not work 
-	// with opDispatch, so brute force it
-	enum RenderedAsAvailable = "renderedAs".among(__traits(allMembers, T));
-
-	static if (RenderedAsAvailable)
-	{
-		DrawerOf!(T.renderedAs) state_rendered_as;
-		enum Cached = is(RenderedAsType : string);
-		static if(Cached)
-			RenderedAsType cached;
-	}
-	else
-		static foreach(member; DrawableMembers!T) 
-		{
-			mixin("DrawerOf!(T." ~ member ~ ") state_" ~ member ~ ";");
-		}
+	DrawerOf!(T.renderedAs) state_rendered_as;
+	enum Cached = is(RenderedAsType : string);
+	static if(Cached)
+		RenderedAsType cached;
 
 	this()(auto ref const(T) t)
 	{
@@ -529,59 +516,89 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	auto measure() inout
 	{
-		static if (RenderedAsAvailable)
-		{
-			return state_rendered_as.height;
-		}
-		else
-		{
-			if (collapsed == nk_collapse_states.NK_MINIMIZED)
-				return itemHeight;
-
-			float h = 0;
-			static foreach(member; DrawableMembers!T)
-			{
-				h += mixin("state_" ~ member ~ ".measure");
-			}
-			return h;
-		}
+		return state_rendered_as.height;
 	}
 
 	auto makeLayout()
 	{
-		static if (RenderedAsAvailable)
-		{
-			height = state_rendered_as.height;
-		}
-		else
-		{
-			if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			{
-				height = itemHeight;
-				return;
-			}
-			
-			float h = 0;
-			static foreach(member; DrawableMembers!T)
-			{
-				mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
-				h += mixin("state_" ~ member ~ ".height");
-				mixin("state_" ~ member ~ ".makeLayout;");
-			}
-			height = h;
-		}
+		height = state_rendered_as.height;
 	}
 
 	/// updates size of underlying data
 	void update()(auto ref const(T) t)
 	{
-		static if (RenderedAsAvailable)
-		{
-			state_rendered_as = drawer(t.renderedAs);
-			static if (Cached)
-				cached = t.renderedAs;
-		}
+		state_rendered_as = drawer(t.renderedAs);
+		static if (Cached)
+			cached = t.renderedAs;
+	}
+
+	/// draws all fields
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	{
+		import nuklear_sdl_gl3;
+
+		static if (Cached)
+			state_rendered_as.draw(ctx, header, cached);
 		else
+			state_rendered_as.draw(ctx, "", t.renderedAs);
+	}
+}
+
+// Non Nullable, non TagggedAlgebraic aggregate type
+struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedAsAvailable!T)
+{
+	import std.traits : isSomeFunction, ReturnType, isArray;
+	import nuklear_sdl_gl3 : nk_collapse_states;
+
+	nk_collapse_states collapsed;
+	int selected;
+
+	static foreach(member; DrawableMembers!T) 
+	{
+		mixin("DrawerOf!(T." ~ member ~ ") state_" ~ member ~ ";");
+	}
+
+	this()(auto ref const(T) t)
+	{
+		update(t);
+	}
+
+	mixin ImplementHeight;
+
+	auto measure() inout
+	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			return itemHeight;
+
+		float h = 0;
+		static foreach(member; DrawableMembers!T)
+		{
+			h += mixin("state_" ~ member ~ ".measure");
+		}
+		return h;
+	}
+
+	auto makeLayout()
+	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = itemHeight;
+			return;
+		}
+		
+		float h = 0;
+		static foreach(member; DrawableMembers!T)
+		{
+			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
+			h += mixin("state_" ~ member ~ ".height");
+			mixin("state_" ~ member ~ ".makeLayout;");
+		}
+		height = h;
+	}
+
+	/// updates size of underlying data
+	void update()(auto ref const(T) t)
+	{
 		static foreach(member; DrawableMembers!T)
 		{{
 			alias DrawerType = typeof(mixin("state_" ~ member));
@@ -594,14 +611,6 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	{
 		import nuklear_sdl_gl3;
 
-		static if (RenderedAsAvailable)
-		{
-			static if (Cached)
-				state_rendered_as.draw(ctx, header, cached);
-			else
-				state_rendered_as.draw(ctx, "", t.renderedAs);
-		}
-		else
 		static if (DrawableMembers!t.length == 1)
 		{
 			static foreach(member; DrawableMembers!t)
@@ -803,6 +812,15 @@ private template isAliasThised(T)
 		enum isAliasThised = __traits(getAliasThis, T).length;
 	else
 		enum isAliasThised = false;
+}
+
+private template RenderedAsAvailable(T)
+{
+	import std.algorithm : among;
+	
+	// Unfortunately `hasMember` does not work 
+	// with opDispatch, so brute force it
+	enum RenderedAsAvailable = "renderedAs".among(__traits(allMembers, T));
 }
 
 private template isNullableLike(T)
