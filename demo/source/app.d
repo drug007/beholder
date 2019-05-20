@@ -160,15 +160,15 @@ class NuklearApplication : Application
 	IntWrapper int_wrapper;
 	DrawerOf!int_wrapper int_wrapper_drawer;
 
-	struct AStructDrawnAsString
+	struct AStructRenderedAsString
 	{
 		int i;
 		float f;
 		bool b;
 
-		string drawnAs() const
+		string renderedAs() const
 		{
-			return "This struct is drawn as string";
+			return "This struct is rendered as string";
 		}
 	}
 
@@ -178,7 +178,7 @@ class NuklearApplication : Application
 	{
 		double d;
 		char ch;
-		AStructDrawnAsString struct_drawn_as_string;
+		AStructRenderedAsString struct_rendered_as_string;
 
 		@renderingIgnore
 		string you_should_not_see_this_field;
@@ -358,7 +358,7 @@ class NuklearApplication : Application
 			int_wrapper_drawer.draw(ctx, "Int wrapper", int_wrapper);
 
 			struct_with_uda_drawer.makeLayout;
-			struct_with_uda_drawer.draw(ctx, "Struct with UDA + drawAs", struct_with_uda);
+			struct_with_uda_drawer.draw(ctx, "Struct with UDA + renderedAs", struct_with_uda);
 		}
 		nk_end(ctx);
 

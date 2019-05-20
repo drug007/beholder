@@ -501,15 +501,15 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	// Unfortunately `hasMember` does not work 
 	// with opDispatch, so brute force it
-	enum DrawnAsAvailable = "drawnAs".among(__traits(allMembers, T));
+	enum RenderedAsAvailable = "renderedAs".among(__traits(allMembers, T));
 
-	static if (DrawnAsAvailable)
+	static if (RenderedAsAvailable)
 	{
-		alias DrawnAsType = ReturnType!(T.drawnAs);
-		Drawer!DrawnAsType state_drawn_as;
-		enum Cached = is(DrawnAsType : string);
+		alias RenderedAsType = ReturnType!(T.renderedAs);
+		Drawer!RenderedAsType state_rendered_as;
+		enum Cached = is(RenderedAsType : string);
 		static if(Cached)
-			DrawnAsType cached;
+			RenderedAsType cached;
 	}
 	else
 		static foreach(member; DrawableMembers!T) 
@@ -529,9 +529,9 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	auto measure() inout
 	{
-		static if (DrawnAsAvailable)
+		static if (RenderedAsAvailable)
 		{
-			return state_drawn_as.height;
+			return state_rendered_as.height;
 		}
 		else
 		{
@@ -549,9 +549,9 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 
 	auto makeLayout()
 	{
-		static if (DrawnAsAvailable)
+		static if (RenderedAsAvailable)
 		{
-			height = state_drawn_as.height;
+			height = state_rendered_as.height;
 		}
 		else
 		{
@@ -575,11 +575,11 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	/// updates size of underlying data
 	void update()(auto ref const(T) t)
 	{
-		static if (DrawnAsAvailable)
+		static if (RenderedAsAvailable)
 		{
-			state_drawn_as = Drawer!(ReturnType!(T.drawnAs))(t.drawnAs);
+			state_rendered_as = Drawer!(ReturnType!(T.renderedAs))(t.renderedAs);
 			static if (Cached)
-				cached = t.drawnAs;
+				cached = t.renderedAs;
 		}
 		else
 		static foreach(member; DrawableMembers!T)
@@ -599,12 +599,12 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate)
 	{
 		import nuklear_sdl_gl3;
 
-		static if (DrawnAsAvailable)
+		static if (RenderedAsAvailable)
 		{
 			static if (Cached)
-				state_drawn_as.draw(ctx, header, cached);
+				state_rendered_as.draw(ctx, header, cached);
 			else
-				state_drawn_as.draw(ctx, "", t.drawnAs);
+				state_rendered_as.draw(ctx, "", t.renderedAs);
 		}
 		else
 		static if (DrawableMembers!t.length == 1)
@@ -869,7 +869,7 @@ private template hasProtection(alias aggregate, string member)
 	enum hasProtection = __traits(compiles, { enum pl = __traits(getProtection, __traits(getMember, aggregate, member)); });
 }
 
-// This trait defines what members should be drawn -
+// This trait defines what members should be rendered -
 // public members that are either readable and writable or getter properties
 private template Drawable(alias value, string member)
 {
@@ -909,7 +909,7 @@ private template Drawable(alias value, string member)
 }
 
 /// returns alias sequence, members of which are members of value
-/// that should be drawn
+/// that should be rendered
 private template DrawableMembers(alias A)
 {
 	import std.meta : ApplyLeft, Filter, AliasSeq;
