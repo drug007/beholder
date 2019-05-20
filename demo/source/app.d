@@ -172,7 +172,21 @@ class NuklearApplication : Application
 		}
 	}
 
-	import beholder.drawer : renderingIgnore, Rendering;
+	import beholder.drawer : renderingIgnore, Rendering, RenderedAs;
+
+	struct Proxy
+	{
+		const(TestStruct)* ts;
+		this(ref const(TestStruct) ts)
+		{
+			this.ts = &ts;
+		}
+		
+		string renderedAs() const
+		{
+			return "ts.f";//ts.f;
+		}
+	}
 	
 	struct StructWithUDA
 	{
@@ -182,6 +196,8 @@ class NuklearApplication : Application
 
 		@renderingIgnore
 		string you_should_not_see_this_field;
+		@RenderedAs!Proxy
+		TestStruct ts;
 
 		string str1;
 		double d2;

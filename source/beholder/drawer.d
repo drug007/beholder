@@ -555,7 +555,14 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	static foreach(member; DrawableMembers!T) 
 	{
-		mixin("DrawerOf!(T." ~ member ~ ") state_" ~ member ~ ";");
+		static if (hasRenderedAs!(__traits(getMember, T, member)))
+		{
+			mixin("Drawer!(getRenderedAs!(__traits(getMember, T, member))) state_" ~ member ~ ";");
+		}
+		else
+		{
+			mixin("DrawerOf!(T." ~ member ~ ") state_" ~ member ~ ";");
+		}
 	}
 
 	this()(auto ref const(T) t)
@@ -602,37 +609,52 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 		static foreach(member; DrawableMembers!T)
 		{{
 			alias DrawerType = typeof(mixin("state_" ~ member));
-			mixin("state_" ~ member) = DrawerType(mixin("t." ~ member ));
+
+			static if (hasRenderedAs!(__traits(getMember, T, member)))
+			{
+				alias Proxy = getRenderedAs!(__traits(getMember, T, member));
+				mixin(`state_` ~ member) = DrawerType(Proxy(mixin(`t.` ~ member )));
+			}
+			else
+			{
+				mixin(`state_` ~ member) = DrawerType(mixin(`t.` ~ member ));
+			}
 		}}
 	}
 
-	/// draws all fields
-	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length == 1) 
 	{
-		import nuklear_sdl_gl3;
+		drawFields(ctx, header, t);
+	}
 
-		static if (DrawableMembers!t.length == 1)
+	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length >= 1) 
+	{
+		import nuklear_sdl_gl3;		
+		import core.stdc.stdio : snprintf;
+		
+		char[textBufferSize] buffer;
+		snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
+
+		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 		{
-			static foreach(member; DrawableMembers!t)
-				mixin("state_" ~ member ~ ".draw(ctx, `" ~ member ~"`, t." ~ member ~ ");");
-		}
-		else
-		{
-			import core.stdc.stdio : snprintf;
+			scope(exit)
+				nk_tree_pop(ctx);
 			
-			char[textBufferSize] buffer;
-			snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
+			drawFields(ctx, header, t);
+		}
+	}
 
-			if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
+	private void drawFields(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
+	{
+		static foreach(member; DrawableMembers!t)
+		{
+			static if (hasRenderedAs!(__traits(getMember, T, member)))
 			{
-				scope(exit)
-					nk_tree_pop(ctx);
-				
-				static foreach(member; DrawableMembers!t) 
-				{
-					mixin("state_" ~ member ~ ".draw(ctx, \"" ~ member ~"\", t." ~ member ~ ");");
-				}
+				alias Proxy = getRenderedAs!(__traits(getMember, T, member));
+				mixin(`state_` ~ member).draw(ctx, member, Proxy(mixin(`t.` ~ member )));
 			}
+			else
+				mixin("state_" ~ member).draw(ctx, member,       mixin(`t.` ~ member));
 		}
 	}
 }
@@ -645,6 +667,12 @@ struct Rendering
 }
 
 enum renderingIgnore = Rendering(["ignore"]);
+
+struct RenderedAs(T){}
+struct RenderedAs(alias string member, T)
+{
+	enum memberName = member;
+}
 
 //*****************************************************************************
 // helpers
@@ -804,6 +832,29 @@ private bool ignore(Rendering[] attrs)
 {
 	import std.algorithm.searching: canFind;
 	return attrs.canFind!(a => a.args == ["ignore"]);
+}
+
+private enum bool isRenderedAs(A) = is(A : RenderedAs!T, T);
+private enum bool isRenderedAs(alias a) = false;
+
+import std.meta : staticMap, Filter;
+
+private alias ProxyList(alias value) = staticMap!(getRenderedAs, Filter!(isRenderedAs, __traits(getAttributes, value)));
+
+private template hasRenderedAs(alias value)
+{
+	private enum _listLength = ProxyList!(value).length;
+	static assert(_listLength <= 1, `Only single serialization proxy is allowed`);
+	enum bool hasRenderedAs = _listLength == 1;
+}
+
+private alias getRenderedAs(T : RenderedAs!Proxy, Proxy) = Proxy;
+
+private template getRenderedAs(alias value)
+{
+	private alias _list = ProxyList!value;
+	static assert(_list.length <= 1, `Only single serialization proxy is allowed`);
+	alias getRenderedAs = _list[0];
 }
 
 private template isAliasThised(T)
