@@ -16,12 +16,12 @@ auto drawer(Args...)(Args args)
 
 template DrawerOf(alias A)
 {
-	import std.traits : isSomeFunction, ReturnType;
+	import std.traits : isSomeFunction, ReturnType, Unqual;
 
 	static if (is(A))
 		alias DrawerOf = Drawer!A;
 	else static if (isSomeFunction!A)
-		alias DrawerOf = Drawer!(ReturnType!A);
+		alias DrawerOf = Drawer!(Unqual!(ReturnType!A)); // to get rid of inout qualifier
 	else
 		alias DrawerOf = Drawer!(typeof(A));
 }
