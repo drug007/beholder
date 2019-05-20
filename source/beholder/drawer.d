@@ -96,7 +96,7 @@ mixin template ImplementDrawList()
 		// in struct ctor demands explicit ctor call and
 		// that complicates code generation.
 		// At least it allows to have id only for part of
-		// structure, not for all like it would be in case
+		// structures, not for all like it would be in case
 		// of classes
 
 		// init id if needed
