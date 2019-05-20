@@ -254,7 +254,10 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 						wrapper = Drawer!FieldType(t.get!FieldType);
 						wrapper.get!DrawerType.selected  = old_selected;
 					}
-					wrapper.get!DrawerType.draw(ctx, FieldName, t.get!FieldType);
+					static if (__traits(compiles, { string s = t.get!FieldType.header; }))
+						wrapper.get!DrawerType.draw(ctx, t.get!FieldType.header, t.get!FieldType);
+					else
+						wrapper.get!DrawerType.draw(ctx,              FieldName, t.get!FieldType);
 					break Lexit;
 				}
 			}
