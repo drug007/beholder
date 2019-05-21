@@ -125,7 +125,9 @@ mixin template ImplementDrawList()
 				nk_layout_row_dynamic(ctx, height, 1);
 				if (nk_list_view_begin(ctx, &view, _char_id.ptr, NK_WINDOW_BORDER, itemHeight, cast(int) a.length)) 
 				{
-					foreach(i; 0..view.count)
+					// temporarily disable view list
+					// and drawing all data
+					foreach(i; 0..wrapper.length)
 					{
 						static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
 						{
