@@ -148,19 +148,30 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 	int selected;
 
 	this(const(Base) t) {
-		// by default do nothing
+		height = itemHeight+padding_y*2;
 	}
 
-	mixin ImplementHeight;
-
-	float measure() inout
+	private
 	{
-		return height;
+		enum padding_y = 5;
+		enum padding_x = 3;
+		float _height;
 	}
 
-	auto makeLayout()
+	@property
+	auto height() inout { return _height; }
+
+	@property
+	auto height(float v) { _height = v; }
+
+	float measure(Context)(Context ctx) inout
 	{
-		assert(height == itemHeight);
+		return itemHeight+padding_y*2;
+	}
+
+	auto makeLayout(Context)(Context ctx)
+	{
+		height = measure(ctx);
 	}
 
 	void draw(Context, Derived : Base)(Context ctx, const(char)[] header, Derived t)
@@ -174,9 +185,7 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 		
 		l += snprintfValue!Base(buffer[l..$], t);
 
-		enum padding_y = 5;
-		enum padding_x = 3;
-		nk_layout_row_dynamic(ctx, height+padding_y*2,  1);
+		nk_layout_row_dynamic(ctx, height,  1);
 
 		auto canvas = nk_window_get_canvas(ctx);
 
@@ -218,14 +227,14 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		return wrapper.height;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		wrapper.makeLayout;
+		wrapper.makeLayout(ctx);
 		height = wrapper.height;
 	}
 
@@ -311,14 +320,14 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		return wrapper.height;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		wrapper.makeLayout;
+		wrapper.makeLayout(ctx);
 		height = wrapper.height;
 	}
 
@@ -380,25 +389,18 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		float h = 0;
 		foreach(ref e; wrapper)
-			h += e.measure;
+			h += e.measure(ctx);
 
 		return h;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		float h = 0;
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure;
-			h += e.height;
-			e.makeLayout;
-		}
-		height = h;
+		height = measure(ctx);
 	}
 }
 
@@ -420,25 +422,18 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		float h = 0;
 		foreach(ref e; wrapper)
-			h += e.measure;
+			h += e.measure(ctx) + ctx.style.window.spacing.y*2;
 
 		return h;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		float h = 0;
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure;
-			h += e.height;
-			e.makeLayout;
-		}
-		height = h;
+		height = measure(ctx);
 	}
 
 	void update(const T a)
@@ -490,25 +485,18 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		float h = 0;
 		foreach(ref e; wrapper)
-			h += e.measure;
+			h += e.measure(ctx);
 
 		return h;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		float h = 0;
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure;
-			h += e.height;
-			e.makeLayout;
-		}
-		height = h;
+		height = measure(ctx);
 	}
 }
 
@@ -533,14 +521,14 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAs
 
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		return state_rendered_as.height;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
-		height = state_rendered_as.height;
+		height = measure(ctx);
 	}
 
 	/// updates size of underlying data
@@ -591,7 +579,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	mixin ImplementHeight;
 
-	auto measure() inout
+	auto measure(Context)(Context ctx) inout
 	{
 		if (collapsed == nk_collapse_states.NK_MINIMIZED)
 			return itemHeight;
@@ -599,12 +587,12 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 		float h = 0;
 		static foreach(member; DrawableMembers!T)
 		{
-			h += mixin("state_" ~ member ~ ".measure");
+			h += mixin("state_" ~ member).measure(ctx);
 		}
 		return h;
 	}
 
-	auto makeLayout()
+	auto makeLayout(Context)(Context ctx)
 	{
 		if (collapsed == nk_collapse_states.NK_MINIMIZED)
 		{
@@ -612,14 +600,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 			return;
 		}
 		
-		float h = 0;
-		static foreach(member; DrawableMembers!T)
-		{
-			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure");
-			h += mixin("state_" ~ member ~ ".height");
-			mixin("state_" ~ member ~ ".makeLayout;");
-		}
-		height = h;
+		height = measure(ctx);
 	}
 
 	/// updates size of underlying data

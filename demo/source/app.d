@@ -133,7 +133,7 @@ class NuklearApplication : Application
 	{
 		private TaggedAlgebraic!TestStruct _ta;
 
-		ref auto get() { return _ta; }
+		ref auto get() inout { return _ta; }
 
 		alias get this;
 
@@ -207,6 +207,9 @@ class NuklearApplication : Application
 	}
 	StructWithUDA struct_with_uda;
 	DrawerOf!struct_with_uda struct_with_uda_drawer;
+
+	TaWrapper[] ta_array;
+	DrawerOf!ta_array ta_array_wrapper;
 	
 	this(string title, int w, int h, Application.FullScreen flag)
 	{
@@ -293,6 +296,19 @@ class NuklearApplication : Application
 			struct_with_uda = StructWithUDA(100, 'D');
 			struct_with_uda_drawer = drawer(struct_with_uda);
 		}
+
+		{
+			ta_array ~= TaWrapper(2);
+			ta_array ~= TaWrapper(3.0);
+			ta_array ~= TaWrapper("some str");
+			ta_array ~= TaWrapper("another str");
+			ta_array ~= TaWrapper("yet another str");
+			ta_array ~= TaWrapper(100.0);
+			ta_array ~= TaWrapper(Nested());
+			ta_array ~= TaWrapper(200);
+
+			ta_array_wrapper = drawer(ta_array);
+		}
 	}
 
 	~this()
@@ -311,9 +327,9 @@ class NuklearApplication : Application
 			static foreach(T; SupportedBasicTypeSequence)
 			{
 				// generate code like:
-				// float_drawer.makeLayout;
+				// float_drawer.makeLayout(ctx);
 				// float_drawer.draw(ctx, `float value`, float_value);
-				mixin(T.stringof ~ "_drawer.makeLayout;");
+				mixin(T.stringof ~ "_drawer.makeLayout(ctx);");
 				mixin(T.stringof ~ "_drawer.draw(ctx, `" ~ T.stringof ~ "`, " ~ T.stringof ~ "_value);");
 			}
 		}
@@ -324,57 +340,60 @@ class NuklearApplication : Application
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
 			import std.conv : text;
-			double_ptr_drawer     .makeLayout;
+			double_ptr_drawer     .makeLayout(ctx);
 			double_ptr_drawer     .draw(ctx, `Pointer to double`, double_ptr);
-			dyn_arr_of_char_drawer.makeLayout;
+			dyn_arr_of_char_drawer.makeLayout(ctx);
 			dyn_arr_of_char_drawer.draw(ctx, `char[]`, dyn_arr_of_char);
-			st_arr_of_char_drawer .makeLayout;
+			st_arr_of_char_drawer .makeLayout(ctx);
 			st_arr_of_char_drawer .draw(ctx, `char[` ~ st_arr_of_char.length.text ~ `]`, st_arr_of_char);
-			aa_str_str_drawer     .makeLayout;
+			aa_str_str_drawer     .makeLayout(ctx);
 			aa_str_str_drawer     .draw(ctx, `string[string]`, aa_str_str);
-			aa_int_int_drawer     .makeLayout;
+			aa_int_int_drawer     .makeLayout(ctx);
 			aa_int_int_drawer     .draw(ctx, `int[int]`, aa_int_int);
-			dyn_arr_of_int_drawer .makeLayout;
+			dyn_arr_of_int_drawer .makeLayout(ctx);
 			dyn_arr_of_int_drawer .draw(ctx, `int[]`, dyn_arr_of_int);
-			st_arr_of_int_drawer  .makeLayout;
+			st_arr_of_int_drawer  .makeLayout(ctx);
 			st_arr_of_int_drawer  .draw(ctx, `int[` ~ st_arr_of_int.length.text ~ `]`, st_arr_of_int);
-			empty_int_arr_drawer  .makeLayout;
+			empty_int_arr_drawer  .makeLayout(ctx);
 			empty_int_arr_drawer  .draw(ctx, `int[` ~ empty_int_arr.length.text ~ `]`, empty_int_arr);
 		}
 		nk_end(ctx);
 
-		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 370),
+		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 550),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
-			test_enum_drawer  .makeLayout;
+			test_enum_drawer  .makeLayout(ctx);
 			test_enum_drawer  .draw(ctx, `test enum`,   test_enum);
-			test_struct_drawer.makeLayout;
+			test_struct_drawer.makeLayout(ctx);
 			test_struct_drawer.draw(ctx, `test struct`, test_struct);
 
-			tagged_algebraic1_drawer.makeLayout;
+			tagged_algebraic1_drawer.makeLayout(ctx);
 			tagged_algebraic1_drawer.draw(ctx, "TaggedAlgebraic #1", tagged_algebraic1);
-			tagged_algebraic2_drawer.makeLayout;
+			tagged_algebraic2_drawer.makeLayout(ctx);
 			tagged_algebraic2_drawer.draw(ctx, "TaggedAlgebraic #2", tagged_algebraic2);
 
-			nullable_int1_drawer.makeLayout;
+			nullable_int1_drawer.makeLayout(ctx);
 			nullable_int1_drawer.draw(ctx, "Nullable!int w/o value", nullable_int1);
-			nullable_int2_drawer.makeLayout;
+			nullable_int2_drawer.makeLayout(ctx);
 			nullable_int2_drawer.draw(ctx, "Nullable!int with value", nullable_int2);
 
-			nullable_test_struct1_drawer.makeLayout;
+			nullable_test_struct1_drawer.makeLayout(ctx);
 			nullable_test_struct1_drawer.draw(ctx, "Nullable!test_struct w/o value", nullable_test_struct1);
-			nullable_test_struct2_drawer.makeLayout;
+			nullable_test_struct2_drawer.makeLayout(ctx);
 			nullable_test_struct2_drawer.draw(ctx, "Nullable!test_struct with value", nullable_test_struct2);
 
-			ta_wrapper_drawer.makeLayout;
+			ta_wrapper_drawer.makeLayout(ctx);
 			ta_wrapper_drawer.draw(ctx, "TaggedAlgebraic", ta_wrapper);
 
-			int_wrapper_drawer.makeLayout;
+			int_wrapper_drawer.makeLayout(ctx);
 			int_wrapper_drawer.draw(ctx, "Int wrapper", int_wrapper);
 
-			struct_with_uda_drawer.makeLayout;
+			struct_with_uda_drawer.makeLayout(ctx);
 			struct_with_uda_drawer.draw(ctx, "Struct with UDA + renderedAs", struct_with_uda);
+
+			ta_array_wrapper.makeLayout(ctx);
+			ta_array_wrapper.draw(ctx, "TaWrapper[]", ta_array);
 		}
 		nk_end(ctx);
 
