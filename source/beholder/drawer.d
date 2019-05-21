@@ -229,13 +229,12 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 
 	auto measure(Context)(Context ctx) inout
 	{
-		return wrapper.height;
+		return wrapper.measure(ctx);
 	}
 
 	auto makeLayout(Context)(Context ctx)
 	{
 		wrapper.makeLayout(ctx);
-		height = wrapper.height;
 	}
 
 	/// updates size of underlying data
@@ -322,13 +321,12 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 
 	auto measure(Context)(Context ctx) inout
 	{
-		return wrapper.height;
+		return wrapper.measure(ctx);
 	}
 
 	auto makeLayout(Context)(Context ctx)
 	{
 		wrapper.makeLayout(ctx);
-		height = wrapper.height;
 	}
 
 	/// updates size of underlying data
@@ -391,6 +389,9 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 
 	auto measure(Context)(Context ctx) inout
 	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			return itemHeight + ctx.style.window.spacing.y*2;
+
 		float h = 0;
 		foreach(ref e; wrapper)
 			h += e.measure(ctx);
@@ -424,7 +425,10 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 
 	auto measure(Context)(Context ctx) inout
 	{
-		float h = 0;
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			return h;
+
 		foreach(ref e; wrapper)
 			h += e.measure(ctx) + ctx.style.window.spacing.y*2;
 
@@ -487,6 +491,9 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 
 	auto measure(Context)(Context ctx) inout
 	{
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+			return itemHeight + ctx.style.window.spacing.y*2;
+
 		float h = 0;
 		foreach(ref e; wrapper)
 			h += e.measure(ctx);
@@ -523,7 +530,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAs
 
 	auto measure(Context)(Context ctx) inout
 	{
-		return state_rendered_as.height;
+		return state_rendered_as.measure(ctx);
 	}
 
 	auto makeLayout(Context)(Context ctx)
@@ -581,25 +588,19 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	auto measure(Context)(Context ctx) inout
 	{
+		float h = itemHeight + ctx.style.window.spacing.y*2;
 		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return itemHeight;
+			return h;
 
-		float h = 0;
 		static foreach(member; DrawableMembers!T)
 		{
-			h += mixin("state_" ~ member).measure(ctx);
+			h += mixin("state_" ~ member).measure(ctx) + ctx.style.window.spacing.y*2;
 		}
 		return h;
 	}
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-		{
-			height = itemHeight;
-			return;
-		}
-		
 		height = measure(ctx);
 	}
 
@@ -637,10 +638,8 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 		{
-			scope(exit)
-				nk_tree_pop(ctx);
-			
 			drawFields(ctx, header, t);
+			nk_tree_pop(ctx);
 		}
 	}
 

@@ -359,7 +359,7 @@ class NuklearApplication : Application
 		}
 		nk_end(ctx);
 
-		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 550),
+		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 600),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
