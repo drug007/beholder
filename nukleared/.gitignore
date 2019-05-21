@@ -1,0 +1,14 @@
+.dub
+docs.json
+__dummy.html
+docs/
+nukleared.so
+nukleared.dylib
+nukleared.dll
+nukleared.a
+nukleared.lib
+nukleared-test-*
+*.exe
+*.o
+*.obj
+*.lst

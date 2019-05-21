@@ -1,0 +1,13 @@
+name "nukleared"
+targetType "library"
+targetPath "lib"
+description "Bindings to nuklear"
+authors "drug007"
+copyright "Copyright © 2019, drug007"
+license "BSL-1.0"
+
+dependency "gfm:sdl2" version="~>7.0.5"
+dependency "gfm:math" version="~>7.0.5"
+dependency "gfm:opengl" version="~>7.0.5"
+
+preBuildCommands "cd $PACKAGE_DIR/c && pwd && PREFIX=.. make install"
