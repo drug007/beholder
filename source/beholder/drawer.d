@@ -145,6 +145,36 @@ mixin template ImplementDrawList()
 	}
 }
 
+mixin template ImplementLayout()
+{
+	auto measure(Context)(Context ctx) inout
+	{
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		if (collapsed != nk_collapse_states.NK_MINIMIZED)
+		{
+			foreach(ref e; wrapper)
+				h += e.measure(ctx) + ctx.style.window.spacing.y;
+		}
+
+		return h;
+	}
+
+	auto makeLayout(Context)(Context ctx)
+	{
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		if (collapsed != nk_collapse_states.NK_MINIMIZED)
+		{
+			foreach(ref e; wrapper)
+			{
+				e.height = e.measure(ctx);
+				h += e.height + ctx.style.window.spacing.y;
+				e.makeLayout(ctx);
+			}
+		}
+		height = h;
+	}
+}
+
 struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 {
 	int selected;
@@ -388,36 +418,7 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
-
-	auto measure(Context)(Context ctx) inout
-	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return h;
-
-		foreach(ref e; wrapper)
-			h += e.measure(ctx);
-
-		return h;
-	}
-
-	auto makeLayout(Context)(Context ctx)
-	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-		{
-			height = itemHeight + ctx.style.window.spacing.y*2;
-			return;
-		}
-
-		float h = itemHeight + ctx.style.window.spacing.y*2;
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure(ctx);
-			h += e.height;
-			e.makeLayout(ctx);
-		}
-		height = h;
-	}
+	mixin ImplementLayout;
 }
 
 struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
@@ -437,38 +438,7 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
-
-	auto measure(Context)(Context ctx) inout
-	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return h;
-
-		foreach(ref e; wrapper)
-		{
-			h += e.measure(ctx) + ctx.style.window.spacing.y*2;
-		}
-
-		return h;
-	}
-
-	auto makeLayout(Context)(Context ctx)
-	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-		{
-			height = h;
-			return;
-		}
-
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure(ctx);
-			h += e.height;
-			e.makeLayout(ctx);
-		}
-		height = h;
-	}
+	mixin ImplementLayout;
 
 	void update(const T a)
 	{
@@ -518,36 +488,7 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 
 	mixin ImplementDrawList;
 	mixin ImplementHeight;
-
-	auto measure(Context)(Context ctx) inout
-	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return itemHeight + ctx.style.window.spacing.y*2;
-
-		float h = 0;
-		foreach(ref e; wrapper)
-			h += e.measure(ctx);
-
-		return h;
-	}
-
-	auto makeLayout(Context)(Context ctx)
-	{
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-		{
-			height = itemHeight + ctx.style.window.spacing.y*2;
-			return;
-		}
-
-		float h = itemHeight + ctx.style.window.spacing.y*2;
-		foreach(ref e; wrapper)
-		{
-			e.height = e.measure(ctx);
-			h += e.height;
-			e.makeLayout(ctx);
-		}
-		height = h;
-	}
+	mixin ImplementLayout;
 }
 
 // Non Nullable, non TagggedAlgebraic aggregate type
@@ -632,12 +573,12 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 	auto measure(Context)(Context ctx) inout
 	{
 		float h = itemHeight + ctx.style.window.spacing.y*2;
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return h;
-
-		static foreach(member; DrawableMembers!T)
+		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
-			h += mixin("state_" ~ member).measure(ctx) + ctx.style.window.spacing.y*2;
+			foreach(member; DrawableMembers!T)
+			{
+				h += mixin("state_" ~ member).measure(ctx) + ctx.style.window.spacing.y*2;
+			}
 		}
 		return h;
 	}
@@ -645,16 +586,14 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 	auto makeLayout(Context)(Context ctx)
 	{
 		float h = itemHeight + ctx.style.window.spacing.y*2;
-		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
-			height = h;
-			return;
-		}
-		static foreach(member; DrawableMembers!T)
-		{
-			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure(ctx)");
-			h += mixin("state_" ~ member ~ ".height");
-			mixin("state_" ~ member ~ ".makeLayout(ctx);");
+			static foreach(member; DrawableMembers!T)
+			{
+				mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure(ctx)");
+				h += mixin("state_" ~ member ~ ".height");
+				mixin("state_" ~ member ~ ".makeLayout(ctx);");
+			}
 		}
 		height = h;
 	}
