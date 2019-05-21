@@ -168,14 +168,30 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
-		size_t l;
+		int l;
 		if (header.length)
 			l = snprintf(buffer.ptr, buffer.length, "%s: ", header.ptr);
 		
-		snprintfValue!Base(buffer[l..$], t);
+		l += snprintfValue!Base(buffer[l..$], t);
 
-		nk_layout_row_dynamic(ctx, height, 1);
-		nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
+		enum padding_y = 5;
+		enum padding_x = 3;
+		nk_layout_row_dynamic(ctx, height+padding_y*2,  1);
+
+		auto canvas = nk_window_get_canvas(ctx);
+
+		nk_rect space;
+		auto state = nk_widget(&space, ctx);
+		if (!state) return;
+
+		version(none) if (state != NK_WIDGET_ROM)
+			update_your_widget_by_user_input();
+
+		nk_fill_rect(canvas, space, 0, nk_rgb(40,40,40));
+		nk_stroke_rect(canvas, space, 0, ctx.current.layout.border, nk_rgb(64,64,64));
+		space.y += padding_y;
+		space.x += padding_x;
+		nk_draw_text(canvas, space, buffer.ptr, l, ctx.style.font, ctx.style.window.background, ctx.style.text.color);
 	}
 }
 
@@ -776,7 +792,7 @@ private string enumToString(E)(E e) if (is(E == enum))
 }
 
 @nogc nothrow
-private void snprintfValue(T)(char[] buffer, auto ref const(T) t)
+private auto snprintfValue(T)(char[] buffer, auto ref const(T) t)
 {
 	/** TODO Known drawback
 	It would be better if the function takes `t` as `inout` instead
@@ -789,32 +805,32 @@ private void snprintfValue(T)(char[] buffer, auto ref const(T) t)
 	// format specifier depends on type, also string should be
 	// passed using `.ptr` member
 	static if (is(T == enum))
-		snprintf(&buffer[0], buffer.length, "%s", t.enumToString.ptr);
+		return snprintf(&buffer[0], buffer.length, "%s", t.enumToString.ptr);
 	else static if (isIntegral!T)
-		snprintf(&buffer[0], buffer.length, "%d", t);
+		return snprintf(&buffer[0], buffer.length, "%d", t);
 	else static if (isFloatingPoint!T)
-		snprintf(&buffer[0], buffer.length, "%f", t);
+		return snprintf(&buffer[0], buffer.length, "%f", t);
 	else static if (isBoolean!T)
-		snprintf(&buffer[0], buffer.length, t ? "true" : "false");
+		return snprintf(&buffer[0], buffer.length, t ? "true" : "false");
 	else static if (isSomeString!T)
-		snprintf(&buffer[0], buffer.length, "%s", t.ptr);
+		return snprintf(&buffer[0], buffer.length, "%s", t.ptr);
 	else static if (isSomeChar!T)
-		snprintf(&buffer[0], buffer.length, "%c", t);
+		return snprintf(&buffer[0], buffer.length, "%c", t);
 	else static if (isPointer!T)
-		snprintf(&buffer[0], buffer.length, "%x", t);
+		return snprintf(&buffer[0], buffer.length, "%x", t);
 	else static if (isStaticArray!T && isSomeChar!(ElementType!T))
-		snprintf(&buffer[0], buffer.length, "%s", t.ptr);
+		return snprintf(&buffer[0], buffer.length, "%s", t.ptr);
 	else static if (isSomeChar!T)
-		snprintf(&buffer[0], buffer.length, "%c", t);
+		return snprintf(&buffer[0], buffer.length, "%c", t);
 	else
 		static assert(0, "Type `" ~ T.stringof ~ "` is not supported");
 }
 
 @nogc nothrow
-private void snprintfValue(T, U)(char[] buffer, auto ref const(U) u) if (isAggregateType!U)
+private auto snprintfValue(T, U)(char[] buffer, auto ref const(U) u) if (isAggregateType!U)
 {
 	auto t = mixin("u." ~ __traits(getAliasThis, U)[0]);
-	snprintfValue!T(buffer, t);
+	return snprintfValue!T(buffer, t);
 }
 
 private template isIgnored(alias aggregate, string member)
