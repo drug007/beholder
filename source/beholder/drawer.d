@@ -389,10 +389,10 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 
 	auto measure(Context)(Context ctx) inout
 	{
+		float h = itemHeight + ctx.style.window.spacing.y*2;
 		if (collapsed == nk_collapse_states.NK_MINIMIZED)
-			return itemHeight + ctx.style.window.spacing.y*2;
+			return h;
 
-		float h = 0;
 		foreach(ref e; wrapper)
 			h += e.measure(ctx);
 
@@ -401,7 +401,20 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		height = measure(ctx);
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = itemHeight + ctx.style.window.spacing.y*2;
+			return;
+		}
+
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure(ctx);
+			h += e.height;
+			e.makeLayout(ctx);
+		}
+		height = h;
 	}
 }
 
@@ -430,14 +443,29 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 			return h;
 
 		foreach(ref e; wrapper)
+		{
 			h += e.measure(ctx) + ctx.style.window.spacing.y*2;
+		}
 
 		return h;
 	}
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		height = measure(ctx);
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = h;
+			return;
+		}
+
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure(ctx);
+			h += e.height;
+			e.makeLayout(ctx);
+		}
+		height = h;
 	}
 
 	void update(const T a)
@@ -503,7 +531,20 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		height = measure(ctx);
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = itemHeight + ctx.style.window.spacing.y*2;
+			return;
+		}
+
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		foreach(ref e; wrapper)
+		{
+			e.height = e.measure(ctx);
+			h += e.height;
+			e.makeLayout(ctx);
+		}
+		height = h;
 	}
 }
 
@@ -601,7 +642,19 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		height = measure(ctx);
+		float h = itemHeight + ctx.style.window.spacing.y*2;
+		if (collapsed == nk_collapse_states.NK_MINIMIZED)
+		{
+			height = h;
+			return;
+		}
+		static foreach(member; DrawableMembers!T)
+		{
+			mixin("state_" ~ member ~ ".height") = mixin("state_" ~ member ~ ".measure(ctx)");
+			h += mixin("state_" ~ member ~ ".height");
+			mixin("state_" ~ member ~ ".makeLayout(ctx);");
+		}
+		height = h;
 	}
 
 	/// updates size of underlying data
