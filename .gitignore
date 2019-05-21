@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/beholder
+beholder.so
+beholder.dylib
+beholder.dll
+beholder.a
+beholder.lib
+beholder-test-*
+*.exe
+*.o
+*.obj
+*.lst

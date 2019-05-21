@@ -1,0 +1,7 @@
+name "demo"
+description "A minimal D application."
+authors "drug007"
+copyright "Copyright © 2022, drug007"
+license "proprietary"
+dependency "beholder" path=".."
+dependency "asdf" version="~>0.7.15"

@@ -1,0 +1,7 @@
+name "beholder"
+description "A minimal D application."
+authors "drug007"
+copyright "Copyright © 2022, drug007"
+license "proprietary"
+dependency "nanogui" version="~>1.2.0"
+targetType "sourceLibrary"
