@@ -116,29 +116,17 @@ mixin template ImplementDrawList()
 		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
 		{
-			if (a.length)
+			assert(wrapper.length == a.length);
+
+			foreach(i; 0..wrapper.length)
 			{
-				assert(wrapper.length == a.length);
-				nk_list_view view;
-				// set layout height for the whole list view
-				// it lets nk_list_view calculates its parameters
-				nk_layout_row_dynamic(ctx, height, 1);
-				if (nk_list_view_begin(ctx, &view, _char_id.ptr, NK_WINDOW_BORDER, itemHeight, cast(int) a.length)) 
+				static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
 				{
-					// temporarily disable view list
-					// and drawing all data
-					foreach(i; 0..wrapper.length)
-					{
-						static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
-						{
-							snprintfValue(buffer[], a.keys[view.begin + i]);
-							wrapper[view.begin + i].draw(ctx, buffer, a[a.keys[view.begin + i]]);
-						}
-						else
-							wrapper[view.begin + i].draw(ctx, "", a[view.begin + i]);
-					}
-					nk_list_view_end(&view);
+					snprintfValue(buffer[], a.keys[i]);
+					wrapper[i].draw(ctx, buffer, a[a.keys[i]]);
 				}
+				else
+					wrapper[i].draw(ctx, "", a[i]);
 			}
 			nk_tree_pop(ctx);
 		}
