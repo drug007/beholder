@@ -7,7 +7,6 @@ import std.range : ElementType;
 import taggedalgebraic : TaggedAlgebraic;
 
 enum textBufferSize = 1024;
-enum itemHeight = 11;
 
 auto drawer(Args...)(Args args)
 {
@@ -65,7 +64,7 @@ template Drawer(T)
 
 mixin template ImplementHeight()
 {
-	private float _height = itemHeight;
+	private float _height;
 
 	@property
 	auto height() inout { return _height; }
@@ -137,7 +136,7 @@ mixin template ImplementLayout()
 {
 	auto measure(Context)(Context ctx) inout
 	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
+		float h = ctx.style.font.height + ctx.style.window.spacing.y*2;
 		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
 			foreach(ref e; wrapper)
@@ -149,7 +148,7 @@ mixin template ImplementLayout()
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
+		float h = ctx.style.font.height + ctx.style.window.spacing.y*2;
 		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
 			foreach(ref e; wrapper)
@@ -167,26 +166,16 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 {
 	int selected;
 
-	this(const(Base) t) {
-		height = itemHeight+padding_y*2;
-	}
-
-	private
+	this(const(Base) t)
 	{
-		enum padding_y = 5;
-		enum padding_x = 3;
-		float _height;
+		// do nothing
 	}
 
-	@property
-	auto height() inout { return _height; }
-
-	@property
-	auto height(float v) { _height = v; }
+	mixin ImplementHeight;
 
 	float measure(Context)(Context ctx) inout
 	{
-		return itemHeight+padding_y*2;
+		return ctx.style.font.height + ctx.style.window.spacing.y*2;
 	}
 
 	auto makeLayout(Context)(Context ctx)
@@ -218,8 +207,8 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 
 		nk_fill_rect(canvas, space, 0, nk_rgb(40,40,40));
 		nk_stroke_rect(canvas, space, 0, ctx.current.layout.border, nk_rgb(64,64,64));
-		space.y += padding_y;
-		space.x += padding_x;
+		space.y += ctx.style.window.spacing.y;
+		space.x += ctx.style.window.spacing.x;
 		nk_draw_text(canvas, space, buffer.ptr, l, ctx.style.font, ctx.style.window.background, ctx.style.text.color);
 	}
 }
@@ -376,7 +365,7 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 			else
 				l = snprintf(buffer.ptr, buffer.length, "null");
 
-			nk_layout_row_dynamic(ctx, itemHeight, 1);
+			nk_layout_row_dynamic(ctx, ctx.style.font.height, 1);
 			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 			return;
 		}
@@ -561,7 +550,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	auto measure(Context)(Context ctx) inout
 	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
+		float h = ctx.style.font.height + ctx.style.window.spacing.y*2;
 		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
 			foreach(member; DrawableMembers!T)
@@ -574,7 +563,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	auto makeLayout(Context)(Context ctx)
 	{
-		float h = itemHeight + ctx.style.window.spacing.y*2;
+		float h = ctx.style.font.height + ctx.style.window.spacing.y*2;
 		if (collapsed != nk_collapse_states.NK_MINIMIZED)
 		{
 			static foreach(member; DrawableMembers!T)
