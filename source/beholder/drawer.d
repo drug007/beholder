@@ -507,6 +507,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAs
 
 	auto makeLayout(Context)(Context ctx)
 	{
+		state_rendered_as.makeLayout(ctx);
 		height = measure(ctx);
 	}
 
