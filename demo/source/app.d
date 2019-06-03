@@ -51,6 +51,11 @@ class Application : NuklearApp
 
 	override void onIdle()
 	{
+		import derelict.opengl;
+		glViewport(0, 0, _width, _height);
+		glClearColor(0.6f, 0.6f, 0.6f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 600),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
