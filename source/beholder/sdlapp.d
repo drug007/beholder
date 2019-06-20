@@ -4,7 +4,7 @@ class SdlApp
 {
 	import std.experimental.logger : FileLogger, LogLevel;
 	import std.typecons : Flag;
-	import gfm.sdl2: SDL_Event;
+	import bindbc.sdl: SDL_Event;
 
 	alias FullScreen = Flag!"FullScreen";
 
@@ -13,48 +13,60 @@ class SdlApp
 
 	this(string title, int width, int height, FullScreen fullscreen)
 	{
-		import derelict.util.loader : SharedLibVersion;
-		import gfm.sdl2, gfm.opengl;
+		import std.exception : enforce;
 
 		_width = width;
 		_height = height;
 
-		// create a logger
-		import std.stdio : stdout;
-		_logger = new FileLogger(stdout, LogLevel.warning);
-
 		// load dynamic libraries
-		_sdl2 = new SDL2(_logger, SharedLibVersion(2, 0, 0));
-		_gl = new OpenGL(_logger); // in fact we disable logging
+		version(BindSDL_Dynamic)
+		{
+			import core.stdc.stdio : printf;
+			SDLSupport sdlsup = loadSDL();
+			if (sdlsup != sdlSupport)
+			{
+				if (sdlsup == SDLSupport.badLibrary)
+					printf("Warning: failed to load some SDL functions. It seems that you have an old version of SDL.");
+				else
+				{
+					printf("Error: SDL library is not found. Please, install SDL 2.0.5");
+					enforce(0);
+				}
+			}
+		}
 		// initialize each SDL subsystem we want by hand
-		_sdl2.subSystemInit(SDL_INIT_VIDEO);
-		_sdl2.subSystemInit(SDL_INIT_EVENTS);
+		enforce(!SDL_InitSubSystem(SDL_INIT_VIDEO));
+		enforce(!SDL_InitSubSystem(SDL_INIT_EVENTS));
 
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
 		// create an OpenGL-enabled SDL window
-		_window = new SDL2Window(_sdl2,
+		import std.string : toStringz;
+		_window = SDL_CreateWindow(title.toStringz,
 								SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 								width, height,
 								SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+		enforce(_window);
 
-		_window.setTitle(title);
-		if (fullscreen)
+		_gl_context = SDL_GL_CreateContext(_window);
+
+		import bindbc.opengl;
+		GLSupport glsup = loadOpenGL();
+		if (!isOpenGLLoaded())
 		{
-			_window.setFullscreenSetting(SDL_WINDOW_FULLSCREEN_DESKTOP);
-			auto ws = _window.getSize;
-			_width  = ws.x;
-			_height = ws.y;
+			printf("Error: failed to load OpenGL functions. Please, update graphics card driver and make sure it supports OpenGL");
+			enforce(0);
 		}
 
-		// reload OpenGL now that a context exists
-		_gl.reload();
+		SDL_GL_SetSwapInterval(1);
 
-		// redirect OpenGL output to our Logger
-		_gl.redirectDebugOutput();
-		
+		if (fullscreen)
+		{
+			enforce(SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN_DESKTOP));
+			SDL_GetWindowSize(_window, &_width, &_height);
+		}
 		_running = true;
 
 		import std.datetime : Clock;
@@ -69,9 +81,18 @@ class SdlApp
 
 	void destroy()
 	{
-		_gl.destroy();
-		_window.destroy();
-		_sdl2.destroy();
+		if (_gl_context !is null)
+		{
+			_gl_context.destroy();
+			_gl_context = null;
+		}
+
+		if (_window !is null)
+		{
+			SDL_DestroyWindow(_window);
+			_window = null;
+		}
+		SDL_Quit();
 	}
 
 	/// allows to interrupt input processing if returns true
@@ -107,7 +128,7 @@ class SdlApp
 			_prev_timestamp = _timestamp;
 			_timestamp = Clock.currTime;
 			onEventLoopStart();
-			while(_sdl2.pollEvent(&event))
+			while(SDL_PollEvent(&event))
 			{
 				if (!isInputConsumed(event))
 					defaultProcessEvent(event);
@@ -116,7 +137,8 @@ class SdlApp
 
 			onIdle();
 
-			_window.swapBuffers();
+			assert(_gl_context !is null);
+			SDL_GL_SwapWindow(_window);
 		}
 	}
 
@@ -174,24 +196,16 @@ class SdlApp
 
 protected:
 	import std.datetime : SysTime;
-	import gfm.sdl2;
 	import gfm.math : vec2f, vec3f;
-	import gfm.opengl: OpenGL;
+	import bindbc.sdl;
 
-	SDL2Window _window;
+	SDL_Window* _window;
+	void* _gl_context;
 	int _width;
 	int _height;
 	SysTime _timestamp, _prev_timestamp;
 
-	// ubyte _left_button, _right_button, _middle_button;
-
 	bool _running;
-	// int _mouse_x, _mouse_y;
-
-	FileLogger _logger;
-
-	OpenGL _gl;
-	SDL2 _sdl2;
 
 	void defaultProcessEvent(ref const(SDL_Event) event)
 	{

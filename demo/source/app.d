@@ -22,7 +22,7 @@ class Application : NuklearApp
 	{
 		super(title, w, h, flag);
 
-		ctx = nk_sdl_init(&window());
+		ctx = nk_sdl_init(window);
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();
@@ -51,6 +51,10 @@ class Application : NuklearApp
 
 	override void onIdle()
 	{
+		import bindbc.opengl;
+		glClearColor(0, 0, 0, 1);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
 		if (nk_begin(ctx, "User defined types", nk_rect(25+230+25+250+25, 50, 300, 600),
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))

@@ -6,8 +6,9 @@ class NuklearApp : SdlApp
 {
 	import std.typecons : Nullable;
 	import gfm.math : vec2f;
-	import gfm.sdl2 : SDL_Event;
+	import bindbc.sdl : SDL_Event;
 	import nuklear_sdl_gl3;
+	import bindbc.nuklear.types : nk_context;
 
 	enum MAX_VERTEX_MEMORY = 512 * 1024;
 	enum MAX_ELEMENT_MEMORY = 128 * 1024;
@@ -18,7 +19,7 @@ class NuklearApp : SdlApp
 	{
 		super(title, w, h, flag);
 
-		ctx = nk_sdl_init(&window());
+		ctx = nk_sdl_init(window);
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();

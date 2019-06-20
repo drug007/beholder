@@ -6,8 +6,13 @@ authors "drug007"
 copyright "Copyright © 2019, drug007"
 license "BSL-1.0"
 
-dependency "gfm:sdl2" version="~>7.0.5"
-dependency "gfm:math" version="~>7.0.5"
-dependency "gfm:opengl" version="~>7.0.5"
+dependency "gfm:math" version="~>8.0.0"
+dependency "bindbc-sdl" version="~>0.10.1"
+dependency "bindbc-opengl" version="~>0.9.0"
+dependency "bindbc-nuklear" path="../bindbc-nuklear"
 
-preBuildCommands "cd $PACKAGE_DIR/c && pwd && PREFIX=.. make install"
+versions "BindSDL_Dynamic"
+
+configuration "static" {
+	subConfiguration "bindbc-nuklear" "static"
+}

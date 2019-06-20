@@ -4,6 +4,7 @@ import std.traits : isStaticArray, isDynamicArray, isAggregateType, isArray,
 	isSomeString, isPointer, isSomeChar, isAssociativeArray, isBoolean,
 	isInstanceOf;
 import std.range : ElementType;
+import core.stdc.stdio : snprintf;
 import taggedalgebraic : TaggedAlgebraic;
 
 enum textBufferSize = 1024;
