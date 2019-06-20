@@ -38,7 +38,11 @@ template Drawer(T)
 		{
 			// get type of the first alias thised member
 			alias U = typeof(mixin("T." ~ __traits(getAliasThis, T)[0]));
-			alias Drawer = Drawer!U;
+			import std.traits : isSomeFunction, ReturnType;
+			static if (isSomeFunction!U)
+				alias Drawer = Drawer!(ReturnType!U);
+			else
+				alias Drawer = Drawer!U;
 		}
 		else
 			alias Drawer = DrawerOneliner!T;
