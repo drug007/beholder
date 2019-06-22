@@ -47,6 +47,14 @@ class Application : NuklearApp
 
 			ta_array_wrapper = drawer(ta_array);
 		}
+
+		import style;
+		// Possible themes are:
+		//     theme.THEME_BLACK
+		//     theme.THEME_WHITE
+		//     theme.THEME_RED
+		//     theme.THEME_DARK
+		set_style(ctx, theme.THEME_BLUE);
 	}
 
 	override void onIdle()
