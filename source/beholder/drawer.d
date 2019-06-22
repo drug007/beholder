@@ -117,7 +117,7 @@ mixin template ImplementDrawList()
 		}
 
 		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
+		if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
 		{
 			assert(wrapper.length == a.length);
 
@@ -200,20 +200,7 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 
 		nk_layout_row_dynamic(ctx, height,  1);
 
-		auto canvas = nk_window_get_canvas(ctx);
-
-		nk_rect space;
-		auto state = nk_widget(&space, ctx);
-		if (!state) return;
-
-		version(none) if (state != NK_WIDGET_ROM)
-			update_your_widget_by_user_input();
-
-		nk_fill_rect(canvas, space, 0, nk_rgb(40,40,40));
-		nk_stroke_rect(canvas, space, 0, ctx.current.layout.border, nk_rgb(64,64,64));
-		space.y += ctx.style.window.spacing.y;
-		space.x += ctx.style.window.spacing.x;
-		nk_draw_text(canvas, space, buffer.ptr, l, ctx.style.font, ctx.style.window.background, ctx.style.text.color);
+		nk_label(ctx, buffer.ptr, NK_LEFT);
 	}
 }
 
@@ -612,7 +599,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 		char[textBufferSize] buffer;
 		snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
 
-		if (nk_tree_state_push(ctx, NK_TREE_NODE, buffer.ptr, &collapsed))
+		if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
 		{
 			drawFields(ctx, header, t);
 			nk_tree_pop(ctx);
