@@ -78,44 +78,14 @@ mixin template ImplementHeight()
 	auto height(float v) { _height = v; }
 }
 
-// TODO: Not thread safe solution!
-private static int __list_drawer_char_id_counter;
-
 mixin template ImplementDrawList()
 {
-	/// let every instance be unique
-	private char[8] _char_id;
-
 	void draw(Context)(Context ctx, const(char)[] header, ref const(T) a)
 	{
 		import core.stdc.stdio : snprintf;
 		import nuklear_sdl_gl3;
 
 		char[textBufferSize] buffer;
-
-		// I'm pretty sure that a drawing method is not
-		// a good place to initialize id (like ctor is).
-		// The problem is absense of ability to define
-		// default ctor for structs so generating of id
-		// in struct ctor demands explicit ctor call and
-		// that complicates code generation.
-		// At least it allows to have id only for part of
-		// structures, not for all like it would be in case
-		// of classes
-
-		// init id if needed
-		if (_char_id == _char_id.init)
-		{
-			import core.stdc.stdio : snprintf;
-			typeof(_char_id) buf;
-			// hope we won't have 10 millions of instances
-			snprintf(buf.ptr, buf.length, "%07d", __list_drawer_char_id_counter++);
-			// reverse char id to place more rapidly changing char
-			// in start of line to accelerate its comparing
-			import std.algorithm : reverse;
-			_char_id[0..$-1] = buf[0..$-1].reverse;
-			_char_id[$-1] = 0;
-		}
 
 		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
 		if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
