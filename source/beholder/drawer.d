@@ -198,7 +198,12 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 		
 		l += snprintfValue!Base(buffer[l..$], t);
 
-		nk_layout_row_dynamic(ctx, height,  1);
+		// wrapper may be not initialized so make layout
+		import std.math : isFinite;
+		if (!height.isFinite)
+			makeLayout(ctx);
+		assert(height.isFinite);
+		nk_layout_row_dynamic(ctx, height, 1);
 
 		nk_label(ctx, buffer.ptr, NK_LEFT);
 	}
@@ -356,7 +361,7 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 			else
 				l = snprintf(buffer.ptr, buffer.length, "null");
 
-			nk_layout_row_dynamic(ctx, ctx.style.font.height, 1);
+			nk_layout_row_dynamic(ctx, wrapper.measure(ctx), 1);
 			nk_selectable_label(ctx, buffer.ptr, NK_TEXT_LEFT, &selected);
 			return;
 		}
