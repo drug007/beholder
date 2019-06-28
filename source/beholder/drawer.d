@@ -79,6 +79,12 @@ mixin template ImplementHeight()
 
 mixin template ImplementDrawList()
 {
+	enum DrawingAxis { horizontal, vertical }
+	static if (T.stringof == "TaWrapper[]")
+		enum drawing_axis = DrawingAxis.horizontal;
+	else
+		enum drawing_axis = DrawingAxis.vertical;
+
 	void draw(Context)(Context ctx, const(char)[] header, ref const(T) a)
 	{
 		import core.stdc.stdio : snprintf;
@@ -87,37 +93,14 @@ mixin template ImplementDrawList()
 		char[textBufferSize] buffer;
 
 		snprintf(buffer.ptr, buffer.length, "%s (%ld)", header.ptr, a.length);
-		// if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
-		// {
-		// 	assert(wrapper.length == a.length);
 
-		// 	foreach(i; 0..wrapper.length)
-		// 	{
-		// 		static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
-		// 		{
-		// 			snprintfValue(buffer[], a.keys[i]);
-		// 			wrapper[i].draw(ctx, buffer, a[a.keys[i]]);
-		// 		}
-		// 		else
-		// 			wrapper[i].draw(ctx, "", a[i]);
-		// 	}
-		// 	nk_tree_pop(ctx);
-		// }
-
-		// wrapper may be not initialized so make layout
-		import std.math : isFinite;
-		if (!height.isFinite)
-			makeLayout(ctx);
-		assert(height.isFinite);
-
-		nk_layout_row_dynamic(ctx, height, 1);
-		if (nk_group_begin(ctx, typeof(this).stringof, /*NK_WINDOW_BORDER*/NK_WINDOW_NO_SCROLLBAR))
+		static if (drawing_axis == DrawingAxis.vertical)
 		{
-			nk_layout_row_dynamic(ctx, height, cast(int)wrapper.length);
-			foreach(i; 0..wrapper.length)
+			if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
 			{
-				snprintf(buffer.ptr, buffer.length, "%s%i", typeof(this).stringof.ptr, i);
-				if (nk_group_begin(ctx, buffer.ptr, NK_WINDOW_NO_SCROLLBAR))
+				assert(wrapper.length == a.length);
+
+				foreach(i; 0..wrapper.length)
 				{
 					static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
 					{
@@ -126,10 +109,39 @@ mixin template ImplementDrawList()
 					}
 					else
 						wrapper[i].draw(ctx, "", a[i]);
-					nk_group_end(ctx);
 				}
+				nk_tree_pop(ctx);
 			}
-			nk_group_end(ctx);
+		}
+		else
+		{
+			// wrapper may be not initialized so make layout
+			import std.math : isFinite;
+			if (!height.isFinite)
+				makeLayout(ctx);
+			assert(height.isFinite);
+
+			nk_layout_row_dynamic(ctx, height, 1);
+			if (nk_group_begin(ctx, typeof(this).stringof, /*NK_WINDOW_BORDER*/NK_WINDOW_NO_SCROLLBAR))
+			{
+				nk_layout_row_dynamic(ctx, height, cast(int)wrapper.length);
+				foreach(i; 0..wrapper.length)
+				{
+					snprintf(buffer.ptr, buffer.length, "%s%i", typeof(this).stringof.ptr, i);
+					if (nk_group_begin(ctx, buffer.ptr, NK_WINDOW_NO_SCROLLBAR))
+					{
+						static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
+						{
+							snprintfValue(buffer[], a.keys[i]);
+							wrapper[i].draw(ctx, buffer, a[a.keys[i]]);
+						}
+						else
+							wrapper[i].draw(ctx, "", a[i]);
+						nk_group_end(ctx);
+					}
+				}
+				nk_group_end(ctx);
+			}
 		}
 	}
 }
