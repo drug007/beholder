@@ -129,6 +129,9 @@ class NuklearApplication : Application
 	DrawerOf!nullable_test_struct1 nullable_test_struct1_drawer;
 	DrawerOf!nullable_test_struct2 nullable_test_struct2_drawer;
 
+	import beholder.drawer : horizontal;
+
+	@horizontal
 	struct TaWrapper
 	{
 		private TaggedAlgebraic!TestStruct _ta;
@@ -143,7 +146,16 @@ class NuklearApplication : Application
 		}
 	}
 
+	@horizontal
 	TaWrapper ta_wrapper;
+
+	import std.traits : getUDAs;
+	enum udas1 = [getUDAs!(ta_wrapper, Rendering)];
+	pragma(msg, "ta_wrapper: ", typeof(udas1), " ", udas1);
+	
+	enum udas2 = [getUDAs!(TaWrapper, Rendering)];
+	pragma(msg, "TaWrapper: ", typeof(udas2), " ", udas2);
+
 	DrawerOf!ta_wrapper ta_wrapper_drawer;
 
 	struct IntWrapper

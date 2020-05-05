@@ -87,6 +87,27 @@ mixin template ImplementDrawList()
 
 	void draw(Context)(Context ctx, const(char)[] header, ref const(T) a)
 	{
+		{
+			static if (isInstanceOf!(.DrawerAssocArray, typeof(this)))
+			{
+
+			}
+			else
+			{
+				import std.traits : getUDAs;
+				import std.algorithm.searching: canFind;
+
+				enum udas = [getUDAs!(a, Rendering)];
+				pragma(msg, typeof(udas));
+				// enum horizontal_axis = udas.canFind!(a => a.args == ["horizontal"]);
+			}
+			import std.traits : getUDAs;
+			enum udas1 = [getUDAs!(a, Rendering)];
+			pragma(msg, "a: ", typeof(udas1), " ", udas1);
+			
+			// enum udas2 = [getUDAs!(T, Rendering)];
+			// pragma(msg, "T: ", typeof(udas2), " ", udas2);
+		}
 		import core.stdc.stdio : snprintf;
 		import nuklear_sdl_gl3;
 
@@ -644,6 +665,7 @@ struct Rendering
 }
 
 enum renderingIgnore = Rendering(["ignore"]);
+enum horizontal = Rendering(["horizontal"]);
 
 struct RenderedAs(T){}
 struct RenderedAs(alias string member, T)
