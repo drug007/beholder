@@ -167,7 +167,7 @@ struct Entry
 
 class MainSimulator : Simulator
 {
-	this(Parent)(OpenGL gl, Parent parent)
+	this(Parent)(Parent parent)
 	{
 		import std.array : uninitializedArray;
 
@@ -298,19 +298,19 @@ class MainSimulator : Simulator
 		updateVertices;
 		updateIndices;
 
-		_track_renderer2 = new ErrorRenderer(gl, parent.camera);
+		_track_renderer2 = new ErrorRenderer(parent.camera);
 		parent.addRenderer(_track_renderer2);
 		_track_renderer2.update(_track_vertices, _track_indices);
 
-		_track_renderer = new TrackRenderer(gl, parent.camera);
+		_track_renderer = new TrackRenderer(parent.camera);
 		parent.addRenderer(_track_renderer);
 		_track_renderer.update(_track_vertices, _track_indices);
 
-		_source_renderer = new RDataSourceRenderer(gl, parent.camera);
+		_source_renderer = new RDataSourceRenderer(parent.camera);
 		parent.addRenderer(_source_renderer);
 		_source_renderer.update(_source_vertices, _source_indices);
 
-		_auxinfo_renderer = new AuxInfoRenderer(gl, parent.camera);
+		_auxinfo_renderer = new AuxInfoRenderer(parent.camera);
 		parent.addRenderer(_auxinfo_renderer);
 	}
 
@@ -540,7 +540,7 @@ struct Timeline
 {
 	import std.typecons : Tuple;
 	import mir.ndslice.slice: sliced;
-	import mir.interpolate.pchip : pchip;
+	import mir.interpolate.spline;// : Spline, spline, SplineType;
 
 	import std.algorithm : map;
 	import std.array : array;
@@ -549,18 +549,48 @@ struct Timeline
 	private Array!Timepoint _points;
 	private Tuple!(vec3f, vec3f) _state;
 
-	alias Interpolator = typeof(pchip!float((float[]).init.idup.sliced, (float[]).init.sliced));
+		import mir.math.common: approxEqual;
+		import mir.algorithm.iteration: all;
+		import mir.ndslice.allocation: rcslice;
+		import mir.ndslice.slice: sliced;
+		import mir.ndslice.topology: vmap;
+
+// 		static immutable x = [1.0, 2, 4, 5, 8, 10, 12, 15, 19, 22];
+// 		static immutable y = [17.0, 0, 16, 4, 10, 15, 19, 5, 18, 6];
+// 		auto interpolant = spline!double(x.rcslice, y.sliced, SplineType.monotone);
+
+// pragma(msg, typeof(interpolant));
+
+// 		auto xs = x[0 .. $ - 1].sliced + 0.5;
+
+// 		auto ys = xs.vmap(interpolant);
+
+		// assert(ys.all!approxEqual([
+		// 	5.333333333333334,
+		// 	2.500000000000000,
+		// 	10.000000000000000,
+		// 	4.288971807628524,
+		// 	11.202580845771145,
+		// 	16.250000000000000,
+		// 	17.962962962962962,
+		// 	5.558593750000000,
+		// 	17.604662698412699,
+		// 	]));
+
+	alias Interpolator = typeof(spline!float((float[]).init.idup.rcslice, (float[]).init.sliced, SplineType.monotone));
+	// alias Interpolator = spline!(float);//((float[]).init.idup.sliced, (float[]).init.sliced), SplineType.monotone);
+	// alias Interpolator = Spline!(float, 1LU, float);
 	Interpolator sx, sy;
 
 	this(Timepoint[] points)
 	{
 		_points = points;
-		auto t = _points[].map!"cast(float)a.timestamp.stdTime".array.idup.sliced;
+		auto t = _points[].map!"cast(float)a.timestamp.stdTime".array.sliced;
 		auto x = _points[].map!"a.pos.x".array.sliced;
 		auto y = _points[].map!"a.pos.y".array.sliced;
 
-		sx = pchip!float(t, x);
-		sy = pchip!float(t, y);
+		// sx = spline!float(t, x, SplineType.monotone);
+		// sy = spline!float(t, y, SplineType.monotone);
 	}
 
 	auto start() const
@@ -603,14 +633,14 @@ struct Timeline
 	auto calculate(SysTime ts) const nothrow @safe
 	{
 		import std.typecons : tuple;
-		if (ts < start ||
-		    ts >= finish) 
+		// if (ts < start ||
+		//     ts >= finish) 
 			return tuple(vec3f(), vec3f());
 
-		auto new_x = sx.withDerivative(ts.stdTime);
-		auto new_y = sy.withDerivative(ts.stdTime);
+		// auto new_x = sx.withDerivative(ts.stdTime);
+		// auto new_y = sy.withDerivative(ts.stdTime);
 
-		return tuple(vec3f(new_x[0], new_y[0], 0),
-					 vec3f(new_x[1]*1e7, new_y[1]*1e7, 0));
+		// return tuple(vec3f(new_x[0], new_y[0], 0),
+		// 			 vec3f(new_x[1]*1e7, new_y[1]*1e7, 0));
 	}
 }

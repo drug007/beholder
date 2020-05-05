@@ -57,7 +57,7 @@ struct Payload
 }
 
 import rtree;
-alias RTreeIndex = RTree!(Payload, CoordType, NumberOfDimensions, CoordType);
+alias RTreeIndex = RTree!(Payload*, CoordType, NumberOfDimensions, CoordType);
 
 import common : Renderer, Simulator;
 import guirenderer : GUIRenderer;
@@ -106,7 +106,7 @@ class DemoApplication : NuklearApp
 		);
 
 		new GridRenderer(this);
-		_simulator = new MainSimulator(gl, this);
+		_simulator = new MainSimulator(this);
 		new GUIRenderer(this);
 
 		import std.datetime : UTC;

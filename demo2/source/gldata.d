@@ -2,26 +2,25 @@ module gldata;
 
 class GLData(V)
 {
-	this(OpenGL gl, GLProgram program)
+	this(GLProgram program)
 	{
-		assert(gl);
 		assert(program);
 
 		_indexKind = GL_UNSIGNED_INT;
 		_indexTypeSize = 4;
 
-		_vbo = new GLBuffer(gl, GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW);
-		_ibo = new GLBuffer(gl, GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW);
+		_vbo = new GLBuffer(GL_ARRAY_BUFFER, GL_DYNAMIC_DRAW);
+		_ibo = new GLBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_DYNAMIC_DRAW);
 
 		// Create an OpenGL vertex description from the Vertex structure.
 		_vs = new VertexSpecification!V(program);
 
-		_vao = new GLVAO(gl);
+		_vao = new GLVAO();
 	}
 
-	this(V, I)(OpenGL gl, GLProgram program, V vertices, I indices)
+	this(V, I)(GLProgram program, V vertices, I indices)
 	{
-		this(gl, program);
+		this(program);
 		setData(vertices, indices);
 	}
 

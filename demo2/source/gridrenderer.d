@@ -28,7 +28,6 @@ class GridRenderer : Renderer
 
 	this(DemoApplication app)
 	{
-		_gl = app.gl;
 		_camera = app.camera;
 		{
 			const program_source =
@@ -112,10 +111,10 @@ class GridRenderer : Renderer
 				#endif
 			";
 
-			_program = new GLProgram(_gl, program_source);
+			_program = new GLProgram(program_source);
 		}
 
-		_gldata = new GLData!Vertex(_gl, _program);
+		_gldata = new GLData!Vertex(_program);
 		update;
 		app.addRenderer(this);
 	}
@@ -155,13 +154,12 @@ class GridRenderer : Renderer
 			glDrawElements(GL_LINE_STRIP_ADJACENCY, cast(int) _gldata.length, GL_UNSIGNED_INT, cast(void *)(start * _gldata.indexSize()));
 			_gldata.unbind();
 
-			_gl.runtimeCheck();
+			runtimeCheck();
 		}
 	}
 
 private:
 	import gfm.opengl;
-	OpenGL    _gl;
 	GLProgram _program;
 	GLData!Vertex _gldata;
 	Camera    _camera;

@@ -6,7 +6,7 @@ authors "drug007"
 copyright "Copyright © 2019, drug007"
 license "BSL-1.0"
 
-dependency "gfm:sdl2" version="~>7.0.5"
-dependency "gfm:math" version="~>7.0.5"
-dependency "gfm:opengl" version="~>7.0.5"
+dependency "gfm7:sdl2" version="~>1.0.0"
+dependency "gfm:math" version="~>8.0.0"
+dependency "gfm7:opengl" version="~>1.0.0"
 

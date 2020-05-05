@@ -20,9 +20,8 @@ class RDataSourceRenderer : Renderer
 	import beholder.camera : Camera;
 	import demo : DemoApplication;
 
-	this(OpenGL gl, Camera camera)
+	this(Camera camera)
 	{
-		_gl = gl;
 		_camera = camera;
 		{
 			const program_source =
@@ -97,10 +96,10 @@ class RDataSourceRenderer : Renderer
 				#endif
 			";
 
-			_program = new GLProgram(_gl, program_source);
+			_program = new GLProgram(program_source);
 		}
 
-		_gldata = new GLData!Vertex(_gl, _program);
+		_gldata = new GLData!Vertex(_program);
 	}
 
 	~this()
@@ -143,13 +142,12 @@ class RDataSourceRenderer : Renderer
 			glDrawElements(GL_POINTS, cast(int) _gldata.length, GL_UNSIGNED_INT, cast(void *)(start * _gldata.indexSize()));
 			_gldata.unbind();
 
-			_gl.runtimeCheck();
+			runtimeCheck();
 		}
 	}
 
 private:
 	import gfm.opengl;
-	OpenGL    _gl;
 	GLProgram _program;
 	GLData!Vertex    _gldata;
 	Camera    _camera;
