@@ -248,7 +248,10 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 	{
 		static foreach(i; 0..T.Union.tupleof.length)
 		{
-			mixin("Drawer!(typeof(T.Union." ~ T.Union.tupleof[i].stringof ~ ")) state_" ~ T.Union.tupleof[i].stringof ~ ";");
+			static if (typeof(T.Union.tupleof[i]).stringof == "Timestamp")
+				mixin("Drawer!string state_" ~ T.Union.tupleof[i].stringof ~ ";");
+			else
+				mixin("Drawer!(typeof(T.Union." ~ T.Union.tupleof[i].stringof ~ ")) state_" ~ T.Union.tupleof[i].stringof ~ ";");
 		}
 	}
 
@@ -286,8 +289,15 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 		mixin("case TU.Kind." ~ t.Union.tupleof[i].stringof ~ ":");
 				{
 					import taggedalgebraic : TypeOf, get;
-					alias PayloadType = TypeOf!(mixin("TU.Kind." ~ t.Union.tupleof[i].stringof));
-					wrapper = Drawer!PayloadType(t.get!PayloadType);
+					static if (typeof(t.Union.tupleof[i]).stringof == "Timestamp")
+					{
+						wrapper = Drawer!string(t.toString);
+					}
+					else
+					{
+						alias PayloadType = TypeOf!(mixin("TU.Kind." ~ t.Union.tupleof[i].stringof));
+						wrapper = Drawer!PayloadType(t.get!PayloadType);
+					}
 					break Lexit;
 				}
 			}
@@ -312,11 +322,31 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 					if (cast(int)wrapper.kind != cast(int)t.kind)
 					{
 						auto old_selected  = wrapper.selected;
-						wrapper = Drawer!FieldType(t.get!FieldType);
-						wrapper.get!DrawerType.selected  = old_selected;
+						static if (typeof(t.Union.tupleof[i]).stringof == "Timestamp")
+						{
+							wrapper = Drawer!string(t.toString);
+							wrapper.get!(Drawer!string).selected  = old_selected;
+						}
+						else
+						{
+							wrapper = Drawer!FieldType(t.get!FieldType);
+							wrapper.get!DrawerType.selected  = old_selected;
+						}
 					}
+
 					static if (__traits(compiles, { string s = t.get!FieldType.header; }))
 						wrapper.get!DrawerType.draw(ctx, t.get!FieldType.header, t.get!FieldType);
+					else static if (FieldType.stringof == "Timestamp")
+					{
+						import std.array : appender;
+						import std.exception : assumeUnique;
+						char[256] buffer;
+						auto app = appender(buffer[]);
+						app.clear;
+						t.get!FieldType.toString(app);
+						app.put(char(0));
+						wrapper.get!(Drawer!string).draw(ctx,         FieldName, assumeUnique(app.data));
+					}
 					else
 						wrapper.get!DrawerType.draw(ctx,              FieldName, t.get!FieldType);
 					break Lexit;
