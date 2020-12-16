@@ -124,14 +124,29 @@ class SdlApp
 			onEventLoopStart();
 			while(_sdl2.pollEvent(&event))
 			{
-				if (!isInputConsumed(event))
+				if (isInputConsumed(event))
+					_need_to_draw = true;
+				else
 					defaultProcessEvent(event);
+
 			}
 			onEventLoopEnd();
 
-			onIdle();
-
-			_window.swapBuffers();
+			static auto pause_time_ms = 0;
+			if (_need_to_draw)
+			{
+				onIdle();
+				_window.swapBuffers();
+				pause_time_ms = 0;
+				_need_to_draw = false;
+			}
+			else
+			{
+				pause_time_ms = pause_time_ms * 2 + 1; // exponential pause
+				if (pause_time_ms > 100)
+					pause_time_ms = 100; // max 100ms of pause
+				SDL_Delay(pause_time_ms);
+			}
 		}
 	}
 
@@ -200,7 +215,7 @@ protected:
 
 	// ubyte _left_button, _right_button, _middle_button;
 
-	bool _running;
+	bool _running, _need_to_draw;
 	// int _mouse_x, _mouse_y;
 
 	FileLogger _logger;
@@ -218,25 +233,31 @@ quitLabel:
 			break;
 			case SDL_KEYDOWN:
 				onKeyDown(event);
+				_need_to_draw = true;
 			break;
 			case SDL_KEYUP:
 				onKeyUp(event);
+				_need_to_draw = true;
 			break;
 			case SDL_MOUSEBUTTONDOWN:
 				processMouseDown(event);
 				onMouseDown(event);
+				_need_to_draw = true;
 			break;
 			case SDL_MOUSEBUTTONUP:
 				processMouseUp(event);
 				onMouseUp(event);
+				_need_to_draw = true;
 			break;
 			case SDL_MOUSEMOTION:
 				processMouseMotion(event);
 				onMouseMotion(event);
+				_need_to_draw = true;
 			break;
 			case SDL_MOUSEWHEEL:
 				processMouseWheel(event);
 				onMouseWheel(event);
+				_need_to_draw = true;
 			break;
 			case SDL_WINDOWEVENT:
                 switch (event.window.event)
@@ -245,9 +266,11 @@ quitLabel:
 					_width = event.window.data1;
 					_height = event.window.data2;
 					onResize(event);
+					_need_to_draw = true;
 					goto case;
                 case SDL_WINDOWEVENT_MAXIMIZED:
                 case SDL_WINDOWEVENT_MOVED:
+					_need_to_draw = true;
                 	return;
                 case SDL_WINDOWEVENT_CLOSE:
                     goto quitLabel;
@@ -257,6 +280,7 @@ version(none) // if SDL2 version is 2.0.5 or higher
                 case SDL_WINDOWEVENT_EXPOSED:
                 //case SDL_WINDOWEVENT_TAKE_FOCUS:
                     OnWindowActivate(event.window.data1, event.window.data2);
+					_need_to_draw = true;
                     return;
 }
                 default:
