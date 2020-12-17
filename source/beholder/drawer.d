@@ -693,7 +693,10 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 				mixin(`state_` ~ member).draw(ctx, member, Proxy(mixin(`t.` ~ member )));
 			}
 			else
-				mixin("state_" ~ member).draw(ctx, member,       mixin(`t.` ~ member));
+			{
+				static if (!is(typeof(mixin(`t.` ~ member)) == const(char[]))) // DIRTY HACK!!!
+					mixin("state_" ~ member).draw(ctx, member,       mixin(`t.` ~ member));
+			}
 		}
 	}
 }
