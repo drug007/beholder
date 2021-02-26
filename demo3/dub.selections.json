@@ -3,9 +3,7 @@
 	"versions": {
 		"beholder": {"path":".."},
 		"bindbc-loader": "0.3.2",
-		"bindbc-nuklear": {"path":"../bindbc-nuklear"},
-		"bindbc-opengl": "0.15.0",
-		"bindbc-sdl": "0.19.2",
+		"bindbc-nuklear": "0.4.4",
 		"color": "0.0.9",
 		"derelict-gl3": "2.0.0-beta.8",
 		"derelict-sdl2": "3.1.0-alpha.6",

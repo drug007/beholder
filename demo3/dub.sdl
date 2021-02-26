@@ -2,9 +2,6 @@ name "demo3"
 description "demo"
 authors "drug007"
 license "BSL-1.0"
-dependency "bindbc-nuklear" path="../bindbc-nuklear"
-dependency "gfm7:opengl" version="~>1.0.1"
-dependency "gfm7:sdl2" version="~>1.0.1"
 dependency "beholder" path=".."
 
 configuration "dynamic" {

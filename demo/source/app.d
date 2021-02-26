@@ -9,8 +9,9 @@ class NuklearApplication : Application
 {
 	import std.typecons : Nullable;
 	import gfm.math : vec2f;
-	import nuklear_sdl_gl3;
+	import beholder.nuklear_sdl_gl3;
 	import beholder.drawer : drawer, DrawerOf;
+	import bindbc.nuklear;
 
 	enum MAX_VERTEX_MEMORY = 512 * 1024;
 	enum MAX_ELEMENT_MEMORY = 128 * 1024;
@@ -227,7 +228,7 @@ class NuklearApplication : Application
 	{
 		super(title, w, h, flag);
 
-		ctx = nk_sdl_init(&window());
+		ctx = nk_sdl_init(window()._window);
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();
@@ -391,6 +392,8 @@ class NuklearApplication : Application
 			NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 			NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
 		{
+			import core.stdc.stdio;
+
 			enum height = 11;
 			int selected;
 			char[256] buffer;
@@ -465,6 +468,15 @@ class NuklearApplication : Application
 
 int main(string[] args)
 {
+	import bindbc.nuklear;
+	NuklearSupport nuksup = loadNuklear();
+	if(nuksup != NuklearSupport.Nuklear4)
+	{
+		import core.stdc.stdio;
+		printf("Error: Nuklear library is not found.");
+		return -1;
+	}
+
 	auto app = new NuklearApplication("Demo gui application", 1200, 768, Application.FullScreen.no);
 	scope(exit) app.destroy();
 

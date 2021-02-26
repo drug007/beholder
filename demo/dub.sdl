@@ -5,6 +5,4 @@ copyright "Copyright © 2018-2019, drug007"
 license "BSL-1.0"
 
 dependency "beholder" path=".."
-dependency "nukleared" path="../nukleared"
-
-lflags "-L../nukleared/lib" "-lnukleared" "-lnuklear_sdl_gl3" "-lGL" "-lSDL2"
+versions "GL_30" "SDL_205" "NK_ALL"

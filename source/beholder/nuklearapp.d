@@ -7,7 +7,8 @@ class NuklearApp : SdlApp
 	import std.typecons : Nullable;
 	import gfm.math : vec2f;
 	import gfm.sdl2 : SDL_Event;
-	import nuklear_sdl_gl3;
+	import bindbc.nuklear;
+	import beholder.nuklear_sdl_gl3;
 
 	enum MAX_VERTEX_MEMORY = 512 * 1024;
 	enum MAX_ELEMENT_MEMORY = 128 * 1024;
@@ -18,7 +19,20 @@ class NuklearApp : SdlApp
 	{
 		super(title, w, h, flag);
 
-		ctx = nk_sdl_init(&window());
+		version(BindNuklear_Static) {}
+		else
+		{
+			NuklearSupport nuksup = loadNuklear();
+			if(nuksup != NuklearSupport.Nuklear4)
+			{
+				import core.stdc.stdio : printf;
+				printf("Error: Nuklear library is not found.");
+				import std.exception : enforce;
+				enforce(0);
+			}
+		}
+
+		ctx = nk_sdl_init(window()._window);
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();

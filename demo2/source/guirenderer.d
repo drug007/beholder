@@ -165,7 +165,8 @@ class GUIRenderer : Renderer
 		nk_sdl_render(NK_ANTI_ALIASING_ON, _app.MAX_VERTEX_MEMORY, _app.MAX_ELEMENT_MEMORY);
 	}
 private:
-	import nuklear_sdl_gl3;
+	import bindbc.nuklear;
+	import beholder.nuklear_sdl_gl3;
 
 	DemoApplication _app;
 	nk_colorf _bg;

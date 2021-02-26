@@ -452,6 +452,8 @@ class DemoApplication : NuklearApp
 
 int main(string[] args)
 {
+	import bindbc.nuklear;
+
 	auto app = new DemoApplication("Demo application", 1200, 768, NuklearApp.FullScreen.no);
 	scope(exit) app.destroy();
 	

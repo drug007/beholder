@@ -109,7 +109,7 @@ mixin template ImplementDrawList()
 			// pragma(msg, "T: ", typeof(udas2), " ", udas2);
 		}
 		import core.stdc.stdio : snprintf;
-		import nuklear_sdl_gl3;
+		import bindbc.nuklear;
 
 		char[textBufferSize] buffer;
 
@@ -220,7 +220,8 @@ struct DrawerOneliner(Base) if (Description!Base.kind == Kind.oneliner)
 
 	void draw(Context, Derived : Base)(Context ctx, const(char)[] header, Derived t)
 	{
-		import nuklear_sdl_gl3;
+		import core.stdc.stdio;
+		import bindbc.nuklear;
 
 		char[textBufferSize] buffer;
 		int l;
@@ -329,7 +330,7 @@ struct DrawerOnelinerTaggedAlgebraic(T : TaggedAlgebraic!U, U) if (Description!T
 struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner && !isInstanceOf!(TaggedAlgebraic, T) && isNullableLike!T)
 {
 	import std.traits : isSomeFunction, ReturnType, isArray, hasMember;
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	int selected;
 
@@ -378,7 +379,7 @@ struct DrawerOnelinerNullableLike(T)  if (Description!T.kind == Kind.oneliner &&
 	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
 		import core.stdc.stdio : snprintf;
-		import nuklear_sdl_gl3;
+		import bindbc.nuklear;
 
 		char[textBufferSize] buffer;
 		auto l = snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
@@ -408,7 +409,7 @@ struct DrawerCtList(T) if (Description!T.kind == Kind.compiletimeList)
 {
 	import std.range : ElementType;
 
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
@@ -430,7 +431,7 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 	import std.array : uninitializedArray;
 	import std.range : ElementType;
 
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	Drawer!(ElementType!T)[] wrapper;
@@ -454,7 +455,7 @@ struct DrawerRtList(T) if (Description!T.kind == Kind.runtimeList)
 	/// draws part of elements
 	version (none) void draw(Context)(Context ctx, T a, Drawer!(ElementType!A)[] wrapper)
 	{
-		import nuklear_sdl_gl3;
+		import bindbc.nuklear;
 
 		char[textBufferSize] buffer;
 
@@ -471,7 +472,7 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 	import std.array : uninitializedArray;
 	import std.range : ElementType;
 
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	alias Value = typeof(T.init.values[0]);
@@ -499,7 +500,7 @@ struct DrawerAssocArray(T) if (Description!T.kind == Kind.assocArray)
 struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAsAvailable!T)
 {
 	import std.traits : isSomeFunction, ReturnType, isArray;
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
@@ -538,7 +539,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAs
 	/// draws all fields
 	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t)
 	{
-		import nuklear_sdl_gl3;
+		import bindbc.nuklear;
 
 		static if (Cached)
 			state_rendered_as.draw(ctx, header, cached);
@@ -551,7 +552,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && RenderedAs
 struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedAsAvailable!T)
 {
 	import std.traits : isSomeFunction, ReturnType, isArray;
-	import nuklear_sdl_gl3 : nk_collapse_states;
+	import bindbc.nuklear : nk_collapse_states;
 
 	nk_collapse_states collapsed;
 	int selected;
@@ -629,7 +630,7 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 
 	void draw(Context)(Context ctx, const(char)[] header, auto ref const(T) t) if (DrawableMembers!t.length > 1) 
 	{
-		import nuklear_sdl_gl3;		
+		import bindbc.nuklear;		
 		import core.stdc.stdio : snprintf;
 		
 		char[textBufferSize] buffer;
