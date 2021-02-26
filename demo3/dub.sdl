@@ -1,0 +1,22 @@
+name "demo3"
+description "demo"
+authors "drug007"
+license "BSL-1.0"
+dependency "bindbc-nuklear" path="../bindbc-nuklear"
+dependency "gfm7:opengl" version="~>1.0.1"
+dependency "gfm7:sdl2" version="~>1.0.1"
+dependency "beholder" path=".."
+
+configuration "dynamic" {
+    targetType "executable"
+	// buildOptions "betterC"
+    subConfiguration "bindbc-nuklear" "dynamicBC"
+}
+
+configuration "static" {
+    targetType "executable"
+	// buildOptions "betterC"
+    subConfiguration "bindbc-nuklear" "staticBC"
+}
+
+versions "GL_30" "SDL_205" "NK_ALL"
