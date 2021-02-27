@@ -16,7 +16,7 @@ int main(string[] args)
 	int width= 1200;
 	int height = 800;
 
-	version(none) {}
+	version(BindNuklear_Static) {}
 	else
 	{
 		NuklearSupport nuksup = loadNuklear();
@@ -27,35 +27,47 @@ int main(string[] args)
 		}
 	}
 
-	version(none) {}
+	import std.experimental.logger : FileLogger, LogLevel;
+	// create a logger
+	import std.stdio : stdout;
+	auto _logger = new FileLogger(stdout, LogLevel.warning);
+
+	// load dynamic libraries
+	auto _sdl2 = new SDL2(_logger);
+	// initialize each SDL subsystem we want by hand
+	_sdl2.subSystemInit(SDL_INIT_VIDEO);
+	_sdl2.subSystemInit(SDL_INIT_EVENTS);
+
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+	SDL_GL_SetAttribute (SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+	// create an OpenGL-enabled SDL window
+	auto _window = new SDL2Window(_sdl2,
+							SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+							width, height,
+							SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+
+	GLSupport retVal = loadOpenGL();
+	if(retVal >= GLSupport.gl33)
+	{
+		// configure renderer for OpenGL 3.3
+		import std.stdio;
+		writefln("Available version of opengl: %s", retVal);
+	}
 	else
 	{
-		import std.experimental.logger : FileLogger, LogLevel;
-		// create a logger
-		import std.stdio : stdout;
-		auto _logger = new FileLogger(stdout, LogLevel.warning);
-
-		// load dynamic libraries
-		auto _sdl2 = new SDL2(_logger, SharedLibVersion(2, 0, 0));
-		auto _gl = new OpenGL(_logger); // in fact we disable logging
-		// initialize each SDL subsystem we want by hand
-		_sdl2.subSystemInit(SDL_INIT_VIDEO);
-		_sdl2.subSystemInit(SDL_INIT_EVENTS);
-
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-		SDL_GL_SetAttribute (SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
-		SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-		
-		// create an OpenGL-enabled SDL window
-		auto _window = new SDL2Window(_sdl2,
-								SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-								width, height,
-								SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+		import std.stdio;
+		if (retVal == GLSupport.noLibrary)
+			writeln("opengl is not available");
+		else
+			writefln("Unsupported version of opengl %s", retVal);
+		return 1;
 	}
-	// reload OpenGL now that a context exists
-	_gl.reload();
+
+	auto _gl = new OpenGL(_logger);
 
 	SDL_GL_SetSwapInterval(1);
 
@@ -63,7 +75,7 @@ int main(string[] args)
 
 	nk_context *ctx;
 	nk_colorf bg;
-	ctx = nk_sdl_init(_window._window);
+	ctx = nk_sdl_init(_window.nativeWindow);
 
 	nk_font_atlas *atlas;
 	nk_sdl_font_stash_begin(&atlas);
@@ -131,7 +143,7 @@ int main(string[] args)
 		* Make sure to either a.) save and restore or b.) reset your own state after
 		* rendering the UI. */
 		nk_sdl_render(NK_ANTI_ALIASING_ON,512*1024, 128*1024);
-		SDL_GL_SwapWindow(_window._window);
+		SDL_GL_SwapWindow(_window.nativeWindow);
 	}
 	nk_sdl_shutdown();
 	destroy(_gl);

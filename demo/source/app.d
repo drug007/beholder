@@ -228,7 +228,7 @@ class NuklearApplication : Application
 	{
 		super(title, w, h, flag);
 
-		ctx = nk_sdl_init(window()._window);
+		ctx = nk_sdl_init(window().nativeWindow);
 		nk_font_atlas *atlas;
 		nk_sdl_font_stash_begin(&atlas);
 		nk_sdl_font_stash_end();

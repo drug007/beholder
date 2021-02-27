@@ -13,7 +13,6 @@ class Application
 
 	this(string title, int width, int height, FullScreen fullscreen)
 	{
-		import derelict.util.loader : SharedLibVersion;
 		import gfm.sdl2, gfm.opengl;
 
 		_width = width;
@@ -24,8 +23,22 @@ class Application
 		_logger = new FileLogger(stdout, LogLevel.warning);
 
 		// load dynamic libraries
-		_sdl2 = new SDL2(_logger, SharedLibVersion(2, 0, 0));
-		_gl = new OpenGL(_logger); // in fact we disable logging
+		SDLSupport ret = loadSDL();
+		if(ret != sdlSupport) {
+			if(ret == SDLSupport.noLibrary) {
+				/*
+				The system failed to load the library. Usually this means that either the library or one of its dependencies could not be found.
+				*/
+			}
+			else if(SDLSupport.badLibrary) {
+				/*
+				This indicates that the system was able to find and successfully load the library, but one or more symbols the binding expected to find was missing. This usually indicates that the loaded library is of a lower API version than the binding was configured to load, e.g., an SDL 2.0.2 library loaded by an SDL 2.0.10 configuration.
+
+				For many C libraries, including SDL, this is perfectly fine and the application can continue as long as none of the missing functions are called.
+				*/
+			}
+		}
+		_sdl2 = new SDL2(_logger);
 		// initialize each SDL subsystem we want by hand
 		_sdl2.subSystemInit(SDL_INIT_VIDEO);
 		_sdl2.subSystemInit(SDL_INIT_EVENTS);
@@ -52,8 +65,25 @@ class Application
 		import gfm.math : vec2f, vec3f;
 		_camera = new Camera(vec2f(_width, _height), vec3f(0, 0, 0), 2.0);
 
-		// reload OpenGL now that a context exists
-		_gl.reload();
+		GLSupport retVal = loadOpenGL();
+		if(retVal >= GLSupport.gl33)
+		{
+			// configure renderer for OpenGL 3.3
+			import std.stdio;
+			writefln("Available version of opengl: %s", retVal);
+		}
+		else
+		{
+			import std.stdio;
+			if (retVal == GLSupport.noLibrary)
+				writeln("opengl is not available");
+			else
+				writefln("Unsupported version of opengl %s", retVal);
+			import std.exception;
+			enforce(0);
+		}
+
+		_gl = new OpenGL(_logger);
 
 		// redirect OpenGL output to our Logger
 		_gl.redirectDebugOutput();

@@ -13,7 +13,6 @@ class SdlApp
 
 	this(string title, int width, int height, FullScreen fullscreen)
 	{
-		import derelict.util.loader : SharedLibVersion;
 		import gfm.sdl2, gfm.opengl;
 
 		_width = width;
@@ -24,8 +23,7 @@ class SdlApp
 		_logger = new FileLogger(stdout, LogLevel.warning);
 
 		// load dynamic libraries
-		_sdl2 = new SDL2(_logger, SharedLibVersion(2, 0, 0));
-		_gl = new OpenGL(_logger); // in fact we disable logging
+		_sdl2 = new SDL2(_logger);
 		// initialize each SDL subsystem we want by hand
 		_sdl2.subSystemInit(SDL_INIT_VIDEO);
 		_sdl2.subSystemInit(SDL_INIT_EVENTS);
@@ -49,8 +47,25 @@ class SdlApp
 			_height = ws.y;
 		}
 
-		// reload OpenGL now that a context exists
-		_gl.reload();
+		GLSupport retVal = loadOpenGL();
+		if(retVal >= GLSupport.gl33)
+		{
+			// configure renderer for OpenGL 3.3
+			import std.stdio;
+			writefln("Available version of opengl: %s", retVal);
+		}
+		else
+		{
+			import std.stdio;
+			if (retVal == GLSupport.noLibrary)
+				writeln("opengl is not available");
+			else
+				writefln("Unsupported version of opengl %s", retVal);
+			import std.exception;
+			enforce(0);
+		}
+
+		_gl = new OpenGL(_logger);
 
 		// redirect OpenGL output to our Logger
 		_gl.redirectDebugOutput();

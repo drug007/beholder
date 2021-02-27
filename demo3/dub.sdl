@@ -6,13 +6,11 @@ dependency "beholder" path=".."
 
 configuration "dynamic" {
     targetType "executable"
-	// buildOptions "betterC"
     subConfiguration "bindbc-nuklear" "dynamicBC"
 }
 
 configuration "static" {
     targetType "executable"
-	// buildOptions "betterC"
     subConfiguration "bindbc-nuklear" "staticBC"
 }
 
