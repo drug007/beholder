@@ -78,7 +78,7 @@ class GUIRenderer : Renderer
 		{
 			const width  = _app.window.getWidth;
 			const height = _app.window.getHeight;
-			const panel_width = 330;
+			const panel_width = 430;
 			if (nk_begin(_app.ctx, "Sources&Tracks", nk_rect(width - panel_width - 5, 140, panel_width, height - 145),
 				NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
 				NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
@@ -89,16 +89,42 @@ class GUIRenderer : Renderer
 				{
 					nk_collapse_states s = src.gui_state ? NK_MAXIMIZED : NK_MINIMIZED;
 					scope(exit) src.gui_state = s == NK_MAXIMIZED;
-					if (nk_tree_state_push(_app.ctx, NK_TREE_NODE, text("Source: ", src.id, "\0").ptr, &s))
+					if (!src.text.length)
+						src.text = text("Source: ", src.id, "\0");
+					if (nk_tree_state_push(_app.ctx, NK_TREE_NODE, src.text.ptr, &s))
 					{
 						foreach(ref t; src.track)
 						{
 							nk_collapse_states ts = t.gui_state ? NK_MAXIMIZED : NK_MINIMIZED;
 							scope(exit) t.gui_state = ts == NK_MAXIMIZED;
-							if (nk_tree_state_push(_app.ctx, NK_TREE_NODE, text("Track: ", t.id, "\0").ptr, &ts))
+							if (!t.text.length)
+								t.text = text("Track: ", t.id, "\0");
+							if (nk_tree_state_push(_app.ctx, NK_TREE_NODE, t.text.ptr, &ts))
 							{
 								foreach(ref p; t.point)
-									nk_label(_app.ctx, text("Point: ", p.x, ", ", p.y, ", ", p.timestamp, "\0").ptr, NK_TEXT_LEFT);
+								{
+									if (!p.text.length)
+										p.text = text("Point: ", p.x, ", ", p.y, ", ", p.timestamp, "\0");
+									int i = !p.gui_state;
+									scope(exit) p.gui_state = (i == 0);
+									char[128] buffer;
+									nk_layout_row_begin(_app.ctx, NK_DYNAMIC, 12, 4);
+									nk_layout_row_push(_app.ctx, 0.04);
+									nk_checkbox_text(_app.ctx, &buffer[0], 0, &i);
+
+									import std.format;
+									sformat(buffer, "%f\0", p.x);
+									nk_layout_row_push(_app.ctx, 0.25);
+									nk_label(_app.ctx, buffer.ptr, NK_TEXT_RIGHT);
+
+									sformat(buffer, "%f\0", p.y);
+									nk_layout_row_push(_app.ctx, 0.25);
+									nk_label(_app.ctx, buffer.ptr, NK_TEXT_RIGHT);
+
+									sformat(buffer, "%s\0", p.timestamp);
+									nk_layout_row_push(_app.ctx, 0.46);
+									nk_label(_app.ctx, buffer.ptr, NK_TEXT_RIGHT);
+								}
 								nk_tree_state_pop(_app.ctx);
 							}
 						}

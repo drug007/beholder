@@ -6,12 +6,15 @@ struct Point
 {
 	float x, y;
 	SysTime timestamp;
+	bool gui_state;
+	string text;
 }
 
 struct Track
 {
 	int id;
 	bool gui_state;
+	string text;
 	Point[] point;
 }
 
@@ -19,6 +22,7 @@ struct Source
 {
 	int id;
 	bool gui_state;
+	string text;
 	Track[] track;
 }
 
@@ -43,7 +47,7 @@ auto makeTestSituation()
 			trk.id = x;
 			foreach(y; 0..30)
 			{
-				trk.point ~= Point(x0 + x*10_000, y0 + y * 1000, t0 + 10.seconds);
+				trk.point ~= Point(x0 + x*10_000, y0 + y * 1000, t0 + y*10.seconds, true);
 			}
 			src.track ~= trk;
 		}
