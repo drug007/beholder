@@ -3,37 +3,6 @@ module demo;
 import gfm.math : vec3f, vec4f;
 import taggedalgebraic : TaggedAlgebraic;
 
-struct Foo
-{
-	int i;
-	float f;
-	string str;
-	int[2] i2 = [ 101, 112 ];
-}
-
-struct Bar
-{
-	int i;
-	string[] string_array;
-}
-
-struct DataPoint
-{
-	int source;
-	int dataset;
-	vec3f position;
-	long timestamp;
-}
-
-struct Types
-{
-	Foo f;
-	Bar b;
-	DataPoint dp;
-}
-
-alias Value = TaggedAlgebraic!Types;
-
 struct Vertex
 {
 	vec3f position;

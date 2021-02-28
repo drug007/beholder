@@ -202,14 +202,14 @@ auto generateRData(RDataSourceRange)(Movable[] movables, RDataSourceRange dsourc
 		foreach(int trk, ref m; movables)
 		{
 			foreach(ref s; dsources)
-			{				
+			{
 				import std.math : atan2;
 				import std.datetime : msecs, UTC, Duration;
 
 				const start  = m.tl.start  > s.start_timestamp  ? m.tl.start  : s.start_timestamp;
 				const finish = m.tl.finish < s.finish_timestamp ? m.tl.finish : s.finish_timestamp;
 				assert(start < finish);
-								
+
 				const base_delta = 100.msecs;
 				assert(finish - start > base_delta);
 
