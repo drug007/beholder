@@ -1,0 +1,12 @@
+name "demo"
+description "Demo for nuklear based application."
+authors "drug007"
+copyright "Copyright © 2018-2019, drug007"
+license "BSL-1.0"
+
+dependency "beholder" path=".."
+dependency "mir" version="~>3.1.1"
+dependency "asdf" version="0.4.5"
+dependency "valhalla_ecs" version="*"
+
+versions "GL_30" "SDL_205" "NK_ALL"
