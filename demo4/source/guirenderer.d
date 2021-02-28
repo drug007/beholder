@@ -11,6 +11,10 @@ class GUIRenderer : Renderer
 		parent.addRenderer(this);
 		_app = parent;
 		_bg.r = 0.10f, _bg.g = 0.18f, _bg.b = 0.24f, _bg.a = 1.0f;
+		int i;
+		test_list.length = 100_000;
+		foreach(ref e; test_list)
+			e = i++;
 	}
 
 	void onRender()
@@ -18,6 +22,7 @@ class GUIRenderer : Renderer
 		static bool popup_active;
 		static nk_rect popup_window;
 		import std.container.array : Array;
+		import std.conv : text;
 		// static Array!Payload search_result;
 
 		nk_style_pop_color(_app.ctx);
@@ -78,6 +83,27 @@ class GUIRenderer : Renderer
 		{
 			const width  = _app.window.getWidth;
 			const height = _app.window.getHeight;
+			const panel_width = 330;
+			if (nk_begin(_app.ctx, "List", nk_rect(5, 140, panel_width, 630),
+				NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+				NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+			{
+				nk_layout_row_dynamic(_app.ctx, 12, 1);
+				foreach(e; test_list)
+				{
+					nk_label(_app.ctx, text("item: ", e, "\0").ptr, NK_TEXT_LEFT);
+					{import std; writeln(_app.ctx.current.layout.at_y);}
+					_app.ctx.current.layout.bounds.h = 30000;
+					if (_app.ctx.current.layout.at_y > 3000)
+						break;
+				}
+			}
+			nk_end(_app.ctx);
+		}
+
+		{
+			const width  = _app.window.getWidth;
+			const height = _app.window.getHeight;
 			const panel_width = 430;
 			if (nk_begin(_app.ctx, "Sources&Tracks", nk_rect(width - panel_width - 5, 140, panel_width, height - 145),
 				NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
@@ -99,15 +125,22 @@ class GUIRenderer : Renderer
 							scope(exit) t.gui_state = ts == NK_MAXIMIZED;
 							if (!t.text.length)
 								t.text = text("Track: ", t.id, "\0");
+
+							char[128] buffer;
+							nk_layout_row_begin(_app.ctx, NK_DYNAMIC, 12, 2);
+							nk_layout_row_push(_app.ctx, 0.1);
+							int ti = !t.gui_visible;
+							scope(exit) t.gui_visible = (ti == 0);
+							nk_checkbox_text(_app.ctx, &buffer[0], 0, &ti);
+							nk_layout_row_push(_app.ctx, 0.9);
 							if (nk_tree_state_push(_app.ctx, NK_TREE_NODE, t.text.ptr, &ts))
 							{
 								foreach(ref p; t.point)
 								{
 									if (!p.text.length)
 										p.text = text("Point: ", p.x, ", ", p.y, ", ", p.timestamp, "\0");
-									int i = !p.gui_state;
-									scope(exit) p.gui_state = (i == 0);
-									char[128] buffer;
+									int i = !p.gui_visible;
+									scope(exit) p.gui_visible = (i == 0);
 									nk_layout_row_begin(_app.ctx, NK_DYNAMIC, 12, 4);
 									nk_layout_row_push(_app.ctx, 0.04);
 									nk_checkbox_text(_app.ctx, &buffer[0], 0, &i);
@@ -143,4 +176,5 @@ private:
 
 	DemoApplication _app;
 	nk_colorf _bg;
+	int[] test_list;
 }

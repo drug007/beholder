@@ -6,7 +6,7 @@ struct Point
 {
 	float x, y;
 	SysTime timestamp;
-	bool gui_state;
+	bool gui_visible;
 	string text;
 }
 
@@ -14,6 +14,7 @@ struct Track
 {
 	int id;
 	bool gui_state;
+	bool gui_visible;
 	string text;
 	Point[] point;
 }
@@ -45,6 +46,7 @@ auto makeTestSituation()
 		{
 			Track trk;
 			trk.id = x;
+			trk.gui_visible = true;
 			foreach(y; 0..30)
 			{
 				trk.point ~= Point(x0 + x*10_000, y0 + y * 1000, t0 + y*10.seconds, true);
