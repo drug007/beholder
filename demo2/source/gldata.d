@@ -45,10 +45,6 @@ class GLData(V)
 		_indexTypeSize = AliasSeq!(1, 2, 4)[IndexElementKind];
 		
 		import std.array : array;
-
-		assert(vertices.length);
-		if (vertices.length == 0)
-			return;
 		{
 			assert(_vbo);
 			_vbo.setData(vertices.array);
