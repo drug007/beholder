@@ -93,6 +93,14 @@ class DemoApplication : NuklearApp
 	private bool _editing_mode;
 	private SysTime _last_timestamp;
 
+	import simulator : Simulator;
+	private Simulator _simulator2;
+	private SysTime _oldTimestamp;
+	import trackrenderer : TrackRenderer;
+	import sourcerenderer : RDataSourceRenderer;
+	private TrackRenderer _track_renderer;
+	private RDataSourceRenderer _source_renderer;
+
 	this(string title, int w, int h, NuklearApp.FullScreen flag)
 	{
 		super(title, w, h, flag);
@@ -107,7 +115,6 @@ class DemoApplication : NuklearApp
 
 		new GridRenderer(this);
 		_simulator = new MainSimulator(this);
-		new GUIRenderer(this);
 
 		import std.datetime : UTC;
 		_last_timestamp = SysTime();
@@ -119,6 +126,17 @@ class DemoApplication : NuklearApp
 
 		stopSimulation;
 		startSimulation;
+
+		_simulator2 = new Simulator();
+		import std.datetime : Clock;
+		_oldTimestamp = Clock.currTime;
+		_track_renderer = new TrackRenderer(_camera);
+		_source_renderer = new RDataSourceRenderer(_camera);
+		addRenderer(_track_renderer);
+		addRenderer(_source_renderer);
+
+		// GUI should be at top
+		new GUIRenderer(this);
 	}
 
 	@property mouseX() const { return _mouse_x; }
@@ -319,6 +337,19 @@ class DemoApplication : NuklearApp
 					delta -= SimulationPeriod;
 				} while (delta >= SimulationPeriod);
 			}
+		}
+		if (_simulation_in_progress)
+		{
+			import std.datetime : dur, Clock;
+			enum SimulationPeriod = 15.dur!"msecs";
+			auto delta = currTimestamp - (_oldTimestamp + _start_timeshift);
+
+			assert(delta >= Duration.zero);
+			_simulator2.onUpdate(delta);
+			_oldTimestamp += delta;
+
+			_track_renderer.update(_simulator2.trackVertices, _simulator2.trackIndices);
+			_source_renderer.update(_simulator2.sourceVertices, _simulator2.sourceIndices);
 		}
 		draw();
 	}
