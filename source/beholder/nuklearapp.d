@@ -46,7 +46,7 @@ class NuklearApp : SdlApp
 	override bool isInputConsumed(ref SDL_Event event)
 	{
 		nk_sdl_handle_event(&event);
-		return isAnyNuklearWindowHoveredExceptOne(ctx, "Main");
+		return nk_item_is_any_active(ctx) != 0;
 	}
 
 	override void onEventLoopStart()
@@ -57,38 +57,5 @@ class NuklearApp : SdlApp
 	override void onEventLoopEnd()
 	{
 		nk_input_end(ctx);
-	}
-
-	private auto isAnyNuklearWindowHoveredExceptOne(nk_context* ctx, string window_name)
-	{
-		nk_window *iter;
-		assert(ctx);
-		if (!ctx) return false;
-		iter = ctx.begin;
-		while (iter)
-		{
-			import std.string : fromStringz;
-			/* check if window is being hovered */
-			if(!(iter.flags & NK_WINDOW_HIDDEN)) {
-				/* check if window popup is being hovered */
-				if (iter.popup.active && iter.popup.win && nk_input_is_mouse_hovering_rect(&ctx.input, iter.popup.win.bounds))
-					return true;
-
-				// skip window
-				if (iter.name_string.ptr.fromStringz != window_name)
-				{
-					if (iter.flags & NK_WINDOW_MINIMIZED) {
-						nk_rect header = iter.bounds;
-						header.h = ctx.style.font.height + 2 * ctx.style.window.header.padding.y;
-						if (nk_input_is_mouse_hovering_rect(&ctx.input, header))
-							return true;
-					} else if (nk_input_is_mouse_hovering_rect(&ctx.input, iter.bounds)) {
-						return true;
-					}
-				}
-			}
-			iter = iter.next;
-		}
-		return false;
 	}
 }

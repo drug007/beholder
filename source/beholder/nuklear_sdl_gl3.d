@@ -408,7 +408,8 @@ nk_sdl_handle_event(SDL_Event *evt)
 		return 1;
 	} else if (evt.type == SDL_MOUSEWHEEL) {
 		/* mouse wheel */
-		nk_input_scroll(ctx,nk_vec2(cast(float)evt.wheel.x,cast(float)evt.wheel.y));
+		if (nk_item_is_any_active(ctx))
+			nk_input_scroll(ctx,nk_vec2(cast(float)evt.wheel.x,cast(float)evt.wheel.y));
 		return 1;
 	}
 	return 0;
