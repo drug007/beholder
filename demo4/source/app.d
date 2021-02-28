@@ -20,6 +20,9 @@ class DemoApplication : NuklearApp
 	private bool _camera_moving;
 	private float _mouse_x, _mouse_y;
 
+	import situation : Situation, makeTestSituation;
+	Situation situation;
+
 	this(string title, int w, int h, NuklearApp.FullScreen flag)
 	{
 		super(title, w, h, flag);
@@ -29,6 +32,8 @@ class DemoApplication : NuklearApp
 			vec3f(0, 0, 0),
 			150_000
 		);
+
+		situation = makeTestSituation;
 
 		new GridRenderer(this);
 		// GUI should be at top
