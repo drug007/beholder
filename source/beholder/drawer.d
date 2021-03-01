@@ -662,13 +662,23 @@ struct DrawerAggregate(T) if (Description!T.kind == Kind.aggregate && !RenderedA
 	{
 		import bindbc.nuklear;		
 		import core.stdc.stdio : snprintf;
-		
+
 		char[textBufferSize] buffer;
 		snprintf(buffer.ptr, buffer.length, "%s", header.ptr);
 
 		if (nk_tree_state_push(ctx, NK_TREE_TAB, buffer.ptr, &collapsed))
 		{
-			drawFields(ctx, header, t);
+
+			static if (T.stringof == "Height")
+			{
+				static foreach(member; DrawableMembers!t)
+				{
+					if (!mixin(`t.` ~ member).isNull)
+						mixin("state_" ~ member).draw(ctx, member,       mixin(`t.` ~ member));
+				}
+			}
+			else
+				drawFields(ctx, header, t);
 			nk_tree_pop(ctx);
 		}
 	}
