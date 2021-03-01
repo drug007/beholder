@@ -469,12 +469,16 @@ class NuklearApplication : Application
 int main(string[] args)
 {
 	import bindbc.nuklear;
-	NuklearSupport nuksup = loadNuklear();
-	if(nuksup != NuklearSupport.Nuklear4)
+	version(BindNuklear_Static) {}
+	else
 	{
-		import core.stdc.stdio;
-		printf("Error: Nuklear library is not found.");
-		return -1;
+		NuklearSupport nuksup = loadNuklear();
+		if(nuksup != NuklearSupport.Nuklear4)
+		{
+			import core.stdc.stdio;
+			printf("Error: Nuklear library is not found.");
+			return -1;
+		}
 	}
 
 	auto app = new NuklearApplication("Demo gui application", 1200, 768, Application.FullScreen.no);

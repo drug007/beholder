@@ -7,9 +7,11 @@ dependency "gfm7:sdl2" version="~>1.1.0"
 dependency "gfm7:opengl" version="~>1.1.0"
 dependency "color" version="~>0.0.7"
 dependency "rtree" version="~>0.0.1"
-dependency "taggedalgebraic" version="~>0.10.11"
+dependency "taggedalgebraic" version="~>0.11.14"
 dependency "bindbc-nuklear" version="~>0.4.4"
 
+versions "BindNuklear_Static"
+libs "nuklear_static"
 
 license "BSL-1.0"
 targetType "library"

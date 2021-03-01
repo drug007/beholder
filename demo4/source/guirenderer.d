@@ -20,9 +20,6 @@ class GUIRenderer : Renderer
 		import std.container.array : Array;
 		// static Array!Payload search_result;
 
-		nk_style_pop_color(_app.ctx);
-		nk_style_pop_style_item(_app.ctx);
-
 		const menu_bar_height = 40;
 		if (nk_begin(_app.ctx, "menu", nk_rect(2, 2, 400, menu_bar_height), 0))
 		{

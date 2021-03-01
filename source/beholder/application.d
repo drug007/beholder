@@ -4,7 +4,7 @@ class Application
 {
 	import std.experimental.logger : FileLogger, LogLevel;
 	import std.typecons : Flag;
-	import gfm.sdl2: SDL_Event;
+	import gfm.sdl2;
 
 	alias FullScreen = Flag!"FullScreen";
 
@@ -14,6 +14,7 @@ class Application
 	this(string title, int width, int height, FullScreen fullscreen)
 	{
 		import gfm.sdl2, gfm.opengl;
+		import bindbc.sdl;
 
 		_width = width;
 		_height = height;

@@ -26,7 +26,7 @@ class NuklearApp : SdlApp
 			if(nuksup != NuklearSupport.Nuklear4)
 			{
 				import core.stdc.stdio : printf;
-				printf("Error: Nuklear library is not found.");
+				printf("Error: Nuklear library is not found.\n");
 				import std.exception : enforce;
 				enforce(0);
 			}
