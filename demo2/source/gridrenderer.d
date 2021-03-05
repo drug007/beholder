@@ -1,7 +1,7 @@
 module gridrenderer;
 
 import common : Renderer;
-import gldata : GLData;
+import beholder.gldata : GLData;
 
 import gfm.math : vec2f, vec3f, vec4f;
 import std.math : PI;

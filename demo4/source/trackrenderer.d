@@ -1,7 +1,7 @@
 module trackrenderer;
 
 import common : Renderer;
-import gldata : GLData;
+import beholder.gldata : GLData;
 
 /// Value of index that indicating primitive restart
 enum PrimitiveRestartIndex = 0xFFFF;
