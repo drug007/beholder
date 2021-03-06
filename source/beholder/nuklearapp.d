@@ -10,9 +10,6 @@ class NuklearApp : SdlApp
 	import bindbc.nuklear;
 	import beholder.nuklear_sdl_gl3;
 
-	enum MAX_VERTEX_MEMORY = 512 * 1024;
-	enum MAX_ELEMENT_MEMORY = 128 * 1024;
-
 	nk_context* ctx;
 
 	this(string title, int w, int h, SdlApp.FullScreen flag)

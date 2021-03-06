@@ -1,0 +1,7 @@
+name "shariki"
+description "A minimal D application."
+authors "drug007"
+copyright "Copyright © 2021, drug007"
+license "BSL"
+dependency "beholder" path=".."
+versions "NK_ALL" "SDL_205"
