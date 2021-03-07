@@ -17,7 +17,7 @@ class Application : NuklearApp
 	this(string title, int w, int h)
 	{
 		super(title, w, h, NuklearApp.FullScreen.no);
-		_camera = new Camera(vec2f(-5000, 5000), vec3f(0, 0, 0), 5000);
+		_camera = new Camera(vec2f(1000, 1000), vec3f(0, 0, 0), 1500);
 		_sharikirenderer = new SharikiRenderer(_camera);
 		_renderers ~= _sharikirenderer;
 	}

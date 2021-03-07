@@ -21,7 +21,24 @@ int main(string[] args)
 		return rc;
 
 	auto app = new Application("Shariki", 1024, 768);
-	app.setData(dl.data.map!(a=>Vertex(vec3f(a[0], a[1], a[2]), a[3], a[4])));
+	app.setData(dl.data.map!((a) {
+		vec4f clr = void;
+		switch (a[4])
+		{
+			case 0 : clr = vec4f(0.0, 1.0, 0.0, 1.0); break;
+			case 1 : clr = vec4f(1.0, 1.0, 0.0, 1.0); break;
+			case 2 : clr = vec4f(0.0, 1.0, 1.0, 1.0); break;
+			case 3 : clr = vec4f(0.5, 0.5, 0.0, 1.0); break;
+			case 4 : clr = vec4f(0.5, 1.0, 0.0, 1.0); break;
+			case 5 : clr = vec4f(0.5, 0.7, 0.5, 1.0); break;
+			case 6 : clr = vec4f(0.0, 1.0, 0.7, 1.0); break;
+			case 7 : clr = vec4f(0.5, 0.0, 0.7, 1.0); break;
+			case 8 : clr = vec4f(0.7, 0.2, 0.4, 1.0); break;
+			case 9 : clr = vec4f(0.5, 1.3, 0.8, 1.0); break;
+			default: clr = vec4f(1.0, 1.0, 1.0, 1.0);
+		}
+		return Vertex(vec3f(a[0], a[1], a[2]), clr, a[3]);
+	}));
 	app.run;
 	app.destroy;
 
