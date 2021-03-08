@@ -116,6 +116,9 @@ class SharikiRenderer : Renderer
 				uniform mat4 p_matrix;
 				uniform vec3 lightDir = vec3(0.577, 0.577, 0.577);
 
+				float near = 0.1; 
+				float far  = 5000.0; 
+
 				void main()
 				{
 					vec3 N;
@@ -128,7 +131,13 @@ class SharikiRenderer : Renderer
 					vec4 ambient = vec4(0.2, 0.2, 0.2, fColor.a);
 					color_out = diffuse * fColor + ambient;
 
-					gl_FragDepth = -N.z;
+					vec3 spherePos = sphereCenter.xyz + N*radius;
+
+					// gl_FragDepth = //sphereCenter.z/3000.0;//gl_FragCoord.z + (1-length(N.xy))*radius;
+					gl_FragDepth = N.z;//0.1+spherePos.z-0.99*spherePos.z;///3000.0;
+
+					// color_out = vec4(vec3(gl_FragCoord.z), 1.0);
+					color_out = vec4(vec3(gl_FragDepth), 1.0);
 				}
 				#endif
 			";
@@ -168,12 +177,13 @@ class SharikiRenderer : Renderer
 		import gfm.opengl : glEnable;
 
 		glEnable(GL_DEPTH_TEST);
+		// glDepthFunc(GL_LEQUAL);
 		
 		glEnable (GL_BLEND);
 		glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glEnable(GL_PRIMITIVE_RESTART);
-		glPrimitiveRestartIndex(PrimitiveRestartIndex);
+		// glEnable(GL_PRIMITIVE_RESTART);
+		// glPrimitiveRestartIndex(PrimitiveRestartIndex);
 		{
 			_program.use();
 			scope(exit) _program.unuse();

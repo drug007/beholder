@@ -104,9 +104,9 @@ protected:
 		auto aspect_ratio= _window.x/_window.y;
 
 		if(_window.x <= _window.y)
-			_projection = mat4f.orthographic(-_size, +_size,-_size/aspect_ratio, +_size/aspect_ratio, -_size, +_size);
+			_projection = mat4f.orthographic(-_size, +_size,-_size/aspect_ratio, +_size/aspect_ratio, 0.0001, +2*_size);
 		else
-			_projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, -_size, +_size);
+			_projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, 0.0001, +2*_size);
 
 		_view = mat4f.lookAt(
 			vec3f(_position.x, _position.y, +_size), // Camera has world coordinates
