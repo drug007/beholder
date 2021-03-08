@@ -54,7 +54,9 @@ class SharikiRenderer : Renderer
 				in vec4 vColor[]; // Output from vertex shader for each vertex
 				in float vRadius[];
 				out vec4 fColor;  // Output to fragment shader
-				out vec2 distance; // Distance from center of line
+				out vec4 sphereCenter;
+				out vec4 fragmentPos;
+				out float radius;
 
 				uniform mat4 mv_matrix;
 				uniform mat4 p_matrix;
@@ -72,24 +74,32 @@ class SharikiRenderer : Renderer
 					two triangles {0, 1, 2} and {1, 2, 3}
 
 					*/
-					gl_Position = p_matrix * ((gl_in[0].gl_Position) + vec4(+vRadius[0], -vRadius[0], 0, 0));
+					sphereCenter = gl_in[0].gl_Position;
+					fragmentPos = sphereCenter + vec4(+vRadius[0], -vRadius[0], 0, 0);
+					gl_Position = p_matrix * fragmentPos;
 					fColor = vColor[0];
-					distance = vec2(+1, -1);
+					radius = vRadius[0];
 					EmitVertex();
 
-					gl_Position = p_matrix * ((gl_in[0].gl_Position) + vec4(+vRadius[0], +vRadius[0], 0, 0));
+					sphereCenter = gl_in[0].gl_Position;
+					fragmentPos = sphereCenter + vec4(+vRadius[0], +vRadius[0], 0, 0);
+					gl_Position = p_matrix * fragmentPos;
 					fColor = vColor[0];
-					distance = vec2(+1, +1);
+					radius = vRadius[0];
 					EmitVertex();
 
-					gl_Position = p_matrix * ((gl_in[0].gl_Position) + vec4(-vRadius[0], -vRadius[0], 0, 0));
+					sphereCenter = gl_in[0].gl_Position;
+					fragmentPos = sphereCenter + vec4(-vRadius[0], -vRadius[0], 0, 0);
+					gl_Position = p_matrix * fragmentPos;
 					fColor = vColor[0];
-					distance = vec2(-1, -1);
+					radius = vRadius[0];
 					EmitVertex();
 
-					gl_Position = p_matrix * ((gl_in[0].gl_Position) + vec4(-vRadius[0], +vRadius[0], 0, 0));
+					sphereCenter = gl_in[0].gl_Position;
+					fragmentPos = sphereCenter + vec4(-vRadius[0], +vRadius[0], 0, 0);
+					gl_Position = p_matrix * fragmentPos;
 					fColor = vColor[0];
-					distance = vec2(-1, +1);
+					radius = vRadius[0];
 					EmitVertex();
 
 					EndPrimitive();
@@ -97,16 +107,19 @@ class SharikiRenderer : Renderer
 				#endif
 
 				#if FRAGMENT_SHADER
-				in vec4 fColor;
-				in vec2 distance;
+				in vec4 fColor;  
+				in vec4 sphereCenter;
+				in vec4 fragmentPos;
+				in float radius;
 				out vec4 color_out;
 
+				uniform mat4 p_matrix;
 				uniform vec3 lightDir = vec3(0.577, 0.577, 0.577);
 
 				void main()
 				{
 					vec3 N;
-					N.xy = distance;
+					N.xy = (fragmentPos.xy - sphereCenter.xy)/radius;
 					float r2 = dot(N.xy, N.xy);
 					if (r2 > 1.0) discard;
 					N.z = sqrt(1.0-r2);
@@ -114,6 +127,8 @@ class SharikiRenderer : Renderer
 					float diffuse = 0.8*max(0.0, dot(N, lightDir));
 					vec4 ambient = vec4(0.2, 0.2, 0.2, fColor.a);
 					color_out = diffuse * fColor + ambient;
+
+					gl_FragDepth = -N.z;
 				}
 				#endif
 			";
