@@ -140,7 +140,10 @@ class SharikiRenderer : Renderer
 					vec4 pos = p_matrix * fragmentPos;
 					gl_FragDepth = linearize_depth(pos.z/pos.w + 1 - sqrt(1-dot(N.xy, N.xy)), near, far);
 
-					color_out = vec4(vec3(gl_FragDepth), 1.0);
+					gl_FragDepth = pos.z;
+					gl_FragDepth = length(N.xy)*radius/abs(far-near);
+
+					// color_out = vec4(vec3(gl_FragDepth), 1.0);
 				}
 				#endif
 			";

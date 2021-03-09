@@ -9,6 +9,7 @@ class Camera
 		_model      = mat4f.identity;
 		_view       = mat4f.identity;
 
+		_origin     = vec3f(0, 0, 0);
 		_position   = position;
 		_window     = window;
 		_size       = size < 0 ? 0 : size;
@@ -43,9 +44,20 @@ class Camera
 		return _position;
 	}
 
-	auto position(vec3f position)
+	auto position(vec3f p)
 	{
-		_position = position;
+		_position = p;
+		updateMatrices();
+	}
+
+	auto origin() const
+	{
+		return _origin;
+	}
+
+	auto origin(vec3f o)
+	{
+		_origin = o;
 		updateMatrices();
 	}
 
@@ -95,7 +107,7 @@ protected:
 	import gfm.math;
 
 	vec2f _window;
-	vec3f _position;
+	vec3f _position, _origin;
 	float _size;
 	mat4f _projection, _view, _mvp_matrix, _model, _model_view;
 
@@ -108,10 +120,12 @@ protected:
 		else
 			_projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, 0.0001, +2*_size);
 
+		auto up = vec3f(1, 0, 0).cross(_origin-_position);
+
 		_view = mat4f.lookAt(
-			vec3f(_position.x, _position.y, +_size), // Camera has world coordinates
-			vec3f(_position.x, _position.y, -_size), // and looks at origin
-			vec3f(0, 1, 0)  // "Head" is up
+			_position,
+			_origin,
+			up  // "Head" is up
 		);
 
 		_model_view = _view * _model;
