@@ -116,8 +116,8 @@ class SharikiRenderer : Renderer
 				uniform mat4 p_matrix;
 				uniform vec3 lightDir = vec3(0.577, 0.577, 0.577);
 
-				float near = 0.1; 
-				float far  = 1500.0;
+				float near = 0.1;
+				float far  = 3000;
 
 				float linearize_depth(float d, float zNear, float zFar)
 				{
@@ -137,12 +137,10 @@ class SharikiRenderer : Renderer
 					vec4 ambient = vec4(0.2, 0.2, 0.2, fColor.a);
 					color_out = diffuse * fColor + ambient;
 
-					vec3 spherePos = sphereCenter.xyz + N*radius;
+					vec4 pos = p_matrix * fragmentPos;
+					gl_FragDepth = linearize_depth(pos.z/pos.w + 1 - sqrt(1-dot(N.xy, N.xy)), near, far);
 
-					// gl_FragDepth = //sphereCenter.z/3000.0;//gl_FragCoord.z + (1-length(N.xy))*radius;
-					float tmp = 1*length(N.xy);//spherePos.z;
-					float tmp2 = gl_FragCoord.z + linearize_depth(tmp, near, far);//0.1+spherePos.z-0.99*spherePos.z;///3000.0;
-					gl_FragDepth = tmp2;//clamp(tmp2, 0.01, 0.99);
+					color_out = vec4(vec3(gl_FragDepth), 1.0);
 				}
 				#endif
 			";

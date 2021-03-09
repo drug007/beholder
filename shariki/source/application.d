@@ -17,7 +17,7 @@ class Application : NuklearApp
 	this(string title, int w, int h)
 	{
 		super(title, w, h, NuklearApp.FullScreen.no);
-		_camera = new Camera(vec2f(1000, 1000), vec3f(0, 0, 0), 1500);
+		_camera = new Camera(vec2f(w, h), vec3f(0, 0, 0), 1500);
 		_sharikirenderer = new SharikiRenderer(_camera);
 		_renderers ~= _sharikirenderer;
 	}
@@ -49,7 +49,7 @@ class Application : NuklearApp
 			import gfm.opengl;
 
 			glViewport(0, 0, _width, _height);
-			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClearColor(0.1f, 0.2f, 0.1f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 			foreach(r; _renderers)
