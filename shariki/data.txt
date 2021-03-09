@@ -1,4 +1,4 @@
-x: 150 y: 300 z: 300 radius: 40 kind: 7
-x: 100 y: 300 z: 300 radius: 150 kind: 6
-x:  50 y: 300 z: 300 radius: 40 kind: 5
-x: 225 y: 300 z: 200 radius: 40 kind: 1
+x: 0 y: 001 z: 01 radius: 150 kind: 7
+x: 210 y: 001 z: 400 radius: 150 kind: 6
+x: 0 y: 210 z: 800 radius: 150 kind: 5
+x: 230 y: 190 z: 1100 radius: 150 kind: 1
