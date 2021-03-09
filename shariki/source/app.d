@@ -40,7 +40,7 @@ int main(string[] args)
 		return Vertex(vec3f(a[0], a[1], a[2]), clr, a[3]);
 	}));
 	app.run;
-	app.destroy;
+	scope(exit) app.destroy;
 
 	return 0;
 }

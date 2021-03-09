@@ -23,7 +23,7 @@ class Camera
 		updateMatrices();
 	}
 
-	auto size() const
+	typeof(_size) size() const
 	{
 		return _size;
 	}
