@@ -5,9 +5,6 @@ import gfm.math;
 import common : Renderer;
 import beholder.gldata : GLData;
 
-/// Value of index that indicating primitive restart
-enum PrimitiveRestartIndex = 0xFFFF;
-
 struct Vertex
 {
 	vec3f position;

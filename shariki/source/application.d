@@ -12,12 +12,14 @@ class Application : NuklearApp
 {
 	import common;
 	import sharikirenderer;
+	import axis;
 
 	private
 	{
 		Renderer[] _renderers;
 		Camera _camera;
 		SharikiRenderer _sharikirenderer;
+		AxisRenderer    _axisrenderer;
 		bool _camera_moving, _camera_rotating;
 		float _mouse_x, _mouse_y;
 	}
@@ -27,7 +29,9 @@ class Application : NuklearApp
 		super(title, w, h, NuklearApp.FullScreen.no);
 		_camera = new Camera(vec2f(w, h), vec3f(0, 0, 1400), 1500);
 		_sharikirenderer = new SharikiRenderer(_camera);
+		_axisrenderer    = new AxisRenderer(_camera);
 		_renderers ~= _sharikirenderer;
+		_renderers ~= _axisrenderer;
 		_camera_moving = _camera_rotating = false;
 		_mouse_x = _mouse_y = 0;
 	}
@@ -38,6 +42,11 @@ class Application : NuklearApp
 		{
 			.destroy(_sharikirenderer);
 			_sharikirenderer = null;
+		}
+		if (_axisrenderer)
+		{
+			.destroy(_axisrenderer);
+			_axisrenderer = null;
 		}
 		super.destroy();
 	}
