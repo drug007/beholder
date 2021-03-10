@@ -28,6 +28,7 @@ class Application : NuklearApp
 	{
 		super(title, w, h, NuklearApp.FullScreen.no);
 		_camera = new Camera(vec2f(w, h), vec3f(0, 0, 1400), 1500);
+		_camera.modifyAngles(2*PI, 0);
 		_sharikirenderer = new SharikiRenderer(_camera);
 		_axisrenderer    = new AxisRenderer(_camera);
 		_renderers ~= _sharikirenderer;
@@ -151,33 +152,11 @@ class Application : NuklearApp
 		}
 		else if (_camera_rotating)
 		{
-			float factor_x = void, factor_y = void;
-			const aspect_ratio = _width/cast(float)_height;
-			if(_width > _height) 
-			{
-				factor_x = 2.0f * _camera.size / cast(float) _width * aspect_ratio;
-				factor_y = 2.0f * _camera.size / cast(float) _height;
-			}
-			else
-			{
-				factor_x = 2.0f * _camera.size / cast(float) _width;
-				factor_y = 2.0f * _camera.size / cast(float) _height / aspect_ratio;
-			}
-
-			auto modifier = vec3f(
-				(_mouse_x - new_mouse_x)*factor_x, 
-				(_mouse_y - new_mouse_y)*factor_y,
-				0,
+			enum MouseSpeed = 1.0/180.;
+			_camera.modifyAngles(
+				(_mouse_x - new_mouse_x)*MouseSpeed,
+				(_mouse_y - new_mouse_y)*MouseSpeed
 			);
-
-			const R = (_camera.position - _camera.origin).magnitude;
-
-			const dB = 0.1*PI/180.0;
-			const dX = R*sin(dB)*modifier.x;
-			const dY = R*sin(dB)*modifier.y;
-			const dZ = R*(1 - cos(dB));
-
-			_camera.position = _camera.position + vec3f(dX, dY, dZ);
 		}
 
 		_mouse_x = new_mouse_x;

@@ -13,6 +13,7 @@ class Camera
 		_position   = position;
 		_window     = window;
 		_size       = size < 0 ? 0 : size;
+		_yaw = _pitch = 0;
 
 		updateMatrices;
 	}
@@ -103,12 +104,25 @@ class Camera
 		return ray3f(p1, p2);
 	}
 
+	auto modifyAngles(float pitch, float yaw)
+	{
+		import std.math;
+
+		_yaw += yaw/2;
+		_pitch   += -pitch/2;
+
+		auto direction = vec3f(cos(_yaw)*sin(_pitch), sin(_yaw), cos(_yaw)*cos(_pitch));
+		_position = _origin - direction*(_origin-_position).magnitude;
+
+		updateMatrices;
+	}
+
 protected:
 	import gfm.math;
 
 	vec2f _window;
 	vec3f _position, _origin;
-	float _size;
+	float _size, _yaw, _pitch;
 	mat4f _projection, _view, _mvp_matrix, _model, _model_view;
 
 	void updateMatrices()
@@ -120,7 +134,7 @@ protected:
 		else
 			_projection = mat4f.orthographic(-_size*aspect_ratio,+_size*aspect_ratio,-_size, +_size, 0.0001, +2*_size);
 
-		auto up = vec3f(1, 0, 0).cross(_origin-_position);
+		auto up = vec3f(0, 1, 0);
 
 		_view = mat4f.lookAt(
 			_position,
