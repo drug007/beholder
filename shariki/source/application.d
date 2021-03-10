@@ -129,13 +129,25 @@ class Application : NuklearApp
 				factor_x = 2.0f * _camera.size / cast(float) _width;
 				factor_y = 2.0f * _camera.size / cast(float) _height / aspect_ratio;
 			}
-			auto new_pos = vec3f(
+			auto pos_change = vec3f(
 				(_mouse_x - new_mouse_x)*factor_x, 
 				(_mouse_y - new_mouse_y)*factor_y,
 				0,
 			);
-			_camera.position = _camera.position + new_pos;
-			_camera.origin   = _camera.origin + new_pos;
+			enum { right, up, direction }
+			// the camera basis
+			vec3f[3] basis;
+			basis[direction] = (_camera.origin-_camera.position);
+			basis[direction].normalize;
+			basis[right] = basis[direction].cross(vec3f(0, 1, 0));
+			basis[up] = basis[right].cross(basis[direction]);
+			// change the basis of the camera position change
+			// from the camera to the world one
+			auto A = mat3f.fromColumns(basis[]);
+			pos_change = A*pos_change;
+
+			_camera.position = _camera.position + pos_change;
+			_camera.origin   = _camera.origin + pos_change;
 		}
 		else if (_camera_rotating)
 		{
