@@ -13,6 +13,7 @@ class Application : NuklearApp
 	import common;
 	import sharikirenderer;
 	import axis;
+	import planes;
 
 	private
 	{
@@ -20,6 +21,7 @@ class Application : NuklearApp
 		Camera _camera;
 		SharikiRenderer _sharikirenderer;
 		AxisRenderer    _axisrenderer;
+		PlaneRenderer   _planerenderer;
 		bool _camera_moving, _camera_rotating;
 		float _mouse_x, _mouse_y;
 	}
@@ -31,8 +33,10 @@ class Application : NuklearApp
 		_camera.modifyAngles(2*PI, 0);
 		_sharikirenderer = new SharikiRenderer(_camera);
 		_axisrenderer    = new AxisRenderer(_camera);
+		_planerenderer   = new PlaneRenderer(_camera);
 		_renderers ~= _sharikirenderer;
 		_renderers ~= _axisrenderer;
+		_renderers ~= _planerenderer;
 		_camera_moving = _camera_rotating = false;
 		_mouse_x = _mouse_y = 0;
 	}
@@ -48,6 +52,11 @@ class Application : NuklearApp
 		{
 			.destroy(_axisrenderer);
 			_axisrenderer = null;
+		}
+		if (_planerenderer)
+		{
+			.destroy(_planerenderer);
+			_planerenderer = null;
 		}
 		super.destroy();
 	}
