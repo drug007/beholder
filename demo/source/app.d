@@ -22,7 +22,7 @@ int main(string[] args) @safe
 	auto txt = readText(filename);
 	auto json = () @trusted { return txt.parseJson; } ();
 	auto data = jsonToData(json);
-	auto beholder = Beholder();
+	auto beholder = Beholder(1000, 800, "Demo");
 	beholder.addData(data);
 
 	beholder.run();

@@ -1,54 +1,47 @@
 module beholder.beholder;
 
-enum CoordSys { Cartesian, Polar, }
+import nanogui.sdlbackend : SdlBackend;
 
-struct GenericPoint(CoordSys coordSys, int Dim, BaseType)
+import beholder.common;
+
+private class Window : SdlBackend
 {
-    static assert (is(BaseType == float) || is(BaseType == double));
+	this(int w, int h, string title)
+	{
+		super(w, h, title);
+	}
 
-    private BaseType[Dim] _value;
-
-    BaseType x() { return _value[0]; }
-    BaseType y() { return _value[1]; }
-
-    void x(BaseType v) { _value[0] = v; }
-    void y(BaseType v) { _value[1] = v; }
-
-    static if (Dim == 2)
-    {
-        this(BaseType x, BaseType y)
-        {
-            this.x = x;
-            this.y = y;
-        }
+	override void onVisibleForTheFirstTime()
+	{
     }
-    else static if (Dim == 3)
-    {
-        this(BaseType x, BaseType y, BaseType z)
-        {
-            this(x, y);
-            this.z = z;
-        }
-
-        BaseType z() { return _value[2]; }
-        void z(BaseType v) { _value[2] = v; }
-    }
-    else
-        static assert(0, "Only 2D or 3D is possible");
 }
-
-alias PointC2f = GenericPoint!(CoordSys.Cartesian, 2, float);
 
 struct Beholder
 {
 @safe:
+
+    @disable this();
+
+	this(int w, int h, string title) @trusted
+	{
+        _window = new Window(w, h, title);
+    }
+
+    ~this() @trusted
+    {
+        destroy(_window);
+    }
+
     void addData(PointC2f[] data)
     {
 
     }
 
-    void run()
+    void run() @trusted
     {
-
+        _window.run();
     }
+
+private:
+    SdlBackend _window;
 }
