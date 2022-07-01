@@ -34,7 +34,7 @@ struct Beholder
 
     void addData(PointC2f[] data)
     {
-
+        _data ~= data;
     }
 
     void run() @trusted
@@ -43,5 +43,6 @@ struct Beholder
     }
 
 private:
+    PointC2f[] _data;
     SdlBackend _window;
 }

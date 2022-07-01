@@ -7,6 +7,7 @@
 		"bindbc-loader": "0.3.2",
 		"bindbc-opengl": "0.15.0",
 		"bindbc-sdl": "0.19.2",
+		"color": "0.0.9",
 		"gfm": "8.0.6",
 		"gfm7": "1.1.2",
 		"intel-intrinsics": "1.10.2",
