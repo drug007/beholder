@@ -1,59 +1,16 @@
 module beholder.vertex_data.vertex_data;
 
-public import gfm.math: vec2f, vec3f, vec4f;
-import gfm.opengl: GLenum, GLBuffer, OpenGL, GLVAO, GLProgram, 
-	VertexSpecification;
+import gfm.opengl;
 
-import gfm.opengl : GL_TRIANGLES, GL_POINTS, GL_LINE_STRIP, GL_LINE_STRIP_ADJACENCY;
-
-struct VertexSlice
-{
-	private Kind _kind;
-
-	enum Kind : GLenum { 
-		Triangles          = GL_TRIANGLES, 
-		Points             = GL_POINTS, 
-		LineStrip          = GL_LINE_STRIP,
-		LineStripAdjacency = GL_LINE_STRIP_ADJACENCY,
-	}
-
-	auto kind() const
-	{
-		return _kind;
-	}
-
-	auto kind(Kind kind)
-	{
-		final switch(kind)
-		{
-			case Kind.Triangles:
-			case Kind.Points:
-			case Kind.LineStrip:
-			case Kind.LineStripAdjacency:
-				_kind = kind;
-			break;
-		}
-	}
-
-	size_t start, length;
-
-	this(Kind k, size_t start, size_t length)
-	{
-		kind(k);
-		this.start  = start;
-		this.length = length;
-	}
-}
+import beholder.vertex_data.vertex_spec;
 
 class VertexData
 {
 	import std.range : isInputRange;
-	import beholder.vertex_data.vertex_spec : IVertexSpec;
+
+    @disable this();
 	
-	private GLenum _indexKind;
-	private ubyte  _indexTypeSize;
-	
-	this(IVertexSpec vertex_specification)
+	this(IVertexSpec vertSpec)
 	{
 		import gfm.opengl : GL_UNSIGNED_INT;
 
@@ -63,18 +20,15 @@ class VertexData
 		import gfm.opengl : GL_ARRAY_BUFFER, GL_STATIC_DRAW,
 			GL_ELEMENT_ARRAY_BUFFER;
 
-		vbo = new GLBuffer(GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-		ibo = new GLBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
-
-		// Create an OpenGL vertex description from the Vertex structure.
-		vert_spec = vertex_specification;
-
-		vao = new GLVAO();
+		this.vbo = new GLBuffer(GL_ARRAY_BUFFER, GL_STATIC_DRAW);
+		this.ibo = new GLBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+		this.vertSpec = vertSpec;
+		this.vao = new GLVAO();
 	}
 
-	this(V, I)(IVertexSpec vertex_specification, V vertices, I indices)
+	this(V, I)(IVertexSpec vertSpec, V vertices, I indices)
 	{
-		this(vertex_specification);
+		this(vertSpec);
 		setData(vertices, indices);
 	}
 
@@ -82,8 +36,8 @@ class VertexData
 		if (isInputRange!V && isInputRange!I)
 	{
 		import std.range : ElementType;
-		import std.traits : Unqual;
-		import std.meta : AliasSeq;
+        import std.traits : Unqual;
+        import std.meta : AliasSeq;
 		import std.meta : staticIndexOf;
 
 		// Unqualified element type of the index range
@@ -99,31 +53,23 @@ class VertexData
 		import gfm.opengl : GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT;
 		_indexKind = AliasSeq!(GL_UNSIGNED_BYTE, GL_UNSIGNED_SHORT, GL_UNSIGNED_INT)[IndexElementKind];
 		_indexTypeSize = AliasSeq!(1, 2, 4)[IndexElementKind];
-		
+
 		import std.array : array;
-		import gfm.opengl : GL_ARRAY_BUFFER, GL_STATIC_DRAW,
-			GL_ELEMENT_ARRAY_BUFFER;
 
 		assert(vertices.length);
-
-		{
-			assert(vbo);
-			vbo.setData(vertices.array);
-		}
-		{
-			assert(ibo);
-			ibo.setData(indices.array);
-		}
-
+        assert(vbo);
+        assert(ibo);
 		assert(vao);
+
+        vbo.setData(vertices.array);
+        ibo.setData(indices.array);
+
 		// prepare VAO
-		{
-			vao.bind();
-			vbo.bind();
-			ibo.bind();
-			vert_spec.use();
-			vao.unbind();
-		}
+        vao.bind();
+        vbo.bind();
+        ibo.bind();
+        vertSpec.use();
+        vao.unbind();
 	}
 
 	~this()
@@ -138,10 +84,10 @@ class VertexData
 			ibo.destroy();
 			ibo = null;
 		}
-		if(vert_spec)
+		if(vertSpec)
 		{
-			vert_spec.destroy();
-			vert_spec = null;
+			vertSpec.destroy();
+			vertSpec = null;
 		}
 		if(vao)
 		{
@@ -154,7 +100,10 @@ class VertexData
 	auto indexKind() { return _indexKind; }
 	auto indexSize() { return _indexTypeSize; }
 
-	GLBuffer      vbo, ibo;
-	GLVAO         vao;
-	IVertexSpec   vert_spec;
+	private GLenum _indexKind;
+	private ubyte  _indexTypeSize;
+
+	GLBuffer vbo, ibo;
+	GLVAO    vao;
+	IVertexSpec vertSpec;
 }
