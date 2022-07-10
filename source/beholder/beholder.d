@@ -4,10 +4,12 @@ import nanogui.sdlbackend : SdlBackend;
 
 import beholder.common;
 import beholder.draw_state;
+import beholder.scene.scene_state : SceneState;
+import beholder.scene.camera;
 import beholder.vertex_data.vertex_data;
 import beholder.vertex_data.vertex_spec;
 
-import gfm.math : vec3f, vec4f;
+import gfm.math : vec3f, vec4f, vec2i;
 
 struct Vertex
 {
@@ -34,6 +36,11 @@ private class Window : SdlBackend
 	this(int w, int h, string title)
 	{
 		super(w, h, title);
+        sceneState = new SceneState(w, h);
+        sceneState.camera.halfWorldWidth = 40_000;
+		sceneState.camera.position = vec3f(0, 0, 0);
+		sceneState.camera.viewport(vec2i(1, 1));
+		sceneState.camera.updateMatrices();
 	}
 
     ~this()
@@ -87,17 +94,15 @@ private class Window : SdlBackend
         _sdlApp.onDraw = ()
         {
             import std;
+            import gfm.math, gfm.opengl;
+            
             glClearColor(0, 0, 0, 1);
-
 		    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            mat4f mvp = sceneState.camera.modelViewProjection;
             foreach(ref drawState; drawStateBuf)
             {
-                import gfm.math, gfm.opengl;
-                auto mvp = mat4f.orthographic(-35000, 35000, -35000, 35000, -10, 10);
-		        drawState.program.uniform("mvp_matrix").set(mvp);
-                    runtimeCheck();
+                drawState.program.uniform("mvp_matrix").set(mvp);
                 drawState.program.use();
-                    runtimeCheck();
                 scope(exit) drawState.program.unuse();
 
                 with(drawState.vertexData)
@@ -123,6 +128,7 @@ private:
     import beholder.context;
 
     Context ctx;
+    SceneState sceneState;
     DrawState[] drawStateBuf;
 
     import gfm.opengl;
