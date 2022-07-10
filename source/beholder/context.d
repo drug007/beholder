@@ -8,13 +8,7 @@ import beholder.clear_state;
 import beholder.render_state.render_state;
 import beholder.render_state.color_mask;
 import beholder.render_state.depth_test;
-
-struct DrawState
-{
-    RenderState* renderState;
-    GLShader shader;
-    GLVAO vao;
-}
+import beholder.draw_state;
 
 enum CullFace { front, back, frontAndBack, }
 
@@ -199,7 +193,6 @@ private:
             glDisable(enableCap);
     }
 
-    RenderState _renderState;
-    GLFBO _boundFBO;
-    GLFBO _setFBO;
+    RenderState _renderState = RenderState();
+    version(none) GLFBO _boundFBO, _setFBO;
 }

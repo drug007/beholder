@@ -12,7 +12,7 @@ struct RenderState
     // StencilTest       stencilTest;
     // DepthRange        depthRange;
     DepthTest         depthTest;
-    ColorMask         colorMask;
+    ColorMask         colorMask = ColorMask(true, true, true, true);
     // Blending          blending;
     bool              depthMask;
 }
