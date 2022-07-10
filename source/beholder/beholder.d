@@ -31,9 +31,13 @@ auto points = [
 	Vertex(vec3f(7500.0,  23000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
 ];
 
-private class Window : SdlBackend
+class Beholder : SdlBackend
 {
-	this(int w, int h, string title)
+@safe:
+
+    @disable this();
+
+	this(int w, int h, string title) @trusted
 	{
 		super(w, h, title);
         sceneState = new SceneState(w, h);
@@ -43,14 +47,24 @@ private class Window : SdlBackend
 		sceneState.camera.updateMatrices();
 	}
 
-    ~this()
+    ~this() @trusted
     {
         foreach(ref e; drawStateBuf)
             destroy(e);
         drawStateBuf = null;
     }
 
-	override void onVisibleForTheFirstTime()
+    void addData(PointC2f[] data)
+    {
+        _data ~= data;
+    }
+
+    override void run() @trusted
+    {
+        super.run();
+    }
+
+	override void onVisibleForTheFirstTime() @trusted
 	{
         import gfm.opengl;
         import beholder.render_state.render_state : RenderState;
@@ -124,16 +138,16 @@ private class Window : SdlBackend
     }
 
 private:
-
+    import gfm.opengl;
     import beholder.context;
+
+    PointC2f[] _data;
 
     Context ctx;
     SceneState sceneState;
     DrawState[] drawStateBuf;
-
-    import gfm.opengl;
     
-    void runtimeCheck()
+    void runtimeCheck() @trusted
     {
         GLint r = glGetError();
         if (r != GL_NO_ERROR)
@@ -158,35 +172,4 @@ private:
             default:                   return "Unknown OpenGL error";
         }
     }
-}
-
-struct Beholder
-{
-@safe:
-
-    @disable this();
-
-	this(int w, int h, string title) @trusted
-	{
-        _window = new Window(w, h, title);
-    }
-
-    ~this() @trusted
-    {
-        destroy(_window);
-    }
-
-    void addData(PointC2f[] data)
-    {
-        _data ~= data;
-    }
-
-    void run() @trusted
-    {
-        _window.run();
-    }
-
-private:
-    PointC2f[] _data;
-    SdlBackend _window;
 }
