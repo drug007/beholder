@@ -1,5 +1,5 @@
 import asdf;
-import beholder : Beholder, PointC2f;
+import beholder : Beholder, PointC2f, Target;
 
 import std.concurrency;
 
@@ -71,7 +71,8 @@ void loadData(Tid ownerTid, string filename)
 
 auto jsonToData(ref Asdf json) @trusted
 {
-	PointC2f[] points;
+
+	Target[] targets;
 	foreach(record; json.byElement)
 	{
 		auto kj = record["kind"];
@@ -81,19 +82,11 @@ auto jsonToData(ref Asdf json) @trusted
 		const kind = cast(string) kj;
 		switch (kind)
 		{
-			case "Point":
-				auto xj = record["x"];
-				if (xj == Asdf.init)
-					continue;
-				auto yj = record["y"];
-				if (yj == Asdf.init)
-					continue;
-				const x = cast(float) xj;
-				const y = cast(float) yj;
-				points ~= PointC2f(x, y);
+			case "Target":
+				targets ~= Target.fromAsdf(record);
 			break;
 			default:
 		}
 	}
-	return points;
+	return targets;
 }
