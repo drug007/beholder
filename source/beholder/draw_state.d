@@ -21,6 +21,9 @@ struct DrawState
         {
             destroy(program);
             program = null;
+        }
+        if (vertexData !is null)
+        {
             destroy(vertexData);
             vertexData = null;
         }
