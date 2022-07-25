@@ -38,30 +38,3 @@ struct GenericPoint(CoordSys coordSys, int Dim, BaseType)
 }
 
 alias PointC2f = GenericPoint!(CoordSys.Cartesian, 2, float);
-
-struct Target
-{
-    struct Id
-    {
-        uint source, target;
-    }
-
-    Id id;
-    PointC2f position;
-    ulong    timestamp;
-
-    static auto fromAsdf(Asdf)(ref Asdf asdf)
-    {
-        import std.datetime : SysTime;
-
-        Target tgt;
-
-        tgt.id.source = cast(uint) asdf["id"]["source"];
-        tgt.id.target = cast(uint) asdf["id"]["target"];
-        tgt.position.x = cast(float) asdf["position"]["x"];
-        tgt.position.y = cast(float) asdf["position"]["y"];
-        tgt.timestamp = SysTime.fromISOExtString(cast(string) asdf["timestamp"]).stdTime;
-
-        return tgt;
-    }
-}

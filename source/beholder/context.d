@@ -9,6 +9,7 @@ import beholder.render_state.render_state;
 import beholder.render_state.color_mask;
 import beholder.render_state.depth_test;
 import beholder.draw_state;
+import beholder.scene.scene_state;
 
 enum CullFace { front, back, frontAndBack, }
 
@@ -79,14 +80,12 @@ struct Blending
     Color color = Color("#00000000");
 }
 
-struct SceneState
+enum PrimitiveType
 {
-
+    LineStrip,
 }
 
-enum PrimitiveType { one, two, }
-
-struct Context
+class Context
 {
     void clear(ref const(ClearState) clearState)
     {
@@ -117,9 +116,27 @@ struct Context
     }
 
     void draw(PrimitiveType primitiveType, int offset, int count, 
-        ref const(DrawState) drawState, ref const(SceneState) sceneState)
+        ref DrawState drawState, SceneState sceneState)
     {
-        assert(0);
+        with(drawState.vertexData)
+        {
+            import gfm.opengl : glDrawElements, GL_UNSIGNED_INT;
+
+            GLenum mode;
+
+            final switch (primitiveType)
+            {
+                case PrimitiveType.LineStrip : mode = GL_LINE_STRIP; break;
+            }
+
+            vao.bind();
+            runtimeCheck();
+
+            glDrawElements(mode, cast(int) count, indexKind(), cast(void *) offset);
+            vao.unbind();
+        }
+
+        runtimeCheck();
     }
 
 private:

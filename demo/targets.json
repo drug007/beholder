@@ -1,0 +1,38 @@
+[
+    {
+        "kind" : "Target",
+        "id" : {
+            "source" : 9,
+            "target" : 2
+        },
+        "position" : {
+            "x" : 2500,
+            "y" : 35000
+        },
+        "timestamp" : "2022-07-18T08:43:24.007729"
+    },
+    {
+        "kind" : "Target",
+        "id" : {
+            "source" : 9,
+            "target" : 2
+        },
+        "position" : {
+            "x" : -2500,
+            "y" : -35000
+        },
+        "timestamp" : "2022-07-18T08:43:23.67792"
+    },
+    {
+        "kind" : "Target",
+        "id" : {
+            "source" : 9,
+            "target" : 2
+        },
+        "position" : {
+            "x" : 0,
+            "y" : 0
+        },
+        "timestamp" : "2022-07-18T08:43:25.29767"
+    }
+]
