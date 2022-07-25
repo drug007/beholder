@@ -14,6 +14,7 @@ class Polyline : Renderable
 {
     PointC2f[][] data;
     DrawState drawState;
+    bool visible;
 
     this(RenderState renderState, GLProgram program, ref VertexData vertexData)
     {
@@ -23,6 +24,9 @@ class Polyline : Renderable
     override void render(Context ctx, ref SceneState sceneState)
     {
         import gfm.math : mat4f;
+
+        if (!visible)
+            return;
 
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);

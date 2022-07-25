@@ -55,9 +55,12 @@ auto points = [
 
 struct Stage
 {
+	import beholder.renderables.polyline : Polyline;
+
 @safe:
 	Target[] targets;
 	Beholder* beholder;
+	Polyline polyline;
 
 	@disable this();
 
@@ -69,7 +72,6 @@ struct Stage
 		import beholder.vertex_data.vertex_data;
 		import beholder.vertex_data.vertex_spec;
 		import beholder.draw_state;
-		import beholder.renderables.polyline;
 
         import gfm.opengl;
         import beholder.render_state.render_state : RenderState;
@@ -105,19 +107,30 @@ struct Stage
 		auto program = new GLProgram(program_source);
 
         auto vertexSpec = new VertexSpec!Vertex(program);
-		import std.algorithm : map;
-		import std.range : iota;
-		// auto indices = iota(0, cast(uint) targets.length);
-        // auto vertexData = new VertexData(vertexSpec, targets.map!(tgt=>Vertex(vec3f(tgt.position.x, tgt.position.y, 0))), indices);
-		auto indices = iota(0, cast(uint) points.length);
-		auto vertexData = new VertexData(vertexSpec, points, indices);
-        this.beholder.renderable ~= new Polyline(renderState, program, vertexData);
+		auto vertexData = new VertexData(
+			vertexSpec,
+			[Vertex(vec3f(0, 0, 0), vec4f(0, 0, 0, 0))],
+			[0u]
+		);
+		polyline = new Polyline(renderState, program, vertexData);
+        this.beholder.renderable ~= polyline;
 	}
 
 	void addTargets(Target[] targets) @trusted
 	{
 		this.targets ~= targets;
-        // this.beholder.renderable ~= new Polyline(renderState, program, vertexData);
+
+		if (!this.targets.length)
+			return;
+
+		import std.algorithm : map;
+		import std.range : iota;
+		import std.array : array;
+		auto newData = this.targets.map!(tgt=>Vertex(vec3f(tgt.position.x, tgt.position.y, 0), vec4f(1, 0, 1, 1))).array;
+		polyline.drawState.vertexData.vbo.setData(newData);
+		polyline.drawState.vertexData.ibo.setData(iota(0, cast(uint) newData.length).array);
+		
+		polyline.visible = true;
 	}
 }
 
