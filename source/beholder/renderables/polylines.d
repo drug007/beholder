@@ -1,11 +1,10 @@
 module beholder.renderables.polylines;
 
-import beholder.render_state.render_state;
-import beholder.vertex_data.vertex_data;
-import beholder.renderables.renderable;
+import beholder.render_state.render_state : RenderState;
+import beholder.vertex_data.vertex_data : VertexData;
+import beholder.renderables.renderable : Renderable;
 import beholder.scene.scene_state : SceneState;
 import beholder.draw_state : DrawState;
-import beholder.common;
 import beholder.context : Context, PrimitiveType, Program;
 
 class Polylines : Renderable
