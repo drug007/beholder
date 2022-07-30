@@ -37,11 +37,6 @@ class Beholder : SdlBackend
         renderable = null;
     }
 
-    void addData(PointC2f[] data)
-    {
-        _data ~= data;
-    }
-
     override void run() @trusted
     {
         super.run();
@@ -66,8 +61,6 @@ class Beholder : SdlBackend
 
 private:
     import beholder.context;
-
-    PointC2f[] _data;
 
     Context ctx;
     SceneState sceneState;
