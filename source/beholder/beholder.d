@@ -24,7 +24,7 @@ class Beholder : SdlBackend
         sceneState = new SceneState(w, h);
         sceneState.camera.halfWorldWidth = 40_000;
 		sceneState.camera.position = vec3f(0, 0, 0);
-		sceneState.camera.viewport(vec2i(1, 1));
+		sceneState.camera.viewport(vec2i(w, h));
 		sceneState.camera.updateMatrices();
 
         ctx = new Context();
@@ -55,6 +55,29 @@ class Beholder : SdlBackend
                 r.render(ctx, sceneState);
             }
         };
+
+        _sdlApp.addHandler!(_sdlApp.onMouseMotion)((ref const(_sdlApp.Event) event)
+        {
+            import gfm.sdl2 : SDL_BUTTON_RMASK;
+            if (event.motion.state & SDL_BUTTON_RMASK)
+            {
+                auto xmove = event.motion.xrel*sceneState.camera.halfWorldWidth*2/sceneState.camera.viewport.x;
+                auto ymove = event.motion.yrel*sceneState.camera.halfWorldWidth*2*sceneState.camera.aspectRatio/sceneState.camera.viewport.x;
+                sceneState.camera.position.x -= xmove;
+                sceneState.camera.position.y += ymove;
+                sceneState.camera.updateMatrices;
+                _sdlApp.invalidate;
+            }
+        });
+
+        _sdlApp.addHandler!(_sdlApp.onMouseWheel)((ref const(_sdlApp.Event) event)
+        {
+            enum Sensitivity = 40;
+            auto scaling = event.wheel.y/cast(float)sceneState.camera.viewport.y;
+            sceneState.camera.halfWorldWidth *= 1 - scaling*Sensitivity;
+            sceneState.camera.updateMatrices;
+            _sdlApp.invalidate;
+        });
     }
 
     public Renderable[] renderable;

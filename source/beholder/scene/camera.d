@@ -13,9 +13,6 @@ class Camera
 		updateMatrices();
 	}
 
-	vec3f position;
-	float halfWorldWidth;
-
 	void updateMatrices()
 	{
 		_projection = mat4f.orthographic(-halfWorldWidth, +halfWorldWidth,-halfWorldWidth/_aspect_ratio, +halfWorldWidth/_aspect_ratio, -halfWorldWidth, +halfWorldWidth);
@@ -87,6 +84,9 @@ class Camera
 	{
 		return 2 * halfWorldWidth / _viewport.x;
 	}
+
+	vec3f position;
+	float halfWorldWidth;
 
 protected:
 
