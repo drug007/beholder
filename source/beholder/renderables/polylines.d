@@ -10,7 +10,6 @@ import beholder.context : Context, PrimitiveType, Program;
 
 class Polylines : Renderable
 {
-    PointC2f[][] data;
     DrawState drawState;
     bool visible;
 
