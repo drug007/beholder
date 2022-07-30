@@ -1,14 +1,12 @@
 module beholder.renderables.polyline.polyline;
 
-import gfm.opengl : GLProgram;
-
 import beholder.render_state.render_state;
 import beholder.vertex_data.vertex_data;
 import beholder.renderables.renderable;
 import beholder.scene.scene_state : SceneState;
 import beholder.draw_state : DrawState;
 import beholder.common;
-import beholder.context : Context, PrimitiveType;
+import beholder.context : Context, PrimitiveType, Program;
 
 class Polyline : Renderable
 {
@@ -16,7 +14,7 @@ class Polyline : Renderable
     DrawState drawState;
     bool visible;
 
-    this(RenderState renderState, GLProgram program, ref VertexData vertexData)
+    this(RenderState renderState, Program program, ref VertexData vertexData)
     {
         drawState = DrawState(renderState, program, vertexData);
     }

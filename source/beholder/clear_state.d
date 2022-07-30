@@ -2,16 +2,14 @@ module beholder.clear_state;
 
 import std.experimental.color : Color = RGBA8;
 
-import gfm.opengl : GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_STENCIL_BUFFER_BIT;
-
 import beholder.render_state.color_mask;
 
 
 enum ClearBuffers
 {
-    colorBuffer = GL_COLOR_BUFFER_BIT,
-    depthBuffer = GL_DEPTH_BUFFER_BIT,
-    stencilBuffer = GL_STENCIL_BUFFER_BIT,
+    colorBuffer,
+    depthBuffer,
+    stencilBuffer,
     colorAndDepthBuffer = colorBuffer | depthBuffer, 
     all = colorBuffer | depthBuffer | stencilBuffer,
 }

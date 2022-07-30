@@ -1,6 +1,6 @@
 module beholder.draw_state;
 
-import gfm.opengl : GLProgram, GLVAO;
+import beholder.context : Program;
 import beholder.render_state.render_state;
 import beholder.vertex_data.vertex_data;
 
@@ -8,7 +8,7 @@ struct DrawState
 {
     @disable this();
 
-    this(ref const(RenderState) renderState, GLProgram program, VertexData vertexData)
+    this(ref const(RenderState) renderState, Program program, VertexData vertexData)
     {
         this.renderState = renderState;
         this.program = program;
@@ -30,6 +30,6 @@ struct DrawState
     }
 
     RenderState renderState;
-    GLProgram   program;
+    Program     program;
     VertexData  vertexData;
 }

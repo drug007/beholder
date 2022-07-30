@@ -64,8 +64,8 @@ struct Stage
 		import beholder.vertex_data.vertex_data;
 		import beholder.vertex_data.vertex_spec;
 		import beholder.draw_state;
+		import beholder.context : Context;
 
-        import gfm.opengl;
         import beholder.render_state.render_state : RenderState;
 
         auto renderState = RenderState();
@@ -98,7 +98,7 @@ struct Stage
 				#endif
 			";
 
-		auto program = new GLProgram(program_source);
+		auto program = Context.makeProgram(program_source);
 
         auto vertexSpec = new VertexSpec!Vertex(program);
 		auto vertexData = new VertexData(

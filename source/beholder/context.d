@@ -3,6 +3,8 @@ module beholder.context;
 import std.experimental.color : Color = RGBA8;
 
 import gfm.opengl;
+public import gfm.opengl : Program = GLProgram, VertexSpecification,
+    Buffer = GLBuffer, VAO = GLVAO;
 
 import beholder.clear_state;
 import beholder.render_state.render_state;
@@ -83,7 +85,17 @@ struct Blending
 
 enum PrimitiveType
 {
-    LineStrip,
+    Points                 = GL_POINTS,
+    Lines                  = GL_LINES,
+    LineLoop               = GL_LINE_LOOP,
+    LineStrip              = GL_LINE_STRIP,
+    Triangles              = GL_TRIANGLES,
+    TriangleStrip          = GL_TRIANGLE_STRIP,
+    TriangleFan            = GL_TRIANGLE_FAN,
+    LinesAdjacency         = GL_LINES_ADJACENCY,
+    LineStripAdjacency     = GL_LINE_STRIP_ADJACENCY,
+    TrianglesAdjacency     = GL_TRIANGLES_ADJACENCY,
+    TriangleStripAdjacency = GL_TRIANGLE_STRIP_ADJACENCY,
 }
 
 class Context
@@ -125,21 +137,39 @@ class Context
         {
             import gfm.opengl : glDrawElements, GL_UNSIGNED_INT;
 
-            GLenum mode;
-
-            final switch (primitiveType)
-            {
-                case PrimitiveType.LineStrip : mode = GL_LINE_STRIP; break;
-            }
-
             vao.bind();
             runtimeCheck();
 
-            glDrawElements(mode, cast(int) count, indexKind(), cast(void *) offset);
+            glDrawElements(primitiveType, cast(int) count, indexKind(), cast(void *) offset);
             vao.unbind();
         }
 
         runtimeCheck();
+    }
+
+    static auto makeProgram(string source)
+    {
+        return new GLProgram(source);
+    }
+
+    static auto makeVertexSpecification(Vertex)(Program program)
+    {
+        return new VertexSpecification!Vertex(program);
+    }
+
+    static auto makeBuffer(GLuint target, GLuint usage)
+    {
+        return new GLBuffer(target, usage);
+    }
+
+    static auto makeBuffer(T)(GLuint target, GLuint usage, T[] buffer)
+    {
+        return new GLBuffer(target, usage, buffer);
+    }
+
+    static auto makeVAO()
+    {
+        return new GLVAO();
     }
 
 private:
@@ -233,4 +263,30 @@ private:
 
     RenderState _renderState = RenderState();
     version(none) GLFBO _boundFBO, _setFBO;
+}
+    
+void runtimeCheck() @trusted
+{
+    GLint r = glGetError();
+    if (r != GL_NO_ERROR)
+    {
+        string errorString = getErrorString(r);
+        version(none) flushGLErrors(); // flush other errors if any
+        throw new OpenGLException(errorString);
+    }
+}
+
+string getErrorString(GLint r) pure nothrow
+{
+    switch(r)
+    {
+        case GL_NO_ERROR:          return "GL_NO_ERROR";
+        case GL_INVALID_ENUM:      return "GL_INVALID_ENUM";
+        case GL_INVALID_VALUE:     return "GL_INVALID_VALUE";
+        case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
+        case GL_OUT_OF_MEMORY:     return "GL_OUT_OF_MEMORY";
+        case GL_STACK_OVERFLOW:    return "GL_STACK_OVERFLOW";
+        case GL_STACK_UNDERFLOW:   return "GL_STACK_UNDERFLOW";
+        default:                   return "Unknown OpenGL error";
+    }
 }

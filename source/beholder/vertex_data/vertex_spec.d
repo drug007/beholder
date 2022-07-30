@@ -2,9 +2,7 @@ module beholder.vertex_data.vertex_spec;
 
 interface IVertexSpec
 {
-	import gfm.opengl : GLuint;
-
-	void use(GLuint divisor = 0);
+	void use(uint divisor = 0);
 
     /// Unuse this vertex specification. If you are using a VAO, you don't need to call it,
     /// since the attributes would be tied to the VAO activation.
@@ -18,14 +16,14 @@ interface IVertexSpec
 
 final class VertexSpec(Vertex) : IVertexSpec
 {
-	import gfm.opengl : GLProgram, VertexSpecification;
+	import beholder.context : Context, Program, VertexSpecification;
 
-	this(GLProgram program)
+	this(Program program)
 	{
-		_vs = new VertexSpecification!Vertex(program);
+		_vs = Context.makeVertexSpecification!Vertex(program);
 	}
 
-	void use(GLuint divisor = 0)
+	void use(uint divisor = 0)
 	{
 		_vs.use(divisor);
 	}

@@ -1,29 +1,26 @@
 module beholder.vertex_data.vertex_data;
 
-import gfm.opengl;
-
 import beholder.vertex_data.vertex_spec;
 
 class VertexData
 {
 	import std.range : isInputRange;
+	import beholder.context : Context, Buffer, VAO;
 
     @disable this();
 	
 	this(IVertexSpec vertSpec)
 	{
-		import gfm.opengl : GL_UNSIGNED_INT;
+		import gfm.opengl : GL_UNSIGNED_INT, GL_ARRAY_BUFFER, GL_STATIC_DRAW,
+			GL_ELEMENT_ARRAY_BUFFER;
 
 		_indexKind = GL_UNSIGNED_INT;
 		_indexTypeSize = 4;
-		
-		import gfm.opengl : GL_ARRAY_BUFFER, GL_STATIC_DRAW,
-			GL_ELEMENT_ARRAY_BUFFER;
 
-		this.vbo = new GLBuffer(GL_ARRAY_BUFFER, GL_STATIC_DRAW);
-		this.ibo = new GLBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
 		this.vertSpec = vertSpec;
-		this.vao = new GLVAO();
+		this.vbo = Context.makeBuffer(GL_ARRAY_BUFFER, GL_STATIC_DRAW);
+		this.ibo = Context.makeBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STATIC_DRAW);
+		this.vao = Context.makeVAO();
 	}
 
 	this(V, I)(IVertexSpec vertSpec, V vertices, I indices)
@@ -100,10 +97,12 @@ class VertexData
 	auto indexKind() { return _indexKind; }
 	auto indexSize() { return _indexTypeSize; }
 
+	import gfm.opengl : GLenum;
+
 	private GLenum _indexKind;
 	private ubyte  _indexTypeSize;
 
-	GLBuffer vbo, ibo;
-	GLVAO    vao;
+	Buffer vbo, ibo;
+	VAO    vao;
 	IVertexSpec vertSpec;
 }

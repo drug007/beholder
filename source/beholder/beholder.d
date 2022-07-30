@@ -65,37 +65,10 @@ class Beholder : SdlBackend
     public Renderable[] renderable;
 
 private:
-    import gfm.opengl;
     import beholder.context;
 
     PointC2f[] _data;
 
     Context ctx;
     SceneState sceneState;
-    
-    void runtimeCheck() @trusted
-    {
-        GLint r = glGetError();
-        if (r != GL_NO_ERROR)
-        {
-            string errorString = getErrorString(r);
-            version(none) flushGLErrors(); // flush other errors if any
-            throw new OpenGLException(errorString);
-        }
-    }
-
-    string getErrorString(GLint r) pure nothrow
-    {
-        switch(r)
-        {
-            case GL_NO_ERROR:          return "GL_NO_ERROR";
-            case GL_INVALID_ENUM:      return "GL_INVALID_ENUM";
-            case GL_INVALID_VALUE:     return "GL_INVALID_VALUE";
-            case GL_INVALID_OPERATION: return "GL_INVALID_OPERATION";
-            case GL_OUT_OF_MEMORY:     return "GL_OUT_OF_MEMORY";
-            case GL_STACK_OVERFLOW:    return "GL_STACK_OVERFLOW";
-            case GL_STACK_UNDERFLOW:   return "GL_STACK_UNDERFLOW";
-            default:                   return "Unknown OpenGL error";
-        }
-    }
 }
