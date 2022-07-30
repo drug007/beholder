@@ -8,6 +8,7 @@ import beholder.clear_state;
 import beholder.render_state.render_state;
 import beholder.render_state.color_mask;
 import beholder.render_state.depth_test;
+import beholder.render_state.primitive_restart;
 import beholder.draw_state;
 import beholder.scene.scene_state;
 
@@ -15,7 +16,7 @@ enum CullFace { front, back, frontAndBack, }
 
 enum WindingOrder { clockwise, counterclockwise, }
 
-enum EnableCap { depthTest, }
+enum EnableCap { depthTest = GL_DEPTH_TEST, primitiveRestart = GL_PRIMITIVE_RESTART, }
 
 struct FacetCulling
 {
@@ -118,6 +119,8 @@ class Context
     void draw(PrimitiveType primitiveType, int offset, int count, 
         ref DrawState drawState, SceneState sceneState)
     {
+        applyPrimitiveRestart(drawState.renderState.primitiveRestart);
+
         with(drawState.vertexData)
         {
             import gfm.opengl : glDrawElements, GL_UNSIGNED_INT;
@@ -199,6 +202,24 @@ private:
             if (_renderState.depthTest.func != depthTest.func)
                 glDepthFunc(depthTest.func);
             _renderState.depthTest.func = depthTest.func;
+        }
+    }
+
+    void applyPrimitiveRestart(ref const(PrimitiveRestart) primitiveRestart)
+    {
+        if (_renderState.primitiveRestart.enabled != primitiveRestart.enabled)
+        {
+            enable(EnableCap.primitiveRestart, primitiveRestart.enabled);
+            _renderState.primitiveRestart.enabled = primitiveRestart.enabled;
+        }
+
+        if (primitiveRestart.enabled)
+        {
+            if (_renderState.primitiveRestart.index != primitiveRestart.index)
+            {
+                glPrimitiveRestartIndex(primitiveRestart.index);
+                _renderState.primitiveRestart.index = primitiveRestart.index;
+            }
         }
     }
 

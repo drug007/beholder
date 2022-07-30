@@ -10,7 +10,7 @@ struct DrawState
 
     this(ref const(RenderState) renderState, GLProgram program, VertexData vertexData)
     {
-        this.renderState = &renderState;
+        this.renderState = renderState;
         this.program = program;
         this.vertexData = vertexData;
     }
@@ -29,7 +29,7 @@ struct DrawState
         }
     }
 
-    const(RenderState)* renderState;
-    GLProgram           program;
-    VertexData          vertexData;
+    RenderState renderState;
+    GLProgram   program;
+    VertexData  vertexData;
 }

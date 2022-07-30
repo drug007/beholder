@@ -38,27 +38,19 @@ struct Vertex
 	vec4f color;
 }
 
-import gfm.math : vec3f, vec4f;
-auto points = [
-	Vertex(vec3f(2500.0,  25000.0, 0), vec4f(1.0, 0.0, 1.0, 1.0)),
-	Vertex(vec3f(2500.0,  35000.0, 0), vec4f(1.0, 0.0, 1.0, 1.0)),
-	Vertex(vec3f(5000.0,  35000.0, 0), vec4f(1.0, 0.0, 1.0, 1.0)),
-	Vertex(vec3f(5000.0,  25000.0, 0), vec4f(1.0, 0.0, 1.0, 1.0)),
-	Vertex(vec3f(2500.0,  25000.0, 0), vec4f(1.0, 0.0, 1.0, 1.0)),
-
-	Vertex(vec3f(7500.0,  23000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
-	Vertex(vec3f(7500.0,  33000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
-	Vertex(vec3f(9000.0,  33000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
-	Vertex(vec3f(9000.0,  23000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
-	Vertex(vec3f(7500.0,  23000.0, 0), vec4f(0.0, 1.0, 1.0, 1.0)),
-];
-
 struct Stage
 {
 	import beholder.renderables.polyline : Polyline;
 
+	import gfm.math : vec3f, vec4f;
+
+	alias TargetIndex = uint;
+
+	enum PrimitiveRestartIndex = 0xFFFF;
+
 @safe:
 	Target[] targets;
+	TargetIndex[][typeof(Target.Id.source)] tracks;
 	Beholder* beholder;
 	Polyline polyline;
 
@@ -77,6 +69,8 @@ struct Stage
         import beholder.render_state.render_state : RenderState;
 
         auto renderState = RenderState();
+		renderState.primitiveRestart.enabled = true;
+		renderState.primitiveRestart.index = PrimitiveRestartIndex;
 
         const program_source =
 				"#version 330 core
@@ -118,7 +112,14 @@ struct Stage
 
 	void addTargets(Target[] targets) @trusted
 	{
-		this.targets ~= targets;
+		foreach(t; targets)
+		{
+			this.targets ~= t;
+
+			import std : castFrom;
+			assert(this.targets.length);
+			tracks[t.id.source] ~= castFrom!ulong.to!TargetIndex(this.targets.length - 1);
+		}
 
 		if (!this.targets.length)
 			return;
@@ -126,9 +127,17 @@ struct Stage
 		import std.algorithm : map;
 		import std.range : iota;
 		import std.array : array;
-		auto newData = this.targets.map!(tgt=>Vertex(vec3f(tgt.position.x, tgt.position.y, 0), vec4f(1, 0, 1, 1))).array;
+		auto newData = this.targets.map!(tgt=>Vertex(vec3f(tgt.position.x, tgt.position.y, 0), vec4f(tgt.id.source == 17 ? 0.9 : 0, 0.6, 0.7, 1))).array;
 		polyline.drawState.vertexData.vbo.setData(newData);
-		polyline.drawState.vertexData.ibo.setData(iota(0, cast(uint) newData.length).array);
+
+		TargetIndex[] indices;
+		foreach (track; tracks)
+		{
+			if (track.length > 1)
+				indices ~= track ~ PrimitiveRestartIndex;
+		}
+
+		polyline.drawState.vertexData.ibo.setData(indices);
 		
 		polyline.visible = true;
 	}
