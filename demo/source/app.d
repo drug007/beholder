@@ -162,6 +162,9 @@ struct Stage
 	}
 }
 
+// Global flag to communicate to other threads
+__gshared bool __global_running = true;
+
 alias DataChunk = shared(const(Target))[];
 
 int main(string[] args) @safe
@@ -199,6 +202,10 @@ int main(string[] args) @safe
 
 	beholder.run();
 
+	() @trusted {
+		__global_running = false;
+	} ();
+
 	// TODO:
 	// Добавить управление камерой
 	// Трассы имеют тип линии
@@ -229,6 +236,11 @@ void loadData(Tid ownerTid, string filename)
 	size_t i = step;
 	for(; i < data.length; i += step)
 	{
+		if (!__global_running)
+		{
+			writefln("Main thread has been stopped");
+			return;
+		}
 		writefln("sent %s..%s", i-step, i);
 		send(ownerTid, data[i - step..i]);
 		Thread.sleep(1000.msecs);
