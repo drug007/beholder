@@ -1,16 +1,14 @@
-module beholder.renderables.polyline.polyline;
+module beholder.renderables.points;
 
-import beholder.render_state.render_state;
-import beholder.vertex_data.vertex_data;
-import beholder.renderables.renderable;
+import beholder.render_state.render_state : RenderState;
+import beholder.vertex_data.vertex_data : VertexData;
+import beholder.renderables.renderable : Renderable;
 import beholder.scene.scene_state : SceneState;
 import beholder.draw_state : DrawState;
-import beholder.common;
 import beholder.context : Context, PrimitiveType, Program;
 
-class Polyline : Renderable
+class Points : Renderable
 {
-    PointC2f[][] data;
     DrawState drawState;
     bool visible;
 
@@ -31,6 +29,9 @@ class Polyline : Renderable
         drawState.program.use();
         scope(exit) drawState.program.unuse();
 
-        ctx.draw(PrimitiveType.LineStrip, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
+        import gfm.opengl;
+        glPointSize(5);
+
+        ctx.draw(PrimitiveType.Points, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
     }
 }

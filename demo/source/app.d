@@ -41,6 +41,7 @@ struct Vertex
 struct Stage
 {
 	import beholder.renderables.polylines : Polylines;
+	import beholder.renderables.points : Points;
 
 	import gfm.math : vec3f, vec4f;
 
@@ -53,6 +54,7 @@ struct Stage
 	TargetIndex[][typeof(Target.Id.source)] tracks;
 	Beholder* beholder;
 	Polylines polylines;
+	Points    points;
 
 	@disable this();
 
@@ -108,6 +110,9 @@ struct Stage
 		);
 		polylines = new Polylines(renderState, program, vertexData);
         this.beholder.renderable ~= polylines;
+
+		points = new Points(renderState, program, vertexData);
+		this.beholder.renderable ~= points;
 	}
 
 	void addTargets(Target[] targets) @trusted
@@ -141,6 +146,7 @@ struct Stage
 				vec4f(tgt.id.source == 17 ? 0.9 : 0, 0.6, 0.7, 1)
 			)).array;
 		polylines.drawState.vertexData.vbo.setData(newData);
+		points.drawState.vertexData.vbo.setData(newData);
 
 		TargetIndex[] indices;
 		foreach (track; tracks)
@@ -149,8 +155,10 @@ struct Stage
 		}
 
 		polylines.drawState.vertexData.ibo.setData(indices);
+		points.drawState.vertexData.ibo.setData(indices);
 		
 		polylines.visible = true;
+		points.visible = true;
 	}
 }
 
