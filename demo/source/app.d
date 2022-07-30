@@ -114,6 +114,14 @@ struct Stage
 	{
 		foreach(t; targets)
 		{
+			// prevent index overflow
+			if (targets.length >= TargetIndex.max)
+			{
+				import std.stdio : writeln;
+				writeln("Index exceeds max possible value. No data added.");
+				break;
+			}
+
 			this.targets ~= t;
 
 			import std : castFrom;
@@ -127,14 +135,17 @@ struct Stage
 		import std.algorithm : map;
 		import std.range : iota;
 		import std.array : array;
-		auto newData = this.targets.map!(tgt=>Vertex(vec3f(tgt.position.x, tgt.position.y, 0), vec4f(tgt.id.source == 17 ? 0.9 : 0, 0.6, 0.7, 1))).array;
+		auto newData = this.targets.map!(
+			tgt=>Vertex(
+				vec3f(tgt.position.x, tgt.position.y, 0), 
+				vec4f(tgt.id.source == 17 ? 0.9 : 0, 0.6, 0.7, 1)
+			)).array;
 		polylines.drawState.vertexData.vbo.setData(newData);
 
 		TargetIndex[] indices;
 		foreach (track; tracks)
 		{
-			if (track.length > 1)
-				indices ~= track ~ PrimitiveRestartIndex;
+			indices ~= track ~ PrimitiveRestartIndex;
 		}
 
 		polylines.drawState.vertexData.ibo.setData(indices);
