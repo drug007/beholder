@@ -201,6 +201,42 @@ int main(string[] args) @safe
 		};
 	} ();
 
+
+	import nanogui : Window;
+	Window exitWindow;
+
+	() @trusted {
+		import nanogui;
+
+		auto colWidth  = [6,  0, 70, 0, 6]; // columns width
+		auto rowHeight = [6, 30,  5, 0, 6]; // rows height
+	
+		exitWindow = new Window(beholder, "Question");
+		auto layout = new AdvancedGridLayout(colWidth, rowHeight);
+		exitWindow.layout = layout;
+
+		auto btnOk = new Button(exitWindow, "Yes");
+		btnOk.callback = () { beholder.close; };
+		auto btnCancel = new Button(exitWindow, "No");
+		btnCancel.callback = () { exitWindow.visible = false; };
+
+		auto content = new Label(exitWindow, "Are you really want to exit?");
+		layout.setAnchor(content,   AdvancedGridLayout.Anchor(1, 1, 3, 1, Alignment.Middle, Alignment.Middle));
+		layout.setAnchor(btnOk,     AdvancedGridLayout.Anchor(1, 3, 1, 1));
+		layout.setAnchor(btnCancel, AdvancedGridLayout.Anchor(3, 3, 1, 1));
+
+		// now we should do layout manually yet
+		beholder.performLayout();
+
+		exitWindow.visible = false;
+
+		const x = (beholder.width  - exitWindow.width) / 2;
+		const y = (beholder.height - exitWindow.height) / 2;
+		exitWindow.position = Vector2i(x, y);
+	} ();
+
+	beholder.onClose = () { exitWindow.visible = true; return false; };
+
 	beholder.run();
 
 	() @trusted {
@@ -210,7 +246,7 @@ int main(string[] args) @safe
 	// TODO:
 	// Вывод текущих параметров (положение курсора, камеры, масштаб)
 	// Добавить поддержку кадров (группирования разнородных данных)
-	// Диалоговое окно при выходе
+	// Сделать диалоговое окно при выходе модальным
 	// Обработка изменения размеров окна
 	// Загрузка текстур
 	// Управление отображением данных
