@@ -37,6 +37,11 @@ class Beholder : SdlBackend
         renderable = null;
     }
 
+    void performLayout() @trusted
+    {
+        super.performLayout(super.ctx);
+    }
+
     override void run() @trusted
     {
         super.run();
@@ -54,6 +59,7 @@ class Beholder : SdlBackend
             {
                 r.render(ctx, sceneState);
             }
+            draw(super.ctx);
         };
 
         _sdlApp.addHandler!(_sdlApp.onMouseMotion)((ref const(_sdlApp.Event) event)
@@ -66,8 +72,9 @@ class Beholder : SdlBackend
                 sceneState.camera.position.x -= xmove;
                 sceneState.camera.position.y += ymove;
                 sceneState.camera.updateMatrices;
-                _sdlApp.invalidate;
+                return true;
             }
+            return false;
         });
 
         _sdlApp.addHandler!(_sdlApp.onMouseWheel)((ref const(_sdlApp.Event) event)
@@ -76,7 +83,7 @@ class Beholder : SdlBackend
             auto scaling = event.wheel.y/cast(float)sceneState.camera.viewport.y;
             sceneState.camera.halfWorldWidth *= 1 - scaling*Sensitivity;
             sceneState.camera.updateMatrices;
-            _sdlApp.invalidate;
+            return true;
         });
     }
 

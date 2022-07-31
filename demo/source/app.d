@@ -188,6 +188,7 @@ int main(string[] args) @safe
 	}
 
 	scope beholder = new Beholder(1000, 800, "Demo");
+	beholder.clearEnabled = false;
 	auto stage = Stage(beholder);
 
 	() @trusted {
