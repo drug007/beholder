@@ -203,39 +203,57 @@ int main(string[] args) @safe
 
 
 	import nanogui : Window;
-	Window exitWindow;
+	import info_window, exit_window;
+
+	ExitWindow exitWindow;
+	InfoWindow infoWindow;
+
+	infoWindow = new InfoWindow(beholder);
+	exitWindow = new ExitWindow(beholder);
 
 	() @trusted {
 		import nanogui;
 
-		auto colWidth  = [6,  0, 70, 0, 6]; // columns width
-		auto rowHeight = [6, 30,  5, 0, 6]; // rows height
-	
-		exitWindow = new Window(beholder, "Question");
-		auto layout = new AdvancedGridLayout(colWidth, rowHeight);
-		exitWindow.layout = layout;
+		exitWindow.btnYes.callback = () { beholder.close; };
+		exitWindow.btnNo.callback  = () { exitWindow.visible = false; };
 
-		auto btnOk = new Button(exitWindow, "Yes");
-		btnOk.callback = () { beholder.close; };
-		auto btnCancel = new Button(exitWindow, "No");
-		btnCancel.callback = () { exitWindow.visible = false; };
-
-		auto content = new Label(exitWindow, "Are you really want to exit?");
-		layout.setAnchor(content,   AdvancedGridLayout.Anchor(1, 1, 3, 1, Alignment.Middle, Alignment.Middle));
-		layout.setAnchor(btnOk,     AdvancedGridLayout.Anchor(1, 3, 1, 1));
-		layout.setAnchor(btnCancel, AdvancedGridLayout.Anchor(3, 3, 1, 1));
-
-		// now we should do layout manually yet
+		// now we should do layout manually yet for the first time
 		beholder.performLayout();
-
-		exitWindow.visible = false;
 
 		const x = (beholder.width  - exitWindow.width) / 2;
 		const y = (beholder.height - exitWindow.height) / 2;
 		exitWindow.position = Vector2i(x, y);
+		infoWindow.position = Vector2i(0, 0);
 	} ();
 
 	beholder.onClose = () { exitWindow.visible = true; return false; };
+
+	beholder.onMouseMotion = delegate(ref const(beholder.Event) event)
+	{
+		() @trusted
+		{
+			import std.conv : to;
+			import gfm.math : vec2i;
+			auto mcoord = vec2i(event.motion.x, event.motion.y);
+			auto ray = beholder.sceneState.camera.rayFromMouseCoord(mcoord);
+			infoWindow.xValue.caption = ray.x.to!string;
+			infoWindow.yValue.caption = ray.y.to!string;
+			infoWindow.camX.caption = beholder.sceneState.camera.position.x.to!string;
+			infoWindow.camY.caption = beholder.sceneState.camera.position.y.to!string;
+			infoWindow.scale.caption = (2*beholder.sceneState.camera.halfWorldWidth).to!string;
+		} ();
+		return false;
+	};
+
+	beholder.onMouseWheel = delegate(ref const(beholder.Event) event)
+	{
+		() @trusted
+		{
+			import std.conv : to;
+			infoWindow.scale.caption = (2*beholder.sceneState.camera.halfWorldWidth).to!string;
+		} ();
+		return false;
+	};
 
 	beholder.run();
 
@@ -244,7 +262,6 @@ int main(string[] args) @safe
 	} ();
 
 	// TODO:
-	// Вывод текущих параметров (положение курсора, камеры, масштаб)
 	// Добавить поддержку кадров (группирования разнородных данных)
 	// Сделать диалоговое окно при выходе модальным
 	// Обработка изменения размеров окна

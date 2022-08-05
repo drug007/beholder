@@ -87,11 +87,22 @@ class Beholder : SdlBackend
         });
     }
 
+    auto onMouseMotion(bool delegate(ref const(Event) event) handler) @trusted
+    {
+        return _sdlApp.addHandler!(_sdlApp.onMouseMotion)(handler);
+    }
+
+    auto onMouseWheel(bool delegate(ref const(Event) event) handler) @trusted
+    {
+        return _sdlApp.addHandler!(_sdlApp.onMouseWheel)(handler);
+    }
+
+    alias Event = _sdlApp.Event;
     public Renderable[] renderable;
+    public SceneState sceneState;
 
 private:
     import beholder.context;
 
     Context ctx;
-    SceneState sceneState;
 }
