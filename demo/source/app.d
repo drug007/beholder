@@ -66,7 +66,6 @@ struct Stage
 		import beholder.vertex_data.vertex_data;
 		import beholder.vertex_data.vertex_spec;
 		import beholder.draw_state;
-		import beholder.context : Context;
 
         import beholder.render_state.render_state : RenderState;
 
@@ -74,44 +73,19 @@ struct Stage
 		renderState.primitiveRestart.enabled = true;
 		renderState.primitiveRestart.index = PrimitiveRestartIndex;
 
-        const program_source =
-				"#version 330 core
+		auto program1 = createProgram1();
 
-				#if VERTEX_SHADER
-				layout(location = 0) in vec3 position;
-				layout(location = 1) in vec4 color;
-				out vec4 vColor;
-				uniform mat4 mvp_matrix;
-				void main()
-				{
-					gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
-					vColor = color;
-				}
-				#endif
+        auto vertexSpec1 = new VertexSpec!Vertex(program1);
 
-				#if FRAGMENT_SHADER
-				in vec4 vColor;
-				out vec4 color_out;
-
-				void main()
-				{
-					color_out = vColor;
-				}
-				#endif
-			";
-
-		auto program = Context.makeProgram(program_source);
-
-        auto vertexSpec = new VertexSpec!Vertex(program);
-		auto vertexData = new VertexData(
-			vertexSpec,
+		auto vertexData1 = new VertexData(
+			vertexSpec1,
 			[Vertex(vec3f(0, 0, 0), vec4f(0, 0, 0, 0))],
 			[0u]
 		);
-		polylines = new Polylines(renderState, program, vertexData);
+		polylines = new Polylines(renderState, program1, vertexData1);
         this.beholder.renderable ~= polylines;
 
-		points = new Points(renderState, program, vertexData);
+		points = new Points(renderState, program1, vertexData1);
 		this.beholder.renderable ~= points;
 	}
 
@@ -159,6 +133,39 @@ struct Stage
 		
 		polylines.visible = true;
 		points.visible = true;
+	}
+
+	auto createProgram1() @trusted
+	{
+		import beholder.context : Context;
+
+        const program_source =
+				"#version 330 core
+
+				#if VERTEX_SHADER
+				layout(location = 0) in vec3 position;
+				layout(location = 1) in vec4 color;
+				out vec4 vColor;
+				uniform mat4 mvp_matrix;
+				void main()
+				{
+					gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
+					vColor = color;
+				}
+				#endif
+
+				#if FRAGMENT_SHADER
+				in vec4 vColor;
+				out vec4 color_out;
+
+				void main()
+				{
+					color_out = vColor;
+				}
+				#endif
+			";
+
+		return Context.makeProgram(program_source);
 	}
 }
 
