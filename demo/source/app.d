@@ -229,11 +229,20 @@ struct Stage
         		uniform sampler2D testTexture;
 				uniform float deltaTime;
 
+				const float PI = radians(180.0);
+
 				void main()
 				{
 					float dt = 1 - clamp(deltaTime, 0.0, 1.0);
 
-					vec4 s = texture(testTexture, vTexCoord);
+					vec2 decart = vTexCoord - 0.5;
+					float r = length(decart);
+					if (r >= 0.5)
+						discard;
+
+					float phi = atan(decart.x, decart.y);
+
+					vec4 s = texture(testTexture, vec2(r*2, (phi+PI)/2/PI));
 					float a = dt - 1.0/2048.0;
 					float b = dt + 1.0/2048.0;
 					float f = s.r + step(a,vTexCoord.y)*step(vTexCoord.y,b);
