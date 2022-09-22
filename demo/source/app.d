@@ -38,13 +38,23 @@ struct Vertex
 	vec4f color;
 }
 
+// Textured vertex
+struct TVertex
+{
+	import gfm.math : vec2f, vec3f, vec4f;
+
+	vec3f position;
+	vec4f color;
+	vec2f texCoord;
+}
+
 struct Stage
 {
 	import beholder.renderables.polylines : Polylines;
 	import beholder.renderables.points : Points;
 	import beholder.renderables.billboard : Billboard;
 
-	import gfm.math : vec3f, vec4f;
+	import gfm.math : vec2f, vec3f, vec4f;
 
 	alias TargetIndex = uint;
 
@@ -79,7 +89,7 @@ struct Stage
 		auto program2 = createProgram2();
 
         auto vertexSpec1 = new VertexSpec!Vertex(program1);
-		auto vertexSpec2 = new VertexSpec!Vertex(program2);
+		auto vertexSpec2 = new VertexSpec!TVertex(program2);
 
 		auto vertexData1 = new VertexData(
 			vertexSpec1,
@@ -89,12 +99,12 @@ struct Stage
 		auto billBoardVertexData = new VertexData(
 			vertexSpec2,
 			[
-				Vertex(vec3f(   0,    0, 0), vec4f(1, 0, 0, 1)),
-				Vertex(vec3f(1000,    0, 0), vec4f(0, 1, 0, 1)),
-				Vertex(vec3f(1000, 1000, 0), vec4f(0, 0, 1, 1)),
-				Vertex(vec3f(   0, 1000, 0), vec4f(0, 1, 1, 1))
+				TVertex(vec3f(12048,    0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
+				TVertex(vec3f(10000,    0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
+				TVertex(vec3f(12048, 2048, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
+				TVertex(vec3f(10000, 2048, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
 			],
-			[0u, 1u, 2u, 3u]
+			[0u, 1u, 3u, 0u, 3u, 2u]
 		);
 
 		polylines = new Polylines(renderState, program1, vertexData1);
@@ -197,22 +207,28 @@ struct Stage
 				#if VERTEX_SHADER
 				layout(location = 0) in vec3 position;
 				layout(location = 1) in vec4 color;
+				layout(location = 2) in vec2 texCoord;
 				out vec4 vColor;
+				out vec2 vTexCoord;
 				uniform mat4 mvp_matrix;
 				void main()
 				{
 					gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
 					vColor = color;
+    				vTexCoord = texCoord;
 				}
 				#endif
 
 				#if FRAGMENT_SHADER
 				in vec4 vColor;
+				in vec2 vTexCoord;
 				out vec4 color_out;
+        		uniform sampler2D testTexture;
 
 				void main()
 				{
-					color_out = vColor;
+					vec4 s = texture(testTexture, vTexCoord);
+					color_out = vec4(s.r, s.r, s.r, 1);
 				}
 				#endif
 			";
@@ -248,6 +264,10 @@ int main(string[] args) @safe
 
 	scope beholder = new Beholder(1000, 800, "Demo");
 	beholder.clearEnabled = false;
+	beholder.sceneState.camera.halfWorldWidth = 1_335;
+	beholder.sceneState.camera.position.x = 11_000;
+	beholder.sceneState.camera.position.y = 1_050;
+	() @trusted { beholder.sceneState.camera.updateMatrices; } ();
 	auto stage = Stage(beholder);
 
 	() @trusted {
