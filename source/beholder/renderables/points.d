@@ -30,7 +30,7 @@ class Points : Renderable
         scope(exit) drawState.program.unuse();
 
         import gfm.opengl;
-        glPointSize(5);
+        glPointSize(5); // TODO fix me
 
         ctx.draw(PrimitiveType.Points, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
     }
