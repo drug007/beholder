@@ -9,8 +9,11 @@ import beholder.context : Context, PrimitiveType, Program;
 
 class Billboard : Renderable
 {
+    import std.datetime : Duration;
     import gfm.opengl : GLTexture2D;
 
+    Duration deltaTime;
+	Duration updatePeriod;
     GLTexture2D texture;
     DrawState drawState;
     bool visible;
@@ -85,9 +88,12 @@ class Billboard : Renderable
         int texUnit = 0;
         texture.use(texUnit);
 
+        auto dt = cast(float)deltaTime.total!"hnsecs"/updatePeriod.total!"hnsecs";
+
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);
         drawState.program.uniform("testTexture").set(texUnit);
+        drawState.program.uniform("deltaTime").set(dt);
         drawState.program.use();
         scope(exit) drawState.program.unuse();
 

@@ -61,12 +61,15 @@ struct Stage
 	enum PrimitiveRestartIndex = 0xFFFF;
 
 @safe:
+	import std.datetime : Duration, SysTime;
+
 	Target[] targets;
 	TargetIndex[][typeof(Target.Id.source)] tracks;
 	Beholder* beholder;
 	Polylines polylines;
 	Points    points;
 	Billboard billboard;
+	SysTime   lastScanTimestamp;
 
 	@disable this();
 
@@ -224,11 +227,17 @@ struct Stage
 				in vec2 vTexCoord;
 				out vec4 color_out;
         		uniform sampler2D testTexture;
+				uniform float deltaTime;
 
 				void main()
 				{
+					float dt = 1 - clamp(deltaTime, 0.0, 1.0);
+
 					vec4 s = texture(testTexture, vTexCoord);
-					color_out = vec4(s.r, s.r, s.r, 1);
+					float a = dt - 1.0/2048.0;
+					float b = dt + 1.0/2048.0;
+					float f = s.r + step(a,vTexCoord.y)*step(vTexCoord.y,b);
+					color_out = vec4(f, f, f, 1);
 				}
 				#endif
 			";
@@ -244,7 +253,7 @@ alias DataChunk = shared(const(Target))[];
 
 int main(string[] args) @safe
 {
-	import std.datetime : msecs;
+	import std.datetime : msecs, Clock, seconds, SysTime;
 	import std.file : exists;
 
 	if (args.length < 2)
@@ -273,7 +282,26 @@ int main(string[] args) @safe
 	() @trusted {
 		spawn(&loadData, thisTid, filename);
 
+		stage.lastScanTimestamp = Clock.currTime;
+		stage.billboard.updatePeriod = 4.seconds;
+
 		beholder.onBeforeLoopStart = () @trusted {
+			beholder.invalidate;
+			auto currTimestamp = Clock.currTime;
+			if (currTimestamp > stage.lastScanTimestamp)
+			{
+				while (currTimestamp - stage.lastScanTimestamp > stage.billboard.updatePeriod)
+				{
+					stage.lastScanTimestamp += stage.billboard.updatePeriod;
+				}
+
+				stage.billboard.deltaTime = currTimestamp - stage.lastScanTimestamp;
+			}
+			else
+			{
+				// TODO log about error
+			}
+
 			receiveTimeout(0.msecs, (DataChunk p) {
 				stage.addTargets(cast(Target[]) p);
 			});
