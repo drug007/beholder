@@ -42,6 +42,7 @@ struct Stage
 {
 	import beholder.renderables.polylines : Polylines;
 	import beholder.renderables.points : Points;
+	import beholder.renderables.billboard : Billboard;
 
 	import gfm.math : vec3f, vec4f;
 
@@ -55,6 +56,7 @@ struct Stage
 	Beholder* beholder;
 	Polylines polylines;
 	Points    points;
+	Billboard billboard;
 
 	@disable this();
 
@@ -74,19 +76,35 @@ struct Stage
 		renderState.primitiveRestart.index = PrimitiveRestartIndex;
 
 		auto program1 = createProgram1();
+		auto program2 = createProgram2();
 
         auto vertexSpec1 = new VertexSpec!Vertex(program1);
+		auto vertexSpec2 = new VertexSpec!Vertex(program2);
 
 		auto vertexData1 = new VertexData(
 			vertexSpec1,
 			[Vertex(vec3f(0, 0, 0), vec4f(0, 0, 0, 0))],
 			[0u]
 		);
+		auto billBoardVertexData = new VertexData(
+			vertexSpec2,
+			[
+				Vertex(vec3f(   0,    0, 0), vec4f(1, 0, 0, 1)),
+				Vertex(vec3f(1000,    0, 0), vec4f(0, 1, 0, 1)),
+				Vertex(vec3f(1000, 1000, 0), vec4f(0, 0, 1, 1)),
+				Vertex(vec3f(   0, 1000, 0), vec4f(0, 1, 1, 1))
+			],
+			[0u, 1u, 2u, 3u]
+		);
+
 		polylines = new Polylines(renderState, program1, vertexData1);
         this.beholder.renderable ~= polylines;
 
 		points = new Points(renderState, program1, vertexData1);
 		this.beholder.renderable ~= points;
+
+		billboard = new Billboard(renderState, program2, billBoardVertexData);
+		this.beholder.renderable ~= billboard;
 	}
 
 	void addTargets(Target[] targets) @trusted
@@ -133,9 +151,43 @@ struct Stage
 		
 		polylines.visible = true;
 		points.visible = true;
+		billboard.visible = true;
 	}
 
 	auto createProgram1() @trusted
+	{
+		import beholder.context : Context;
+
+        const program_source =
+				"#version 330 core
+
+				#if VERTEX_SHADER
+				layout(location = 0) in vec3 position;
+				layout(location = 1) in vec4 color;
+				out vec4 vColor;
+				uniform mat4 mvp_matrix;
+				void main()
+				{
+					gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
+					vColor = color;
+				}
+				#endif
+
+				#if FRAGMENT_SHADER
+				in vec4 vColor;
+				out vec4 color_out;
+
+				void main()
+				{
+					color_out = vColor;
+				}
+				#endif
+			";
+
+		return Context.makeProgram(program_source);
+	}
+
+	auto createProgram2() @trusted
 	{
 		import beholder.context : Context;
 
