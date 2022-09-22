@@ -60,8 +60,8 @@ class Billboard : Renderable
 
 			texture = new GLTexture2D();
 
-			texture.setMinFilter(GL_LINEAR_MIPMAP_LINEAR);
-			texture.setMagFilter(GL_LINEAR);
+			texture.setMinFilter(GL_NEAREST);
+			texture.setMagFilter(GL_NEAREST);
 			texture.setWrapS(GL_REPEAT);
 			texture.setWrapT(GL_REPEAT);
 			texture.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);

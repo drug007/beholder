@@ -230,10 +230,11 @@ struct Stage
 				uniform float deltaTime;
 
 				const float PI = radians(180.0);
+				const vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
 
 				void main()
 				{
-					float dt = 1 - clamp(deltaTime, 0.0, 1.0);
+					float dt = clamp(deltaTime, 0.0, 1.0);
 
 					vec2 decart = vTexCoord - 0.5;
 					float r = length(decart);
@@ -242,10 +243,17 @@ struct Stage
 
 					float phi = atan(decart.x, decart.y);
 
-					vec4 s = texture(testTexture, vec2(r*2, (phi+PI)/2/PI));
-					float a = dt - 1.0/2048.0;
-					float b = dt + 1.0/2048.0;
-					float f = s.r + step(a,vTexCoord.y)*step(vTexCoord.y,b);
+					vec2 polarCoord = vec2(r*2, (phi+PI)/2/PI);
+					if (polarCoord.y >= dt)
+					{
+						color_out = black;
+						return;
+					}
+					vec4 s = texture(testTexture, polarCoord);
+					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
+					float a = dt - 2.0/2048.0;
+					float b = dt + 2.0/2048.0; 
+					float f = clamp(s.r + step(a,polarCoord.y)*step(polarCoord.y,b), 0.0, 1.0);
 					color_out = vec4(f, f, f, 1);
 				}
 				#endif
