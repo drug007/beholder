@@ -23,6 +23,15 @@ final class VertexSpec(Vertex) : IVertexSpec
 		_vs = Context.makeVertexSpecification!Vertex(program);
 	}
 
+    ~this()
+    {
+        if (_vs)
+        {
+            destroy(_vs);
+            _vs = null;
+        }
+    }
+
 	void use(uint divisor = 0)
 	{
 		_vs.use(divisor);

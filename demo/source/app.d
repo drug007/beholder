@@ -242,7 +242,7 @@ struct Stage
 						color_out = black;
 						return;
 					}
-					vec4 s = texture(backTex, polarCoord);
+					vec4 s = texture(frontTex, polarCoord);
 					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 

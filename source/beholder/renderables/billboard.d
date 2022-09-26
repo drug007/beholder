@@ -40,13 +40,14 @@ class Billboard : Renderable
         auto internalProgram = createInternalProgram();
         auto vs = new VertexSpec!TVertex(internalProgram);
 
+        enum s = 2048/4;
 		auto internalVertexData = new VertexData(
 			vs,
 			[
-				TVertex(vec3f(12048,    0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
-				TVertex(vec3f(10000,    0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
-				TVertex(vec3f(12048, 2048, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
-				TVertex(vec3f(10000, 2048, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
+				TVertex(vec3f(s+10000, 0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
+				TVertex(vec3f(  10000, 0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
+				TVertex(vec3f(s+10000, s, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
+				TVertex(vec3f(  10000, s, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
 			],
 			[0u, 1u, 3u, 0u, 3u, 2u]
 		);
@@ -149,7 +150,7 @@ class Billboard : Renderable
 
     override void render(Context ctx, ref SceneState sceneState)
     {
-        import gfm.math : mat4f;
+        import gfm.math : mat4f, vec2f;
         import gfm.opengl : glBindFramebuffer, GL_FRAMEBUFFER;
 
         if (!visible)
@@ -161,6 +162,8 @@ class Billboard : Renderable
         const texWidth = 2048/1;
         const texHeight = 2048/1;
         glViewport(0, 0, texWidth, texHeight);
+        scope(exit)
+            glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
         static float dt;
         static int frontTexUnit;
@@ -172,27 +175,74 @@ class Billboard : Renderable
         frontTex.use(frontTexUnit);
         backTex.use(backTexUnit);
 
-        mat4f mvp = sceneState.camera.modelViewProjection;
-
-        _internalDrawState.program.uniform("tex").set(frontTexUnit);
+        mat4f mvp;
+        sceneState.camera.position.xy = vec2f(11200, 750);
+        sceneState.camera.updateMatrices;
+        mvp = sceneState.camera.modelViewProjection;
+// #1
+        _internalDrawState.program.uniform("tex").set(backTexUnit);
         _internalDrawState.program.uniform("mvp_matrix").set(mvp);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
         _internalDrawState.program.unuse();
 
-        drawState.program.uniform("mvp_matrix").set(mvp);
-        drawState.program.uniform("frontTex").set(frontTexUnit);
-        drawState.program.uniform("backTex").set(backTexUnit);
-        drawState.program.uniform("deltaTime").set(dt);
-        drawState.program.use();
+        glBindTexture(GL_TEXTURE_2D, frontTex.handle);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
+// #2
+
+        glViewport(0, 0, texWidth, texHeight);
+
+        frontTex.use(frontTexUnit);
+        backTex.use(backTexUnit);
+
+        sceneState.camera.position.xy = vec2f(10600, 750);
+        sceneState.camera.updateMatrices;
+        mvp = sceneState.camera.modelViewProjection;
+
+        _internalDrawState.program.uniform("tex").set(backTexUnit);
+        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
+        _internalDrawState.program.use();
+
+        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
+        _internalDrawState.program.unuse();
+// #3
 
-        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
-        drawState.program.unuse();
+        glViewport(0, 0, texWidth, texHeight);
+
+        frontTex.use(frontTexUnit);
+        backTex.use(backTexUnit);
+
+        sceneState.camera.position.xy = vec2f(10600, 1350);
+        sceneState.camera.updateMatrices;
+        mvp = sceneState.camera.modelViewProjection;
+
+        _internalDrawState.program.uniform("tex").set(frontTexUnit);
+        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
+        _internalDrawState.program.use();
+
+        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
+        _internalDrawState.program.unuse();
+
+// # 4
+        // drawState.program.uniform("mvp_matrix").set(mvp);
+        // drawState.program.uniform("frontTex").set(frontTexUnit);
+        // drawState.program.uniform("backTex").set(backTexUnit);
+        // drawState.program.uniform("deltaTime").set(dt);
+        // drawState.program.use();
+
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
+        // drawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
