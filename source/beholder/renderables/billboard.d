@@ -155,11 +155,6 @@ class Billboard : Renderable
         if (!visible)
             return;
 
-        int frontTexUnit = 0;
-        frontTex.use(frontTexUnit);
-        int backTexUnit = 1;
-        backTex.use(backTexUnit);
-
         import gfm.opengl;
         int[4] viewport;
         glGetIntegerv(GL_VIEWPORT, viewport.ptr);
@@ -167,7 +162,15 @@ class Billboard : Renderable
         const texHeight = 2048/1;
         glViewport(0, 0, texWidth, texHeight);
 
-        auto dt = cast(float)deltaTime.total!"hnsecs"/updatePeriod.total!"hnsecs";
+        static float dt;
+        static int frontTexUnit;
+        int backTexUnit;
+        auto newDt = cast(float)deltaTime.total!"hnsecs"/(updatePeriod.total!"hnsecs");
+        backTexUnit = (frontTexUnit + 1) % 2;
+        dt = newDt;
+
+        frontTex.use(frontTexUnit);
+        backTex.use(backTexUnit);
 
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);
@@ -182,15 +185,15 @@ class Billboard : Renderable
 
         drawState.program.unuse();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-        
+
         _internalDrawState.program.uniform("tex").set(frontTexUnit);
         _internalDrawState.program.uniform("mvp_matrix").set(mvp);
         _internalDrawState.program.use();
-        scope(exit) _internalDrawState.program.unuse();
 
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
+        _internalDrawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
