@@ -38,15 +38,7 @@ struct Vertex
 	vec4f color;
 }
 
-// Textured vertex
-struct TVertex
-{
-	import gfm.math : vec2f, vec3f, vec4f;
-
-	vec3f position;
-	vec4f color;
-	vec2f texCoord;
-}
+import beholder.renderables.billboard : TVertex;
 
 struct Stage
 {
@@ -226,7 +218,8 @@ struct Stage
 				in vec4 vColor;
 				in vec2 vTexCoord;
 				out vec4 color_out;
-        		uniform sampler2D testTexture;
+        		uniform sampler2D frontTex;
+        		uniform sampler2D backTex;
 				uniform float deltaTime;
 
 				const float PI = radians(180.0);
@@ -249,7 +242,7 @@ struct Stage
 						color_out = black;
 						return;
 					}
-					vec4 s = texture(testTexture, polarCoord);
+					vec4 s = texture(backTex, polarCoord);
 					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
@@ -288,7 +281,7 @@ int main(string[] args) @safe
 		return 2;
 	}
 
-	scope beholder = new Beholder(1000, 800, "Demo");
+	scope beholder = new Beholder(1024, 1024, "Demo");
 	beholder.clearEnabled = false;
 	beholder.sceneState.camera.halfWorldWidth = 1_335;
 	beholder.sceneState.camera.position.x = 11_000;
