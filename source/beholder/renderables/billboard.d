@@ -173,27 +173,26 @@ class Billboard : Renderable
         backTex.use(backTexUnit);
 
         mat4f mvp = sceneState.camera.modelViewProjection;
+
+        _internalDrawState.program.uniform("tex").set(frontTexUnit);
+        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
+        _internalDrawState.program.use();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
+        _internalDrawState.program.unuse();
+
         drawState.program.uniform("mvp_matrix").set(mvp);
         drawState.program.uniform("frontTex").set(frontTexUnit);
         drawState.program.uniform("backTex").set(backTexUnit);
         drawState.program.uniform("deltaTime").set(dt);
         drawState.program.use();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
-
-        drawState.program.unuse();
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
-        glClear(GL_COLOR_BUFFER_BIT);
+
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-
-        _internalDrawState.program.uniform("tex").set(frontTexUnit);
-        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
-        _internalDrawState.program.use();
-
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
-        _internalDrawState.program.unuse();
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
+        drawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
