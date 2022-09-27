@@ -38,7 +38,15 @@ struct Vertex
 	vec4f color;
 }
 
-import beholder.renderables.billboard : TVertex;
+// Textured vertex
+struct TVertex
+{
+	import gfm.math : vec2f, vec3f, vec4f;
+
+	vec3f position;
+	vec4f color;
+	vec2f texCoord;
+}
 
 struct Stage
 {
@@ -94,10 +102,10 @@ struct Stage
 		auto billBoardVertexData = new VertexData(
 			vertexSpec2,
 			[
-				TVertex(vec3f(12048,    0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
-				TVertex(vec3f(10000,    0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
-				TVertex(vec3f(12048, 2048, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
-				TVertex(vec3f(10000, 2048, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
+				TVertex(vec3f(2048,    0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
+				TVertex(vec3f(   0,    0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
+				TVertex(vec3f(2048, 2048, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
+				TVertex(vec3f(   0, 2048, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
 			],
 			[0u, 1u, 3u, 0u, 3u, 2u]
 		);
@@ -283,9 +291,9 @@ int main(string[] args) @safe
 
 	scope beholder = new Beholder(1024, 1024, "Demo");
 	beholder.clearEnabled = false;
-	beholder.sceneState.camera.halfWorldWidth = 1_335;
-	beholder.sceneState.camera.position.x = 11_000;
-	beholder.sceneState.camera.position.y = 1_050;
+	beholder.sceneState.camera.halfWorldWidth = 1_250;
+	beholder.sceneState.camera.position.x = 1000;
+	beholder.sceneState.camera.position.y = 1050;
 	() @trusted { beholder.sceneState.camera.updateMatrices; } ();
 	auto stage = Stage(beholder);
 

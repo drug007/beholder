@@ -1,5 +1,7 @@
 module beholder.renderables.billboard;
 
+import gfm.math : vec2f;
+
 import beholder.render_state.render_state : RenderState;
 import beholder.vertex_data.vertex_data : VertexData;
 import beholder.renderables.renderable : Renderable;
@@ -7,14 +9,10 @@ import beholder.scene.scene_state : SceneState;
 import beholder.draw_state : DrawState;
 import beholder.context : Context, PrimitiveType, Program;
 
-// Textured vertex
-struct TVertex
-{
-	import gfm.math : vec2f, vec3f, vec4f;
 
-	vec3f position;
-	vec4f color;
-	vec2f texCoord;
+struct Vertex
+{
+    vec2f position;
 }
 
 class Billboard : Renderable
@@ -35,19 +33,19 @@ class Billboard : Renderable
 
 		import beholder.vertex_data.vertex_data;
 		import beholder.vertex_data.vertex_spec;
-        import gfm.math : vec2f, vec3f, vec4f;
 
         auto internalProgram = createInternalProgram();
-        auto vs = new VertexSpec!TVertex(internalProgram);
+        auto vs = new VertexSpec!Vertex(internalProgram);
 
-        enum s = 2048/4;
-		auto internalVertexData = new VertexData(
+        enum shift_x = -0;//.0475;
+        enum shift_y = -0;//.0475;
+        auto internalVertexData = new VertexData(
 			vs,
 			[
-				TVertex(vec3f(s+10000, 0, 0), vec4f(0, 1, 0, 1), vec2f(1, 0)),
-				TVertex(vec3f(  10000, 0, 0), vec4f(0, 0, 1, 1), vec2f(0, 0)),
-				TVertex(vec3f(s+10000, s, 0), vec4f(1, 0, 0, 1), vec2f(1, 1)),
-				TVertex(vec3f(  10000, s, 0), vec4f(0, 1, 1, 1), vec2f(0, 1))
+                Vertex(vec2f( 0.5+shift_x, -0.5+shift_y)),
+				Vertex(vec2f(-0.5+shift_x, -0.5+shift_y)),
+				Vertex(vec2f( 0.5+shift_x,  0.5+shift_y)),
+				Vertex(vec2f(-0.5+shift_x,  0.5+shift_y))
 			],
 			[0u, 1u, 3u, 0u, 3u, 2u]
 		);
@@ -108,18 +106,26 @@ class Billboard : Renderable
                 frontTex.setWrapT(GL_REPEAT);
                 ubyte[] tmp;
                 tmp.length = surface.w * surface.h;
-                tmp[] = 0;
+                foreach(y; 0..surface.h)
+                    foreach(x; 0..surface.w)
+                    {
+                        // if (x < 1830)
+                            tmp[x + y*surface.pitch] = cast(ubyte) (255*x / cast(float) surface.w);
+                        // else
+                        //     tmp[x + y*surface.pitch] = (x%2) ? 255 : 0;
+                    }
+                // tmp[] = 0;
                 frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, tmp.ptr);
+                // frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);
                 frontTex.generateMipmap();
             }
 
             glGenFramebuffers(1, &_fboId);
             glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
-            scope(exit) glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                 GL_TEXTURE_2D, frontTex.handle, 0);
-
+            GLenum[1] DrawBuffers = [GL_COLOR_ATTACHMENT0];
+            glDrawBuffers(1, DrawBuffers.ptr);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
             //Проверим статус, чтоб убедиться что нет никаких ошибок
@@ -159,11 +165,8 @@ class Billboard : Renderable
         import gfm.opengl;
         int[4] viewport;
         glGetIntegerv(GL_VIEWPORT, viewport.ptr);
-        const texWidth = 2048/1;
-        const texHeight = 2048/1;
-        glViewport(0, 0, texWidth, texHeight);
-        scope(exit)
-            glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+        const texWidth =  2048;
+        const texHeight = 2048;
 
         static float dt;
         static int frontTexUnit;
@@ -175,19 +178,19 @@ class Billboard : Renderable
         frontTex.use(frontTexUnit);
         backTex.use(backTexUnit);
 
-        mat4f mvp;
-        sceneState.camera.position.xy = vec2f(11200, 750);
-        sceneState.camera.updateMatrices;
-        mvp = sceneState.camera.modelViewProjection;
 // #1
         _internalDrawState.program.uniform("tex").set(backTexUnit);
-        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0, 0, texWidth/2, texHeight/2);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        ctx.draw(PrimitiveType.LineStrip, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
         _internalDrawState.program.unuse();
+        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
         glBindTexture(GL_TEXTURE_2D, frontTex.handle);
         glGenerateMipmap(GL_TEXTURE_2D);
@@ -195,46 +198,24 @@ class Billboard : Renderable
 
 // #2
 
-        glViewport(0, 0, texWidth, texHeight);
+        // // glViewport(0, 0, texWidth, texHeight);
 
-        frontTex.use(frontTexUnit);
-        backTex.use(backTexUnit);
-
-        sceneState.camera.position.xy = vec2f(10600, 750);
-        sceneState.camera.updateMatrices;
-        mvp = sceneState.camera.modelViewProjection;
-
-        _internalDrawState.program.uniform("tex").set(backTexUnit);
-        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
-        _internalDrawState.program.use();
-
-        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
-        _internalDrawState.program.unuse();
+        // _internalDrawState.program.uniform("tex").set(backTexUnit);
+        // _internalDrawState.program.use();
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        // _internalDrawState.program.unuse();
 // #3
 
-        glViewport(0, 0, texWidth, texHeight);
-
-        frontTex.use(frontTexUnit);
-        backTex.use(backTexUnit);
-
-        sceneState.camera.position.xy = vec2f(10600, 1350);
-        sceneState.camera.updateMatrices;
-        mvp = sceneState.camera.modelViewProjection;
+        // glViewport(0, 0, texWidth, texHeight);
 
         _internalDrawState.program.uniform("tex").set(frontTexUnit);
-        _internalDrawState.program.uniform("mvp_matrix").set(mvp);
         _internalDrawState.program.use();
-
-        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) _internalDrawState.vertexData.ibo.size, _internalDrawState, sceneState);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         _internalDrawState.program.unuse();
 
 // # 4
+        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+        // mat4f mvp = sceneState.camera.modelViewProjection;
         // drawState.program.uniform("mvp_matrix").set(mvp);
         // drawState.program.uniform("frontTex").set(frontTexUnit);
         // drawState.program.uniform("backTex").set(backTexUnit);
@@ -253,15 +234,12 @@ class Billboard : Renderable
 				"#version 330 core
 
 				#if VERTEX_SHADER
-                layout(location = 0) in vec3 position;
-				layout(location = 1) in vec4 color;
-				layout(location = 2) in vec2 texCoord;
+                layout(location = 0) in vec2 position;
                 out vec2 vTexCoord;
-                uniform mat4 mvp_matrix;
                 void main()
                 {
-                    gl_Position = mvp_matrix * vec4(position.xyz, 1.0);
-                    vTexCoord = texCoord;
+                    gl_Position = vec4(position, 0.0, 1.0);
+                    vTexCoord = position.xy - vec2(0.5, 0.5);
                 }
 				#endif
 
@@ -271,7 +249,7 @@ class Billboard : Renderable
                 uniform sampler2D tex;
                 void main()
                 {
-                    FragOut = texture(tex, vTexCoord);
+                    FragOut = texture(tex, vTexCoord + vec2(0.0, 0.0));
                 }
 				#endif
 			";
