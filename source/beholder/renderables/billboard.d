@@ -22,7 +22,8 @@ class Billboard : Renderable
 
     Duration deltaTime;
 	Duration updatePeriod;
-    GLTexture2D frontTex, backTex, currTex;
+    GLTexture2D[2] bufferTex;
+    int frontTexUnit;
     DrawState drawState, _internalDrawState;
     private uint _fboId;
     bool visible;
@@ -98,34 +99,24 @@ class Billboard : Renderable
             signal.length = 16*2048;
             signal[] = 0;
 
+            foreach(i; 0..bufferTex.length)
             {
-                backTex = new GLTexture2D();
-                backTex.setMinFilter(GL_NEAREST);
-                backTex.setMagFilter(GL_NEAREST);
-                backTex.setWrapS(GL_REPEAT);
-                backTex.setWrapT(GL_REPEAT);
-                backTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, currentData.ptr);
-                backTex.generateMipmap();
-            }
-			{
-                frontTex = new GLTexture2D();
-                frontTex.setMinFilter(GL_NEAREST);
-                frontTex.setMagFilter(GL_NEAREST);
-                frontTex.setWrapS(GL_REPEAT);
-                frontTex.setWrapT(GL_REPEAT);
-                frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, currentData.ptr);
-                frontTex.generateMipmap();
+                bufferTex[i] = new GLTexture2D();
+                bufferTex[i].setMinFilter(GL_NEAREST);
+                bufferTex[i].setMagFilter(GL_NEAREST);
+                bufferTex[i].setWrapS(GL_REPEAT);
+                bufferTex[i].setWrapT(GL_REPEAT);
+                bufferTex[i].setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, currentData.ptr);
+                bufferTex[i].generateMipmap();
             }
 
             glGenFramebuffers(1, &_fboId);
             glBindFramebuffer(GL_FRAMEBUFFER, _fboId);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                GL_TEXTURE_2D, frontTex.handle, 0);
+                GL_TEXTURE_2D, bufferTex[frontTexUnit].handle, 0);
             GLenum[1] DrawBuffers = [GL_COLOR_ATTACHMENT0];
             glDrawBuffers(1, DrawBuffers.ptr);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-            currTex = frontTex;
 
             //Проверим статус, чтоб убедиться что нет никаких ошибок
             auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -135,16 +126,13 @@ class Billboard : Renderable
 
     ~this()
     {
-        currTex = null;
-        if (backTex)
+        foreach(i; 0..bufferTex.length)
         {
-            destroy(backTex);
-            backTex = null;
-        }
-        if (frontTex)
-        {
-            destroy(frontTex);
-            frontTex = null;
+            if (bufferTex[i])
+            {
+                destroy(bufferTex[i]);
+                bufferTex[i] = null;
+            }
         }
         if (_fboId)
         {
@@ -169,21 +157,17 @@ class Billboard : Renderable
         const texHeight = 2048;
 
         static float dt;
-        static int frontTexUnit;
-        int backTexUnit, currTexUnit = 2;
         auto newDt = cast(float)deltaTime.total!"hnsecs"/(updatePeriod.total!"hnsecs");
-        backTexUnit = (frontTexUnit + 1) % 2;
+        int backTexUnit = (frontTexUnit + 1) % 2;
         if (newDt < dt)
         {
             backTexUnit = frontTexUnit;
             frontTexUnit = (frontTexUnit + 1) % 2;
-            currTex = (currTex is frontTex) ? backTex : frontTex;
         }
         dt = newDt;
 
-        frontTex.use(0);
-        backTex.use(1);
-        currTex.use(2);
+        bufferTex[0].use(0);
+        bufferTex[1].use(1);
 
 // #1
         // _internalDrawState.program.uniform("tex").set(backTexUnit);
@@ -237,10 +221,10 @@ class Billboard : Renderable
         if (counter+1 < totalHeight/subHeight)
             counter++;
 
-        currTex.use;
+        bufferTex[frontTexUnit].use;
         glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, subWidth, subHeight, format, type, signal.ptr);
 
-		_internalDrawState.program.uniform("tex").set(currTexUnit);
+		_internalDrawState.program.uniform("tex").set(frontTexUnit);
         _internalDrawState.program.use();
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         _internalDrawState.program.unuse();
