@@ -37,15 +37,13 @@ class Billboard : Renderable
         auto internalProgram = createInternalProgram();
         auto vs = new VertexSpec!Vertex(internalProgram);
 
-        enum shift_x = -0;//.0475;
-        enum shift_y = -0;//.0475;
         auto internalVertexData = new VertexData(
 			vs,
 			[
-                Vertex(vec2f( 0.5+shift_x, -0.5+shift_y)),
-				Vertex(vec2f(-0.5+shift_x, -0.5+shift_y)),
-				Vertex(vec2f( 0.5+shift_x,  0.5+shift_y)),
-				Vertex(vec2f(-0.5+shift_x,  0.5+shift_y))
+                Vertex(vec2f( 1.0, -1.0)),
+				Vertex(vec2f(-1.0, -1.0)),
+				Vertex(vec2f( 1.0,  1.0)),
+				Vertex(vec2f(-1.0,  1.0))
 			],
 			[0u, 1u, 3u, 0u, 3u, 2u]
 		);
@@ -183,11 +181,10 @@ class Billboard : Renderable
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0, 0, texWidth/2, texHeight/2);
+        glViewport(0, 0, texWidth, texHeight);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        ctx.draw(PrimitiveType.LineStrip, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
         _internalDrawState.program.unuse();
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
@@ -195,35 +192,30 @@ class Billboard : Renderable
         glBindTexture(GL_TEXTURE_2D, frontTex.handle);
         glGenerateMipmap(GL_TEXTURE_2D);
         glBindTexture(GL_TEXTURE_2D, 0);
+        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
 // #2
-
-        // // glViewport(0, 0, texWidth, texHeight);
-
         // _internalDrawState.program.uniform("tex").set(backTexUnit);
         // _internalDrawState.program.use();
         // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         // _internalDrawState.program.unuse();
 // #3
 
-        // glViewport(0, 0, texWidth, texHeight);
-
-        _internalDrawState.program.uniform("tex").set(frontTexUnit);
-        _internalDrawState.program.use();
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        _internalDrawState.program.unuse();
+        // _internalDrawState.program.uniform("tex").set(frontTexUnit);
+        // _internalDrawState.program.use();
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        // _internalDrawState.program.unuse();
 
 // # 4
-        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-        // mat4f mvp = sceneState.camera.modelViewProjection;
-        // drawState.program.uniform("mvp_matrix").set(mvp);
-        // drawState.program.uniform("frontTex").set(frontTexUnit);
-        // drawState.program.uniform("backTex").set(backTexUnit);
-        // drawState.program.uniform("deltaTime").set(dt);
-        // drawState.program.use();
+        mat4f mvp = sceneState.camera.modelViewProjection;
+        drawState.program.uniform("mvp_matrix").set(mvp);
+        drawState.program.uniform("frontTex").set(frontTexUnit);
+        drawState.program.uniform("backTex").set(backTexUnit);
+        drawState.program.uniform("deltaTime").set(dt);
+        drawState.program.use();
 
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
-        // drawState.program.unuse();
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
+        drawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
@@ -238,8 +230,8 @@ class Billboard : Renderable
                 out vec2 vTexCoord;
                 void main()
                 {
-                    gl_Position = vec4(position, 0.0, 1.0);
-                    vTexCoord = position.xy - vec2(0.5, 0.5);
+                    gl_Position = vec4(position.xy, 0.0, 1.0);
+                    vTexCoord = position.xy/2 - 0.5;
                 }
 				#endif
 
@@ -249,7 +241,7 @@ class Billboard : Renderable
                 uniform sampler2D tex;
                 void main()
                 {
-                    FragOut = texture(tex, vTexCoord + vec2(0.0, 0.0));
+                    FragOut = texture(tex, vTexCoord);
                 }
 				#endif
 			";
