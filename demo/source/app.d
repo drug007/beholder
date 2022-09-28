@@ -255,8 +255,12 @@ struct Stage
 					if (unseen)
 						fr = vec4(0);
 
-					vec4 s = mix(fr, bk, 0.2);
-					// s.r = s.r * pow(1 - dt + polarCoord.y, 2);
+					vec4 s;
+					if (length(fr.rgb) > 0.1)
+						s = fr;
+					else
+						s = bk;
+					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
 					float f = clamp(s.r + step(a,polarCoord.y)*step(polarCoord.y,b), 0.0, 1.0);
