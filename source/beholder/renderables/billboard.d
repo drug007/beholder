@@ -163,6 +163,8 @@ class Billboard : Renderable
         {
             backTexUnit = frontTexUnit;
             frontTexUnit = (frontTexUnit + 1) % 2;
+            bufferTex[frontTexUnit].use;
+            glClear(GL_COLOR_BUFFER_BIT);
         }
         dt = newDt;
 
