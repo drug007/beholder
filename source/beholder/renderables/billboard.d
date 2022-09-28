@@ -22,7 +22,7 @@ class Billboard : Renderable
 
     Duration deltaTime;
 	Duration updatePeriod;
-    GLTexture2D frontTex, backTex, srcTex, currTex;
+    GLTexture2D frontTex, backTex, currTex;
     DrawState drawState, _internalDrawState;
     private uint _fboId;
     bool visible;
@@ -87,16 +87,6 @@ class Billboard : Renderable
             scope(exit)
                 SDL_FreeSurface(surface);
 
-			{
-                srcTex = new GLTexture2D();
-                srcTex.setMinFilter(GL_NEAREST);
-                srcTex.setMagFilter(GL_NEAREST);
-                srcTex.setWrapS(GL_REPEAT);
-                srcTex.setWrapT(GL_REPEAT);
-                srcTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);
-                srcTex.generateMipmap();
-            }
-
             ubyte[] tmp;
             tmp.length = surface.w * surface.h;
             tmp[] = 0;
@@ -149,11 +139,6 @@ class Billboard : Renderable
             destroy(frontTex);
             frontTex = null;
         }
-        if (srcTex)
-        {
-            destroy(srcTex);
-            srcTex = null;
-        }
         if (_fboId)
         {
             import gfm.opengl;
@@ -191,10 +176,9 @@ class Billboard : Renderable
 
         frontTex.use(0);
         backTex.use(1);
-        srcTex.use(2);
 
 // #1
-        _internalDrawState.program.uniform("tex").set(srcTexUnit);
+        _internalDrawState.program.uniform("tex").set(backTexUnit);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
