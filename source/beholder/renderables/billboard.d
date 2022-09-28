@@ -26,6 +26,8 @@ class Billboard : Renderable
     DrawState drawState, _internalDrawState;
     private uint _fboId;
     bool visible;
+    int counter = 1;
+    ubyte[] currentData, sourceData, signal;
 
     this(RenderState renderState, Program program, ref VertexData vertexData)
     {
@@ -87,17 +89,22 @@ class Billboard : Renderable
             scope(exit)
                 SDL_FreeSurface(surface);
 
-            ubyte[] tmp;
-            tmp.length = surface.w * surface.h;
-            tmp[] = 0;
-            
-			{
+            sourceData.length = surface.w * surface.h;
+            sourceData[] = (cast(ubyte*)surface.pixels)[0..sourceData.length];
+
+            currentData.length = surface.w * surface.h;
+            currentData[] = 0;
+
+            signal.length = 16*2048;
+            signal[] = 0;
+
+            {
                 backTex = new GLTexture2D();
                 backTex.setMinFilter(GL_NEAREST);
                 backTex.setMagFilter(GL_NEAREST);
                 backTex.setWrapS(GL_REPEAT);
                 backTex.setWrapT(GL_REPEAT);
-                backTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, tmp.ptr);
+                backTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, currentData.ptr);
                 backTex.generateMipmap();
             }
 			{
@@ -106,7 +113,7 @@ class Billboard : Renderable
                 frontTex.setMagFilter(GL_NEAREST);
                 frontTex.setWrapS(GL_REPEAT);
                 frontTex.setWrapT(GL_REPEAT);
-                frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, tmp.ptr);
+                frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, currentData.ptr);
                 frontTex.generateMipmap();
             }
 
@@ -163,7 +170,7 @@ class Billboard : Renderable
 
         static float dt;
         static int frontTexUnit;
-        int backTexUnit, srcTexUnit = 2;
+        int backTexUnit, currTexUnit = 2;
         auto newDt = cast(float)deltaTime.total!"hnsecs"/(updatePeriod.total!"hnsecs");
         backTexUnit = (frontTexUnit + 1) % 2;
         if (newDt < dt)
@@ -176,26 +183,27 @@ class Billboard : Renderable
 
         frontTex.use(0);
         backTex.use(1);
+        currTex.use(2);
 
 // #1
-        _internalDrawState.program.uniform("tex").set(backTexUnit);
-        _internalDrawState.program.use();
+        // _internalDrawState.program.uniform("tex").set(backTexUnit);
+        // _internalDrawState.program.use();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, currTex.handle, 0);
-        glViewport(0, 0, texWidth, texHeight);
-        glClear(GL_COLOR_BUFFER_BIT);
+        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+        //     GL_TEXTURE_2D, currTex.handle, 0);
+        // glViewport(0, 0, texWidth, texHeight);
+        // glClear(GL_COLOR_BUFFER_BIT);
 
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
-        _internalDrawState.program.unuse();
-        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
+        // _internalDrawState.program.unuse();
+        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
-        glBindTexture(GL_TEXTURE_2D, frontTex.handle);
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+        // glBindTexture(GL_TEXTURE_2D, frontTex.handle);
+        // glGenerateMipmap(GL_TEXTURE_2D);
+        // glBindTexture(GL_TEXTURE_2D, 0);
+        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
 // #2
         // _internalDrawState.program.uniform("tex").set(backTexUnit);
@@ -204,21 +212,49 @@ class Billboard : Renderable
         // _internalDrawState.program.unuse();
 // #3
 
-        // _internalDrawState.program.uniform("tex").set(frontTexUnit);
-        // _internalDrawState.program.use();
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        // _internalDrawState.program.unuse();
+        const totalWidth = 2048;
+        const totalHeight = 2048;
+        const pitch = 2048;
+        const subWidth = totalWidth;
+        const subHeight = 16;
+        const level = 0;
+        const xoffset = 0;
+        const format = GL_RED;
+        const type = GL_UNSIGNED_BYTE;
+
+        const yoffset = subHeight*(counter-1);
+
+        signal.length = subHeight*totalWidth;
+
+        foreach(y; 0..16)
+        {
+            foreach(x; 0..subWidth)
+            {
+                signal[x+y*pitch] = sourceData[x+(y+yoffset)*pitch];
+            }
+        }
+
+        if (counter+1 < totalHeight/subHeight)
+            counter++;
+
+        currTex.use;
+        glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, subWidth, subHeight, format, type, signal.ptr);
+
+		_internalDrawState.program.uniform("tex").set(currTexUnit);
+        _internalDrawState.program.use();
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        _internalDrawState.program.unuse();
 
 // # 4
-        mat4f mvp = sceneState.camera.modelViewProjection;
-        drawState.program.uniform("mvp_matrix").set(mvp);
-        drawState.program.uniform("frontTex").set(frontTexUnit);
-        drawState.program.uniform("backTex").set(backTexUnit);
-        drawState.program.uniform("deltaTime").set(dt);
-        drawState.program.use();
+        // mat4f mvp = sceneState.camera.modelViewProjection;
+        // drawState.program.uniform("mvp_matrix").set(mvp);
+        // drawState.program.uniform("frontTex").set(frontTexUnit);
+        // drawState.program.uniform("backTex").set(backTexUnit);
+        // drawState.program.uniform("deltaTime").set(dt);
+        // drawState.program.use();
 
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) drawState.vertexData.ibo.size, drawState, sceneState);
-        drawState.program.unuse();
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
+        // drawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
