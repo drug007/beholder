@@ -22,7 +22,7 @@ class Billboard : Renderable
 
     Duration deltaTime;
 	Duration updatePeriod;
-    GLTexture2D[2] bufferTex;
+    GLTexture2D[3] bufferTex;
     int frontTexUnit;
     DrawState drawState, _internalDrawState;
     private uint _fboId;
@@ -165,11 +165,14 @@ class Billboard : Renderable
             frontTexUnit = (frontTexUnit + 1) % 2;
             bufferTex[frontTexUnit].use;
             glClear(GL_COLOR_BUFFER_BIT);
+            uint z = 0;
+            glClearTexImage(bufferTex[2].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
         }
         dt = newDt;
 
         bufferTex[0].use(0);
         bufferTex[1].use(1);
+        bufferTex[2].use(2);
 
 // #1
         // _internalDrawState.program.uniform("tex").set(backTexUnit);
@@ -196,7 +199,7 @@ class Billboard : Renderable
         // _internalDrawState.program.use();
         // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         // _internalDrawState.program.unuse();
-// #3
+// #2.5
 
         const totalWidth = 2048;
         const totalHeight = 2048;
@@ -225,24 +228,50 @@ class Billboard : Renderable
         else
             counter = 1;
 
-        bufferTex[frontTexUnit].use;
+        bufferTex[2].use(2);
         glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, subWidth, subHeight, format, type, signal.ptr);
+        bufferTex[2].unuse;
 
-		_internalDrawState.program.uniform("tex").set(frontTexUnit);
+
+        bufferTex[frontTexUnit].use(frontTexUnit);
+        bufferTex[2].use(2);
+		_internalDrawState.program.uniform("frontTex").set(2);
+        _internalDrawState.program.uniform("backTex").set(backTexUnit);
         _internalDrawState.program.use();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, bufferTex[frontTexUnit].handle, 0);
+        glViewport(0, 0, texWidth, texHeight);
+        glClear(GL_COLOR_BUFFER_BIT);
+
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
         _internalDrawState.program.unuse();
+        glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+
+        // glBindTexture(GL_TEXTURE_2D, frontTex.handle);
+        // glGenerateMipmap(GL_TEXTURE_2D);
+        // glBindTexture(GL_TEXTURE_2D, 0);
+        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+
+        // // #3
+		// _internalDrawState.program.uniform("frontTex").set(frontTexUnit);
+        // _internalDrawState.program.uniform("backTex").set(backTexUnit);
+        // _internalDrawState.program.use();
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        // _internalDrawState.program.unuse();
 
 // # 4
-        // mat4f mvp = sceneState.camera.modelViewProjection;
-        // drawState.program.uniform("mvp_matrix").set(mvp);
-        // drawState.program.uniform("frontTex").set(frontTexUnit);
-        // drawState.program.uniform("backTex").set(backTexUnit);
-        // drawState.program.uniform("deltaTime").set(dt);
-        // drawState.program.use();
+        mat4f mvp = sceneState.camera.modelViewProjection;
+        drawState.program.uniform("mvp_matrix").set(mvp);
+        drawState.program.uniform("frontTex").set(frontTexUnit);
+        drawState.program.uniform("backTex").set(backTexUnit);
+        drawState.program.uniform("deltaTime").set(dt);
+        drawState.program.use();
 
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
-        // drawState.program.unuse();
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
+        drawState.program.unuse();
     }
 
     private final auto createInternalProgram() @trusted
@@ -265,10 +294,18 @@ class Billboard : Renderable
 				#if FRAGMENT_SHADER
 				in vec2 vTexCoord;
                 out vec4 FragOut;
-                uniform sampler2D tex;
+                uniform sampler2D backTex;
+                uniform sampler2D frontTex;
                 void main()
                 {
-                    FragOut = texture(tex, vTexCoord);
+                    // FragOut = texture(tex, vTexCoord);
+                    vec4 fr = texture(frontTex, vTexCoord);// * pow(1 - vTexCoord.y, 2);
+					vec4 bk = texture(backTex, vTexCoord);// * pow(1 - vTexCoord.y, 2);
+
+					if (length(fr.rgb) > 0.1)
+						FragOut = fr;
+					else
+						FragOut = vec4(bk.rgb*0.5, 1.0);
                 }
 				#endif
 			";

@@ -260,7 +260,7 @@ struct Stage
 						s = fr;
 					else
 						s = bk;
-					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
+					// s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
 					float f = clamp(s.r + step(a,polarCoord.y)*step(polarCoord.y,b), 0.0, 1.0);
@@ -298,7 +298,7 @@ int main(string[] args) @safe
 		return 2;
 	}
 
-	scope beholder = new Beholder(1024, 1024, "Demo");
+	scope beholder = new Beholder(512, 512, "Demo");
 	beholder.clearEnabled = false;
 	beholder.sceneState.camera.halfWorldWidth = 1_250;
 	beholder.sceneState.camera.position.x = 1000;
