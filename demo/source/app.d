@@ -245,13 +245,18 @@ struct Stage
 					float phi = atan(decart.x, decart.y);
 
 					vec2 polarCoord = vec2(r*2, (phi+PI)/2/PI);
-					if (polarCoord.y >= dt)
-					{
-						color_out = black;
-						return;
-					}
-					vec4 s = texture(frontTex, polarCoord);
-					s.r = s.r * pow(1 - dt + polarCoord.y, 2);
+
+					// Данная точка пространства еще не зондирована
+					bool unseen = polarCoord.y >= dt;
+
+					vec4 fr = texture(frontTex, polarCoord) /** pow(1 - dt + polarCoord.y, 2)*/;
+					vec4 bk = texture(backTex, polarCoord) /** pow(1 - dt - 0.5 + polarCoord.y, 2)*/;
+
+					if (unseen)
+						fr = vec4(0);
+
+					vec4 s = mix(fr, bk, 0.2);
+					// s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
 					float f = clamp(s.r + step(a,polarCoord.y)*step(polarCoord.y,b), 0.0, 1.0);

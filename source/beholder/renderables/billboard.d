@@ -22,7 +22,7 @@ class Billboard : Renderable
 
     Duration deltaTime;
 	Duration updatePeriod;
-    GLTexture2D frontTex, backTex;
+    GLTexture2D frontTex, backTex, srcTex, currTex;
     DrawState drawState, _internalDrawState;
     private uint _fboId;
     bool visible;
@@ -88,12 +88,26 @@ class Billboard : Renderable
                 SDL_FreeSurface(surface);
 
 			{
+                srcTex = new GLTexture2D();
+                srcTex.setMinFilter(GL_NEAREST);
+                srcTex.setMagFilter(GL_NEAREST);
+                srcTex.setWrapS(GL_REPEAT);
+                srcTex.setWrapT(GL_REPEAT);
+                srcTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);
+                srcTex.generateMipmap();
+            }
+
+            ubyte[] tmp;
+            tmp.length = surface.w * surface.h;
+            tmp[] = 0;
+            
+			{
                 backTex = new GLTexture2D();
                 backTex.setMinFilter(GL_NEAREST);
                 backTex.setMagFilter(GL_NEAREST);
                 backTex.setWrapS(GL_REPEAT);
                 backTex.setWrapT(GL_REPEAT);
-                backTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);
+                backTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, tmp.ptr);
                 backTex.generateMipmap();
             }
 			{
@@ -102,19 +116,7 @@ class Billboard : Renderable
                 frontTex.setMagFilter(GL_NEAREST);
                 frontTex.setWrapS(GL_REPEAT);
                 frontTex.setWrapT(GL_REPEAT);
-                ubyte[] tmp;
-                tmp.length = surface.w * surface.h;
-                foreach(y; 0..surface.h)
-                    foreach(x; 0..surface.w)
-                    {
-                        // if (x < 1830)
-                            tmp[x + y*surface.pitch] = cast(ubyte) (255*x / cast(float) surface.w);
-                        // else
-                        //     tmp[x + y*surface.pitch] = (x%2) ? 255 : 0;
-                    }
-                // tmp[] = 0;
                 frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, tmp.ptr);
-                // frontTex.setImage(0, GL_RGB, surface.w, surface.h, 0, GL_RED, GL_UNSIGNED_BYTE, surface.pixels);
                 frontTex.generateMipmap();
             }
 
@@ -126,6 +128,8 @@ class Billboard : Renderable
             glDrawBuffers(1, DrawBuffers.ptr);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+            currTex = frontTex;
+
             //Проверим статус, чтоб убедиться что нет никаких ошибок
             auto status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
             assert(status == GL_FRAMEBUFFER_COMPLETE, "FBOError " ~ text(status));
@@ -134,6 +138,7 @@ class Billboard : Renderable
 
     ~this()
     {
+        currTex = null;
         if (backTex)
         {
             destroy(backTex);
@@ -143,6 +148,11 @@ class Billboard : Renderable
         {
             destroy(frontTex);
             frontTex = null;
+        }
+        if (srcTex)
+        {
+            destroy(srcTex);
+            srcTex = null;
         }
         if (_fboId)
         {
@@ -168,19 +178,28 @@ class Billboard : Renderable
 
         static float dt;
         static int frontTexUnit;
-        int backTexUnit;
+        int backTexUnit, srcTexUnit = 2;
         auto newDt = cast(float)deltaTime.total!"hnsecs"/(updatePeriod.total!"hnsecs");
         backTexUnit = (frontTexUnit + 1) % 2;
+        if (newDt < dt)
+        {
+            backTexUnit = frontTexUnit;
+            frontTexUnit = (frontTexUnit + 1) % 2;
+            currTex = (currTex is frontTex) ? backTex : frontTex;
+        }
         dt = newDt;
 
-        frontTex.use(frontTexUnit);
-        backTex.use(backTexUnit);
+        frontTex.use(0);
+        backTex.use(1);
+        srcTex.use(2);
 
 // #1
-        _internalDrawState.program.uniform("tex").set(backTexUnit);
+        _internalDrawState.program.uniform("tex").set(srcTexUnit);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, currTex.handle, 0);
         glViewport(0, 0, texWidth, texHeight);
         glClear(GL_COLOR_BUFFER_BIT);
 
