@@ -220,6 +220,8 @@ class Billboard : Renderable
 
         if (counter+1 < totalHeight/subHeight)
             counter++;
+        else
+            counter = 1;
 
         bufferTex[frontTexUnit].use;
         glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, subWidth, subHeight, format, type, signal.ptr);
