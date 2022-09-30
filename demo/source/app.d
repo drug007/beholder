@@ -300,9 +300,9 @@ int main(string[] args) @safe
 
 	scope beholder = new Beholder(1024, 1024, "Demo");
 	beholder.clearEnabled = false;
-	beholder.sceneState.camera.halfWorldWidth = 1_250;
-	beholder.sceneState.camera.position.x = 1000;
-	beholder.sceneState.camera.position.y = 1050;
+	beholder.sceneState.camera.halfWorldWidth = 1027;
+	beholder.sceneState.camera.position.x = 1027;
+	beholder.sceneState.camera.position.y = 1030;
 	() @trusted { beholder.sceneState.camera.updateMatrices; } ();
 	auto stage = Stage(beholder);
 
