@@ -203,7 +203,7 @@ class Billboard : Renderable
 
         signal.length = subHeight*totalWidth;
 
-        foreach(y; 0..16)
+        foreach(y; 0..subHeight)
         {
             foreach(x; 0..subWidth)
             {
@@ -224,9 +224,6 @@ class Billboard : Renderable
         int lastLine = (yoffset+subHeight);
         if (lastLine < oldLastLine)
         {
-            // Меняем буферы местами
-            backTexUnit = frontTexUnit;
-            frontTexUnit = (frontTexUnit + 1) % 2;
             uint z = 0;
             glClearTexImage(bufferTex[frontTexUnit].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
             glClearTexImage(bufferTex[2].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
@@ -244,7 +241,6 @@ class Billboard : Renderable
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             GL_TEXTURE_2D, bufferTex[frontTexUnit].handle, 0);
         glViewport(0, 0, texWidth, texHeight);
-        glClear(GL_COLOR_BUFFER_BIT);
 
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
@@ -258,29 +254,33 @@ class Billboard : Renderable
 
 		import std.datetime;
 		import core.thread;
-		Thread.sleep(10.msecs);
+		Thread.sleep(30.msecs);
 
-        // #3
-		_internalDrawState.program.uniform("resolution").set(vec2f(viewport[2], viewport[3]));
-		_internalDrawState.program.uniform("flag").set(true);
-		_internalDrawState.program.uniform("lastLine").set(lastLine/4);
-		_internalDrawState.program.uniform("frontTex").set(frontTexUnit);
-        _internalDrawState.program.uniform("backTex").set(backTexUnit);
-        _internalDrawState.program.use();
+        // // #3
+		// _internalDrawState.program.uniform("resolution").set(vec2f(viewport[2], viewport[3]));
+		// _internalDrawState.program.uniform("flag").set(true);
+		// _internalDrawState.program.uniform("lastLine").set(lastLine/2);
+		// _internalDrawState.program.uniform("frontTex").set(frontTexUnit);
+        // _internalDrawState.program.uniform("backTex").set(backTexUnit);
+        // _internalDrawState.program.use();
 
-        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        _internalDrawState.program.unuse();
+        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+        // _internalDrawState.program.unuse();
 
-// // # 4
-//         mat4f mvp = sceneState.camera.modelViewProjection;
-//         drawState.program.uniform("mvp_matrix").set(mvp);
-//         drawState.program.uniform("frontTex").set(frontTexUnit);
-//         drawState.program.uniform("backTex").set(backTexUnit);
-//         drawState.program.uniform("deltaTime").set(lastLine/cast(float)2048);
-//         drawState.program.use();
+// # 4
+        mat4f mvp = sceneState.camera.modelViewProjection;
+        drawState.program.uniform("mvp_matrix").set(mvp);
+        drawState.program.uniform("frontTex").set(frontTexUnit);
+        drawState.program.uniform("backTex").set(backTexUnit);
+        drawState.program.uniform("deltaTime").set(lastLine/cast(float)2048);
+        drawState.program.use();
 
-//         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
-//         drawState.program.unuse();
+        ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
+        drawState.program.unuse();
+
+        // Меняем буферы местами
+        backTexUnit = frontTexUnit;
+        frontTexUnit = (frontTexUnit + 1) % 2;
     }
 
     private final auto createInternalProgram() @trusted
@@ -322,10 +322,20 @@ class Billboard : Renderable
                     }
                     else
                     {
-                        if (length(fr.rgb) > 0.1)
-                            FragOut = vec4(fr.rgb * factor, 1.0);
+                        float factor = 0.99;
+                        if (gl_FragCoord.y > lastLine-16 && gl_FragCoord.y <= lastLine)
+                        {
+                            if (fr.r > 0.01)
+                            {
+                                FragOut = vec4(fr.rgb, 1.0);
+                            }
+                            else
+                            {
+                                FragOut = vec4(bk.rgb * factor, 1.0);
+                            }
+                        }
                         else
-                            FragOut = vec4(0.9*bk.rgb, 1.0);
+                            FragOut = vec4(bk.rgb * factor, 1.0);
                     }
 
                     if (flag && (gl_FragCoord.y > (lastLine - 1)) && (gl_FragCoord.y < (lastLine + 1)))

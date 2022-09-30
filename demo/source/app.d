@@ -298,7 +298,7 @@ int main(string[] args) @safe
 		return 2;
 	}
 
-	scope beholder = new Beholder(512, 512, "Demo");
+	scope beholder = new Beholder(1024, 1024, "Demo");
 	beholder.clearEnabled = false;
 	beholder.sceneState.camera.halfWorldWidth = 1_250;
 	beholder.sceneState.camera.position.x = 1000;
