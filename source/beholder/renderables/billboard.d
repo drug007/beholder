@@ -201,13 +201,17 @@ class Billboard : Renderable
 
         const yoffset = subHeight*(counter-1);
 
+        static int shift = 0;
+        const shifting_speed = 2;
+
         signal.length = subHeight*totalWidth;
 
         foreach(y; 0..subHeight)
         {
             foreach(x; 0..subWidth)
             {
-                signal[x+y*pitch] = sourceData[x+(y+yoffset)*pitch];
+                const y2 = (y+yoffset+shift) % totalHeight;
+                signal[x+y*pitch] = sourceData[x+y2*pitch];
             }
         }
 
@@ -224,6 +228,7 @@ class Billboard : Renderable
         int lastLine = (yoffset+subHeight);
         if (lastLine < oldLastLine)
         {
+            shift += shifting_speed;
             uint z = 0;
             glClearTexImage(bufferTex[frontTexUnit].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
             glClearTexImage(bufferTex[2].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
