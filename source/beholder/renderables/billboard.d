@@ -96,7 +96,7 @@ class Billboard : Renderable
             currentData.length = surface.w * surface.h;
             currentData[] = 0;
 
-            signal.length = 16*2048;
+            signal.length = 8*2048;
             signal[] = 0;
 
             foreach(i; 0..bufferTex.length)
@@ -193,7 +193,7 @@ class Billboard : Renderable
         const totalHeight = 2048;
         const pitch = 2048;
         const subWidth = totalWidth;
-        const subHeight = 16;
+        const subHeight = 8;
         const level = 0;
         const xoffset = 0;
         const format = GL_RED;
@@ -323,7 +323,7 @@ class Billboard : Renderable
                     else
                     {
                         float factor = 0.99;
-                        if (gl_FragCoord.y > lastLine-16 && gl_FragCoord.y <= lastLine)
+                        if (gl_FragCoord.y > lastLine-8 && gl_FragCoord.y <= lastLine)
                         {
                             if (fr.r > 0.01)
                             {
