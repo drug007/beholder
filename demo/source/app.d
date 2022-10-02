@@ -232,6 +232,7 @@ struct Stage
 
 				const float PI = radians(180.0);
 				const vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
+				const vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
 
 				void main()
 				{
@@ -243,28 +244,13 @@ struct Stage
 						discard;
 
 					float phi = atan(decart.x, decart.y);
-
 					vec2 polarCoord = vec2(r*2, (phi+PI)/2/PI);
+					vec4 fr = texture(frontTex, polarCoord);
 
-					// Данная точка пространства еще не зондирована
-					bool unseen = polarCoord.y >= dt;
-
-					vec4 fr = texture(frontTex, polarCoord) /** pow(1 - dt + polarCoord.y, 2)*/;
-					vec4 bk = texture(backTex, polarCoord) /** pow(1 - dt - 0.5 + polarCoord.y, 2)*/;
-
-					if (unseen)
-						fr = vec4(0);
-
-					vec4 s;
-					if (length(fr.rgb) > 0.1)
-						s = fr;
-					else
-						s = bk;
-					// s.r = s.r * pow(1 - dt + polarCoord.y, 2);
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
-					float f = clamp(s.r + step(a,polarCoord.y)*step(polarCoord.y,b), 0.0, 1.0);
-					color_out = vec4(f, f, f, 1);
+					float t = step(a,polarCoord.y)*step(polarCoord.y,b);
+					FragOut = white*t + fr*(1-t);
 				}
 				#endif
 			";
