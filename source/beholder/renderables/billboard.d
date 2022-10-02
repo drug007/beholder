@@ -94,10 +94,8 @@ class Billboard : Renderable
             sourceData[] = (cast(ubyte*)surface.pixels)[0..sourceData.length];
 
             currentData.length = surface.w * surface.h;
-            currentData[] = 0;
 
             signal.length = 8*2048;
-            signal[] = 0;
 
             foreach(i; 0..bufferTex.length)
             {
@@ -251,11 +249,6 @@ class Billboard : Renderable
         glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
         _internalDrawState.program.unuse();
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-
-        // glBindTexture(GL_TEXTURE_2D, frontTex.handle);
-        // glGenerateMipmap(GL_TEXTURE_2D);
-        // glBindTexture(GL_TEXTURE_2D, 0);
-        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
 		import std.datetime;
 		import core.thread;

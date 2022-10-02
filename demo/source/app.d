@@ -225,7 +225,7 @@ struct Stage
 				#if FRAGMENT_SHADER
 				in vec4 vColor;
 				in vec2 vTexCoord;
-				out vec4 color_out;
+				out vec4 FragOut;
         		uniform sampler2D frontTex;
         		uniform sampler2D backTex;
 				uniform float deltaTime;
