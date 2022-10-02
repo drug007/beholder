@@ -306,6 +306,11 @@ class Billboard : Renderable
                 uniform int lastLine;
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
+
+                const vec4 newColorMax = vec4((10*16+0)/255.0, (11*16+15)/255.0, (5*16+12)/255.0, 1.0); //A0BF5C;
+                const vec4 newColorMin = vec4((11*16+15)/255.0, (11*16+8)/255.0, (0*16+0)/255.0, 1.0); //BFB800;
+                const vec4 afterglowColor = vec4(0, (10*16+8)/255.0, 1.0, 1.0); // 00A8FF
+
                 void main()
                 {
                     vec4 fr = texture(frontTex, vTexCoord);// * pow(1 - vTexCoord.y, 2);
@@ -325,7 +330,7 @@ class Billboard : Renderable
                         {
                             if (fr.r > 0.01)
                             {
-                                FragOut = vec4(fr.rgb, 1.0);
+                                FragOut = mix(newColorMin, newColorMax, fr.r);
                             }
                             else
                             {
