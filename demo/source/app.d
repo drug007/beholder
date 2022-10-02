@@ -232,7 +232,7 @@ struct Stage
 
 				const float PI = radians(180.0);
 				const vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
-				const vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
+				const vec4 beam = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
 
 				void main()
 				{
@@ -250,7 +250,7 @@ struct Stage
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 
 					float t = step(a,polarCoord.y)*step(polarCoord.y,b);
-					FragOut = white*t + fr*(1-t);
+					FragOut = beam*t + fr*(1-t);
 				}
 				#endif
 			";
