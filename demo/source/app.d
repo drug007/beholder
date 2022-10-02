@@ -323,13 +323,15 @@ int main(string[] args) @safe
 
 
 	import nanogui : Window;
-	import info_window, exit_window;
+	import info_window, exit_window, tuning_window;
 
 	ExitWindow exitWindow;
 	InfoWindow infoWindow;
+	TuningWindow tuningWindow;
 
 	infoWindow = new InfoWindow(beholder);
 	exitWindow = new ExitWindow(beholder);
+	tuningWindow = new TuningWindow(beholder);
 
 	() @trusted {
 		import nanogui;
@@ -337,13 +339,19 @@ int main(string[] args) @safe
 		exitWindow.btnYes.callback = () { beholder.close; };
 		exitWindow.btnNo.callback  = () { exitWindow.visible = false; };
 
+		tuningWindow.attenuationFactor.value = 999999;
+
 		// now we should do layout manually yet for the first time
 		beholder.performLayout();
 
 		const x = (beholder.width  - exitWindow.width) / 2;
 		const y = (beholder.height - exitWindow.height) / 2;
 		exitWindow.position = Vector2i(x, y);
-		infoWindow.position = Vector2i(0, 0);
+		infoWindow.position = Vector2i(0, infoWindow.height);
+		tuningWindow.position = Vector2i(beholder.width - tuningWindow.width, 0);
+		tuningWindow.attenuationFactor.callback = (float v) { stage.billboard.attenuationFactor = v; };
+		tuningWindow.attenuationFactor.value = 8.85;
+		stage.billboard.attenuationFactor = 8.85;
 	} ();
 
 	beholder.onClose = () { exitWindow.visible = true; return false; };

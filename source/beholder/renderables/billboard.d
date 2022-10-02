@@ -29,6 +29,7 @@ class Billboard : Renderable
     bool visible;
     int counter = 1;
     ubyte[] currentData, sourceData, signal;
+    float attenuationFactor;
 
     this(RenderState renderState, Program program, ref VertexData vertexData)
     {
@@ -238,6 +239,7 @@ class Billboard : Renderable
 		_internalDrawState.program.uniform("lastLine").set(lastLine);
 		_internalDrawState.program.uniform("frontTex").set(2);
         _internalDrawState.program.uniform("backTex").set(backTexUnit);
+        _internalDrawState.program.uniform("attenuationFactor").set(attenuationFactor);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
@@ -306,15 +308,22 @@ class Billboard : Renderable
                 uniform int lastLine;
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
+                uniform float attenuationFactor;
 
                 const vec4 newColorMax = vec4((10*16+0)/255.0, (11*16+15)/255.0, (5*16+12)/255.0, 1.0); //A0BF5C;
                 const vec4 newColorMin = vec4((11*16+15)/255.0, (11*16+8)/255.0, (0*16+0)/255.0, 1.0); //BFB800;
                 const vec4 afterglowColor = vec4(0, (10*16+8)/255.0, 1.0, 1.0); // 00A8FF
+                const float epsilon = 0.0009765625;
+
+                float attenuation(in float x)
+                {
+                    return 1 - exp(-attenuationFactor*x);
+                }
 
                 void main()
                 {
-                    vec4 fr = texture(frontTex, vTexCoord);// * pow(1 - vTexCoord.y, 2);
-					vec4 bk = texture(backTex, vTexCoord);// * pow(1 - vTexCoord.y, 2);
+                    vec4 fr = texture(frontTex, vTexCoord);
+					vec4 bk = texture(backTex, vTexCoord);
 
                     if (flag)
                     {
@@ -325,7 +334,6 @@ class Billboard : Renderable
                     }
                     else
                     {
-                        float factor = 0.99;
                         if (gl_FragCoord.y > lastLine-8 && gl_FragCoord.y <= lastLine)
                         {
                             if (fr.r > 0.01)
@@ -334,11 +342,11 @@ class Billboard : Renderable
                             }
                             else
                             {
-                                FragOut = vec4(bk.rgb * factor, 1.0);
+                                FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
                             }
                         }
                         else
-                            FragOut = vec4(bk.rgb * factor, 1.0);
+                            FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
                     }
 
                     if (flag && (gl_FragCoord.y > (lastLine - 1)) && (gl_FragCoord.y < (lastLine + 1)))
