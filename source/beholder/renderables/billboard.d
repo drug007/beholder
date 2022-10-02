@@ -161,33 +161,6 @@ class Billboard : Renderable
         bufferTex[1].use(1);
         bufferTex[2].use(2);
 
-// #1
-        // _internalDrawState.program.uniform("tex").set(backTexUnit);
-        // _internalDrawState.program.use();
-
-        // glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
-        // glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-        //     GL_TEXTURE_2D, currTex.handle, 0);
-        // glViewport(0, 0, texWidth, texHeight);
-        // glClear(GL_COLOR_BUFFER_BIT);
-
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        // glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
-        // _internalDrawState.program.unuse();
-        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-
-        // glBindTexture(GL_TEXTURE_2D, frontTex.handle);
-        // glGenerateMipmap(GL_TEXTURE_2D);
-        // glBindTexture(GL_TEXTURE_2D, 0);
-        // glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
-
-// #2
-        // _internalDrawState.program.uniform("tex").set(backTexUnit);
-        // _internalDrawState.program.use();
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        // _internalDrawState.program.unuse();
-// #2.5
-
         const totalWidth = 2048;
         const totalHeight = 2048;
         const pitch = 2048;
@@ -234,8 +207,6 @@ class Billboard : Renderable
         }
         oldLastLine = lastLine;
 
-		_internalDrawState.program.uniform("resolution").set(vec2f(texWidth, texHeight));
-		_internalDrawState.program.uniform("flag").set(false);
 		_internalDrawState.program.uniform("lastLine").set(lastLine);
 		_internalDrawState.program.uniform("frontTex").set(2);
         _internalDrawState.program.uniform("backTex").set(backTexUnit);
@@ -256,18 +227,7 @@ class Billboard : Renderable
 		import core.thread;
 		Thread.sleep(30.msecs);
 
-        // // #3
-		// _internalDrawState.program.uniform("resolution").set(vec2f(viewport[2], viewport[3]));
-		// _internalDrawState.program.uniform("flag").set(true);
-		// _internalDrawState.program.uniform("lastLine").set(lastLine/2);
-		// _internalDrawState.program.uniform("frontTex").set(frontTexUnit);
-        // _internalDrawState.program.uniform("backTex").set(backTexUnit);
-        // _internalDrawState.program.use();
-
-        // ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
-        // _internalDrawState.program.unuse();
-
-// # 4
+        // Радиально-круговая развертка
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);
         drawState.program.uniform("frontTex").set(frontTexUnit);
@@ -303,8 +263,6 @@ class Billboard : Renderable
 				#if FRAGMENT_SHADER
 				in vec2 vTexCoord;
                 out vec4 FragOut;
-                uniform vec2 resolution;
-                uniform bool flag;
                 uniform int lastLine;
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
@@ -325,32 +283,19 @@ class Billboard : Renderable
                     vec4 fr = texture(frontTex, vTexCoord);
 					vec4 bk = texture(backTex, vTexCoord);
 
-                    if (flag)
+                    if (gl_FragCoord.y > lastLine-8 && gl_FragCoord.y <= lastLine)
                     {
-                        if (gl_FragCoord.x < resolution.x/2)
-                            FragOut = fr;
-                        else
-                            FragOut = bk;
-                    }
-                    else
-                    {
-                        if (gl_FragCoord.y > lastLine-8 && gl_FragCoord.y <= lastLine)
+                        if (fr.r > 0.01)
                         {
-                            if (fr.r > 0.01)
-                            {
-                                FragOut = mix(newColorMin, newColorMax, fr.r);
-                            }
-                            else
-                            {
-                                FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
-                            }
+                            FragOut = mix(newColorMin, newColorMax, fr.r);
                         }
                         else
+                        {
                             FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
+                        }
                     }
-
-                    if (flag && (gl_FragCoord.y > (lastLine - 1)) && (gl_FragCoord.y < (lastLine + 1)))
-                        FragOut = vec4(1);
+                    else
+                        FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
                 }
 				#endif
 			";
