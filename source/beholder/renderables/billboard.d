@@ -272,6 +272,7 @@ class Billboard : Renderable
                 const vec4 newColorMin = vec4((11*16+15)/255.0, (11*16+8)/255.0, (0*16+0)/255.0, 1.0); //BFB800;
                 const vec4 afterglowColor = vec4(0, (10*16+8)/255.0, 1.0, 1.0); // 00A8FF
                 const float epsilon = 0.0009765625;
+                const int beamWidth = 8;
 
                 float attenuation(in float x)
                 {
@@ -283,19 +284,13 @@ class Billboard : Renderable
                     vec4 fr = texture(frontTex, vTexCoord);
 					vec4 bk = texture(backTex, vTexCoord);
 
-                    if (gl_FragCoord.y > lastLine-8 && gl_FragCoord.y <= lastLine)
-                    {
-                        if (fr.r > 0.01)
-                        {
-                            FragOut = mix(newColorMin, newColorMax, fr.r);
-                        }
-                        else
-                        {
-                            FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
-                        }
-                    }
-                    else
-                        FragOut = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
+                    vec4 f = mix(newColorMin, newColorMax, fr.r);
+                    vec4 b = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
+                    bool cond = ((gl_FragCoord.y > lastLine-beamWidth) && 
+                                    (gl_FragCoord.y <= lastLine) && 
+                                    (fr.r > 0.01));
+                    float v = cond ? 1.0 : 0.0;
+                    FragOut = v*f + (1-v)*b;
                 }
 				#endif
 			";
