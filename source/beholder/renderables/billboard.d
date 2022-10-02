@@ -268,9 +268,9 @@ class Billboard : Renderable
                 uniform sampler2D frontTex;
                 uniform float attenuationFactor;
 
-                const vec4 newColorMax = vec4((10*16+0)/255.0, (11*16+15)/255.0, (5*16+12)/255.0, 1.0); //A0BF5C;
-                const vec4 newColorMin = vec4((11*16+15)/255.0, (11*16+8)/255.0, (0*16+0)/255.0, 1.0); //BFB800;
-                const vec4 afterglowColor = vec4(0, (10*16+8)/255.0, 1.0, 1.0); // 00A8FF
+                const vec4 newColorMax    = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C;
+                const vec4 newColorMin    = vec4(0.749019608, 0.721568627, 0.0,         1.0); // BFB800;
+                const vec4 afterglowColor = vec4(0.0,         0.658823529, 1.0,         1.0); // 00A8FF
                 const float epsilon = 0.0009765625;
                 const int beamWidth = 8;
 
