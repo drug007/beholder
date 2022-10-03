@@ -201,16 +201,12 @@ class Billboard : Renderable
         if (lastLine < oldLastLine)
         {
             shift += shifting_speed;
-            uint z = 0;
-            glClearTexImage(bufferTex[frontTexUnit].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
-            glClearTexImage(bufferTex[2].handle, 0, GL_RED, GL_UNSIGNED_BYTE, &z);
         }
         oldLastLine = lastLine;
 
 		_internalDrawState.program.uniform("lastLine").set(lastLine);
 		_internalDrawState.program.uniform("frontTex").set(2);
         _internalDrawState.program.uniform("backTex").set(backTexUnit);
-        _internalDrawState.program.uniform("attenuationFactor").set(attenuationFactor);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
@@ -231,8 +227,7 @@ class Billboard : Renderable
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);
         drawState.program.uniform("frontTex").set(frontTexUnit);
-        drawState.program.uniform("backTex").set(backTexUnit);
-        drawState.program.uniform("deltaTime").set(lastLine/cast(float)2048);
+        drawState.program.uniform("deltaTime").set(lastLine/cast(float)totalHeight);
         drawState.program.use();
 
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
@@ -262,22 +257,13 @@ class Billboard : Renderable
 
 				#if FRAGMENT_SHADER
 				in vec2 vTexCoord;
-                out vec4 FragOut;
-                uniform int lastLine;
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
-                uniform float attenuationFactor;
 
                 const vec4 newColorMax    = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
                 const vec4 newColorMin    = vec4(0.749019608, 0.721568627, 0.0,         1.0); // BFB800
                 const vec4 afterglowColor = vec4(0.0,         0.658823529, 1.0,         1.0); // 00A8FF
-                const float epsilon = 0.0009765625;
-                const int beamWidth = 8;
-
-                float attenuation(in float x)
-                {
-                    return 1 - exp(-attenuationFactor*x);
-                }
+                const vec4 black          = vec4(0.0, 0.0, 0.0, 1.0);
 
                 void main()
                 {
@@ -285,12 +271,9 @@ class Billboard : Renderable
 					vec4 bk = texture(backTex, vTexCoord);
 
                     vec4 f = mix(newColorMin, newColorMax, fr.r);
-                    vec4 b = vec4(bk.rgb * attenuation(bk.r)-epsilon, 1.0);
-                    bool cond = ((gl_FragCoord.y > lastLine-beamWidth) && 
-                                    (gl_FragCoord.y <= lastLine) && 
-                                    (fr.r > 0.01));
-                    float v = cond ? 1.0 : 0.0;
-                    FragOut = v*f + (1-v)*b;
+                    vec4 b = mix(black, afterglowColor, bk.r);
+                    float v = (fr.r > 0.01) ? 1.0 : 0.0;
+                    gl_FragColor = v*f + (1-v)*b;
                 }
 				#endif
 			";

@@ -227,7 +227,6 @@ struct Stage
 				in vec2 vTexCoord;
 				out vec4 FragOut;
         		uniform sampler2D frontTex;
-        		uniform sampler2D backTex;
 				uniform float deltaTime;
 
 				const float PI = radians(180.0);
