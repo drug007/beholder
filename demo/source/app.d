@@ -229,9 +229,12 @@ struct Stage
         		uniform sampler2D frontTex;
 				uniform float deltaTime;
 
+                const vec4 newColorMax    = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
+                const vec4 newColorMin    = vec4(0.749019608/2, 0.721568627/2, 0.0,         1.0); // BFB800
+                const vec4 afterglowColor = vec4(0.0,         0.658823529, 1.0,         1.0); // 00A8FF
+                const vec4 black          = vec4(0.0, 0.0, 0.0, 1.0);
+				const vec4 beam = newColorMax;
 				const float PI = radians(180.0);
-				const vec4 black = vec4(0.0, 0.0, 0.0, 1.0);
-				const vec4 beam = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
 
 				void main()
 				{
@@ -244,7 +247,10 @@ struct Stage
 
 					float phi = atan(decart.x, decart.y);
 					vec2 polarCoord = vec2(r*2, (phi+PI)/2/PI);
-					vec4 fr = texture(frontTex, polarCoord);
+					vec4 it = texture(frontTex, polarCoord);
+					float p = step(0.05, it.g);
+					vec4 fr = p*mix(black, afterglowColor, it.r) +
+					          (1 - p)*mix(newColorMin, newColorMax, it.r);
 
 					float a = dt - 2.0/2048.0;
 					float b = dt + 2.0/2048.0; 

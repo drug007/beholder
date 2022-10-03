@@ -201,12 +201,41 @@ class Billboard : Renderable
         if (lastLine < oldLastLine)
         {
             shift += shifting_speed;
+
+            // Копируем данные текущего обзора (в его конце) для учета в последующих обзорах
+            {
+                // Результаты текущего обзора (frontTex) вместе с результатами
+                // предыдущих обзоров (backTex) вывожу в FBO с прикрепленной промежуточной
+                // текстурой (#2). Из которой данные копирую обратно в текстуру backTex
+                // как результат предыдущих обзоров.
+                _internalDrawState.program.uniform("lastLine").set(lastLine);
+                _internalDrawState.program.uniform("frontTex").set(frontTexUnit);
+                _internalDrawState.program.uniform("backTex").set(backTexUnit);
+                _internalDrawState.program.uniform("attenuation").set(0.8f);
+                _internalDrawState.program.use();
+
+                glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
+                glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                    GL_TEXTURE_2D, bufferTex[2].handle, 0);
+                glViewport(0, 0, texWidth, texHeight);
+
+                ctx.draw(PrimitiveType.Triangles, 0, cast(int) (_internalDrawState.vertexData.ibo.size/int.sizeof), _internalDrawState, sceneState);
+
+                bufferTex[backTexUnit].use(backTexUnit);
+                glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, texWidth, texHeight);
+                runtimeCheck;
+
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);//Деактивируем FBO
+                _internalDrawState.program.unuse();
+                glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
+            }
         }
         oldLastLine = lastLine;
 
 		_internalDrawState.program.uniform("lastLine").set(lastLine);
 		_internalDrawState.program.uniform("frontTex").set(2);
         _internalDrawState.program.uniform("backTex").set(backTexUnit);
+        _internalDrawState.program.uniform("attenuation").set(1.0f);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
@@ -219,10 +248,6 @@ class Billboard : Renderable
         _internalDrawState.program.unuse();
         glViewport(viewport[0],viewport[1],viewport[2],viewport[3]);
 
-		import std.datetime;
-		import core.thread;
-		Thread.sleep(30.msecs);
-
         // Радиально-круговая развертка
         mat4f mvp = sceneState.camera.modelViewProjection;
         drawState.program.uniform("mvp_matrix").set(mvp);
@@ -233,9 +258,9 @@ class Billboard : Renderable
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
         drawState.program.unuse();
 
-        // Меняем буферы местами
-        backTexUnit = frontTexUnit;
-        frontTexUnit = (frontTexUnit + 1) % 2;
+		import std.datetime;
+		import core.thread;
+		Thread.sleep(1.msecs);
     }
 
     private final auto createInternalProgram() @trusted
@@ -259,21 +284,27 @@ class Billboard : Renderable
 				in vec2 vTexCoord;
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
-
-                const vec4 newColorMax    = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
-                const vec4 newColorMin    = vec4(0.749019608, 0.721568627, 0.0,         1.0); // BFB800
-                const vec4 afterglowColor = vec4(0.0,         0.658823529, 1.0,         1.0); // 00A8FF
-                const vec4 black          = vec4(0.0, 0.0, 0.0, 1.0);
+                uniform float attenuation;
 
                 void main()
                 {
-                    vec4 fr = texture(frontTex, vTexCoord);
-					vec4 bk = texture(backTex, vTexCoord);
+                    vec4 f = texture(frontTex, vTexCoord);
+					vec4 b = texture(backTex, vTexCoord);
 
-                    vec4 f = mix(newColorMin, newColorMax, fr.r);
-                    vec4 b = mix(black, afterglowColor, bk.r);
-                    float v = (fr.r > 0.01) ? 1.0 : 0.0;
-                    gl_FragColor = v*f + (1-v)*b;
+                    // Ненулевая зеленая компонента означает, что это
+                    // значение из предыдущих обзоров
+                    b.g = 0.1;
+
+                    // Проверяем коэффициент затухание на близость к единице
+                    float p = step(0.99, attenuation);
+                    // Если близок к еденицы то затухания нет и смешиваем
+                    // передний и задний буфер так, что где передний буфер пустой
+                    // используется задний.
+                    // Если коэффициент затухания меньше единицы, смешиваем оба
+                    // буфера в равном соотношении, при этом значение заднего буфера
+                    // домножаем на коэффициент затухания
+                    float t = p*step(0.01, f.r) + (1-p)*0.5;
+                    gl_FragColor = t*f + (1-t)*b*attenuation;
                 }
 				#endif
 			";
