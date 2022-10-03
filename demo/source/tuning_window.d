@@ -5,6 +5,7 @@ import nanogui;
 class TuningWindow : Window
 {
     public FloatBox!float attenuationFactor;
+    public CheckBox trails;
 
     this(Widget parent) @trusted
     {
@@ -17,5 +18,9 @@ class TuningWindow : Window
 		attenuationFactor.alignment = TextBox.Alignment.Right;
 		attenuationFactor.editable = true;
 		attenuationFactor.numberFormat = "%.5f";
+
+        trails = new CheckBox(this, "Trails", null);
+
+        new Label(this, " _ ");
     }
 }

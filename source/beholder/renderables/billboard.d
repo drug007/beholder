@@ -30,6 +30,7 @@ class Billboard : Renderable
     int counter = 1;
     ubyte[] currentData, sourceData, signal;
     float attenuationFactor;
+    bool trails;
 
     this(RenderState renderState, Program program, ref VertexData vertexData)
     {

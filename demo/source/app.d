@@ -357,6 +357,10 @@ int main(string[] args) @safe
 		tuningWindow.attenuationFactor.callback = (float v) { stage.billboard.attenuationFactor = v; };
 		tuningWindow.attenuationFactor.value = 8.85;
 		stage.billboard.attenuationFactor = 8.85;
+
+		tuningWindow.trails.callback = (bool value) {
+            stage.billboard.trails = value;
+        };
 	} ();
 
 	beholder.onClose = () { exitWindow.visible = true; return false; };
