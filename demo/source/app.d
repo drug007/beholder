@@ -228,6 +228,7 @@ struct Stage
 				out vec4 FragOut;
         		uniform sampler2D frontTex;
 				uniform float deltaTime;
+                uniform float trailsEnabled;
 
                 const vec4 newColorMax    = vec4(0.62745098,  0.749019608, 0.360784314, 1.0); // A0BF5C
                 const vec4 newColorMin    = vec4(0.749019608/2, 0.721568627/2, 0.0,         1.0); // BFB800
@@ -249,7 +250,9 @@ struct Stage
 					vec2 polarCoord = vec2(r*2, (phi+PI)/2/PI);
 					vec4 it = texture(frontTex, polarCoord);
 					float p = step(0.05, it.g);
-					vec4 fr = p*mix(black, afterglowColor, it.r) +
+					// Включаем/выключаем следы
+					vec4 clr = vec4(afterglowColor.rgb*trailsEnabled, 1.0);
+					vec4 fr = p*mix(black, clr, it.r) +
 					          (1 - p)*mix(newColorMin, newColorMax, it.r);
 
 					float a = dt - 2.0/2048.0;
@@ -359,7 +362,7 @@ int main(string[] args) @safe
 		stage.billboard.attenuationFactor = 8.85;
 
 		tuningWindow.trails.callback = (bool value) {
-            stage.billboard.trails = value;
+            stage.billboard.trailsEnabled = value;
         };
 	} ();
 

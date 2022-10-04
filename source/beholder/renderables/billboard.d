@@ -30,7 +30,7 @@ class Billboard : Renderable
     int counter = 1;
     ubyte[] currentData, sourceData, signal;
     float attenuationFactor;
-    bool trails;
+    bool trailsEnabled;
 
     this(RenderState renderState, Program program, ref VertexData vertexData)
     {
@@ -213,6 +213,7 @@ class Billboard : Renderable
                 _internalDrawState.program.uniform("frontTex").set(frontTexUnit);
                 _internalDrawState.program.uniform("backTex").set(backTexUnit);
                 _internalDrawState.program.uniform("attenuation").set(0.8f);
+                _internalDrawState.program.uniform("trailsEnabled").set(trailsEnabled ? 1 : 0);
                 _internalDrawState.program.use();
 
                 glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
@@ -237,6 +238,7 @@ class Billboard : Renderable
 		_internalDrawState.program.uniform("frontTex").set(2);
         _internalDrawState.program.uniform("backTex").set(backTexUnit);
         _internalDrawState.program.uniform("attenuation").set(1.0f);
+        _internalDrawState.program.uniform("trailsEnabled").set(trailsEnabled ? 1 : 0);
         _internalDrawState.program.use();
 
         glBindFramebuffer(GL_FRAMEBUFFER, _fboId);   // Активируем FBO
@@ -254,6 +256,7 @@ class Billboard : Renderable
         drawState.program.uniform("mvp_matrix").set(mvp);
         drawState.program.uniform("frontTex").set(frontTexUnit);
         drawState.program.uniform("deltaTime").set(lastLine/cast(float)totalHeight);
+        drawState.program.uniform("trailsEnabled").set(trailsEnabled ? 1.0f : 0.0f);
         drawState.program.use();
 
         ctx.draw(PrimitiveType.Triangles, 0, cast(int) (drawState.vertexData.ibo.size/int.sizeof), drawState, sceneState);
@@ -286,11 +289,15 @@ class Billboard : Renderable
                 uniform sampler2D backTex;
                 uniform sampler2D frontTex;
                 uniform float attenuation;
+                uniform int trailsEnabled;
 
                 void main()
                 {
                     vec4 f = texture(frontTex, vTexCoord);
 					vec4 b = texture(backTex, vTexCoord);
+                    // // Если использовать строчку ниже, то следы не будут
+                    // // накапливаться в отключенном состоянии
+					// vec4 b = texture(backTex, vTexCoord)*trailsEnabled;
 
                     // Ненулевая зеленая компонента означает, что это
                     // значение из предыдущих обзоров
